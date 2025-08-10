@@ -6,6 +6,7 @@ runConfig:
   # more instances in response to increased traffic.
   maxInstances: 1
   
+# Environment variables and secrets
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: NEXT_PUBLIC_FIREBASE_API_KEY
