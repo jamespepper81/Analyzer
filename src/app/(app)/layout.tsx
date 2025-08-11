@@ -518,7 +518,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
-            <Logo className="h-8 w-8 text-primary" />
+            <Logo className="h-8 w-8" style={{ color: 'hsl(var(--brand))' }} />
             <span className="font-headline text-2xl font-bold tracking-tighter group-data-[collapsible=icon]:hidden">BitSleuth</span>
           </div>
         </SidebarHeader>

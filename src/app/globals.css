@@ -32,6 +32,8 @@
     --chart-negative: 350 89% 60%;
     --chart-received: 330 100% 71%;
     --chart-sent: 150 100% 71%;
+    /* Brand color used for logos/icons regardless of theme */
+    --brand: 276 100% 68.4%;
     --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -71,6 +73,7 @@
     --chart-negative: 0 90% 60%;
     --chart-received: 330 100% 71%;
     --chart-sent: 150 100% 71%;
+    --brand: 276 100% 68.4%;
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 276 100% 68.4%;

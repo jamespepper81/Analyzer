@@ -25,14 +25,14 @@ export function ThemeToggle() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-auto min-w-min">
-        <DropdownMenuItem onClick={() => setTheme('light')}>
+      <DropdownMenuContent align="end" sideOffset={6} className="w-auto min-w-0" style={{ minWidth: 'auto' }}>
+        <DropdownMenuItem className="px-2" onClick={() => setTheme('light')}>
           <Sun className="mr-2 h-4 w-4" /> Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
+        <DropdownMenuItem className="px-2" onClick={() => setTheme('dark')}>
           <Moon className="mr-2 h-4 w-4" /> Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
+        <DropdownMenuItem className="px-2" onClick={() => setTheme('system')}>
           <Monitor className="mr-2 h-4 w-4" /> System
         </DropdownMenuItem>
       </DropdownMenuContent>
