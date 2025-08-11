@@ -124,13 +124,14 @@ export default function CoinControlPage() {
                 </CardHeader>
                 <CardContent>
                     <ResponsiveContainer width="100%" height={400}>
-                         <Treemap
+                          <Treemap
                             data={treemapData}
                             dataKey="value"
                             nameKey="id"
                             aspectRatio={4 / 3}
-                            stroke="hsl(var(--background))"
-                            fill="hsl(var(--primary))"
+                             stroke="hsl(var(--background))"
+                             /* Use CSS variable so SSR is safe */
+                             fill="hsl(var(--treemap))"
                             isAnimationActive={false}
                          >
                             <RechartsTooltip content={<CustomTreemapTooltip currency={currency} fiatPrice={fiatPrice} />} />
