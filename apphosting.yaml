@@ -47,8 +47,8 @@ env:
   #- variable: BLOCKCHAIN_COM_API_SECRET
   #  secret: BLOCKCHAIN_COM_API_SECRET
     
-  #- variable: GEMINI_API_KEY
-  #  secret: GEMINI_API_KEY
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
     
   - variable: COINGECKO_API_KEY
     secret: COINGECKO_API_KEY
