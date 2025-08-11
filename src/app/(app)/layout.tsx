@@ -42,6 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { Currency } from '@/lib/types';
 import { ToastAction } from '@/components/ui/toast';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', description: "Get a high-level overview of your wallet's balance, security, and recent activity." },
@@ -596,6 +597,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
               <h1 className="text-xl font-bold tracking-tighter">{pageTitle}</h1>
             </div>
             <div className="flex items-center justify-end gap-2">
+              <ThemeToggle />
               {activeXpub ? (
                  <Button variant="outline" onClick={handleDisconnect}>Disconnect</Button>
               ) : (

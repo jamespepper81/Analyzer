@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics-tracker';
 import { WalletProvider } from '@/contexts/wallet-context';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -58,19 +59,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} dark`}>
+    <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#BF5FFF" />
       </head>
       <body className="font-body antialiased">
-        <WalletProvider>
-          {children}
-        </WalletProvider>
-        <Toaster />
-        <Suspense fallback={null}>
-          <AnalyticsTracker />
-        </Suspense>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <WalletProvider>
+            {children}
+          </WalletProvider>
+          <Toaster />
+          <Suspense fallback={null}>
+            <AnalyticsTracker />
+          </Suspense>
+        </ThemeProvider>
       </body>
     </html>
   );
