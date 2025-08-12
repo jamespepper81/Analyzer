@@ -4,10 +4,9 @@
 import { bitcoin, bip32 } from '@/lib/bitcoin-init';
 import type { WalletData, Transaction, AddressInfo, UTXO, Currency, TransactionLabel } from '@/lib/types';
 import { KNOWN_EXCHANGE_ADDRESSES } from '@/lib/exchange-labels';
-import { fetchJson, getHistoricalPriceRange } from './blockchain-api';
+import { esploraGet, fetchJson, getHistoricalPriceRange } from './blockchain-api';
 import { format, startOfDay } from 'date-fns';
 
-const BLOCKSTREAM_API_BASE = 'https://blockstream.info/api';
 const GAP_LIMIT = 20; // Standard gap limit for address discovery
 
 function getP2wpkhAddress(pubKey: Buffer): string {
@@ -26,10 +25,17 @@ function deriveAddressBatch(node: any, chain: number, from: number, to: number):
     return addresses;
 }
 
-// This is the new, more robust implementation.
+// This is the new, more robust implementation with provider readiness check and fallback.
 async function discoverUsedAddresses(xpub: string): Promise<string[]> {
     const node = bip32.fromBase58(xpub, bitcoin.networks.bitcoin);
     let allUsedAddresses: string[] = [];
+
+    // Quick provider readiness check (with fallback & retry under the hood)
+    try {
+        await esploraGet(`/blocks/tip/height`, 60);
+    } catch (e) {
+        throw new Error('Upstream data provider is temporarily unavailable. Please try again in a moment.');
+    }
 
     for (const chain of [0, 1]) { // 0 for external, 1 for internal
         let gap = 0;
@@ -37,10 +43,10 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
         
         while (gap < GAP_LIMIT) {
             const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT);
+            // Query the batch; tolerate per-address failures
             const addressTxs = await Promise.all(
                 batch.map(addr =>
-                    fetchJson(`${BLOCKSTREAM_API_BASE}/address/${addr}/txs/chain`)
-                        .catch(() => [])
+                    esploraGet(`/address/${addr}/txs/chain`, 300).catch(() => [])
                 )
             );
             
@@ -102,7 +108,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
 
         // Fetch non-critical data, allowing for graceful failure.
         const [latestBlockHeight, priceHistory24h, priceHistory7d, priceHistory30d] = await Promise.all([
-            fetchJson(`${BLOCKSTREAM_API_BASE}/blocks/tip/height`, {}, 60).catch(() => null),
+            esploraGet(`/blocks/tip/height`, 60).catch(() => null),
             getHistoricalPriceRange(1, currency).catch(() => []),
             getHistoricalPriceRange(7, currency).catch(() => []),
             getHistoricalPriceRange(30, currency).catch(() => [])
@@ -112,32 +118,39 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
         const utxos: UTXO[] = [];
         const addressInfos: AddressInfo[] = [];
 
-        // Fetch all data for used addresses in parallel
-        await Promise.all(usedAddresses.map(async (address) => {
-            const [txs, addressUtxos, addressInfo] = await Promise.all([
-                fetchJson(`${BLOCKSTREAM_API_BASE}/address/${address}/txs`).catch(() => []),
-                fetchJson(`${BLOCKSTREAM_API_BASE}/address/${address}/utxo`).catch(() => []),
-                fetchJson(`${BLOCKSTREAM_API_BASE}/address/${address}`).catch(() => null)
-            ]);
-            
-            if (Array.isArray(txs)) {
-                txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
+        // Fetch all data for used addresses with limited concurrency to avoid provider throttling
+        const concurrency = 6;
+        let idx = 0;
+        async function worker() {
+            while (idx < usedAddresses.length) {
+                const address = usedAddresses[idx++];
+                try {
+                    const [txs, addressUtxos, addressInfo] = await Promise.all([
+                        esploraGet(`/address/${address}/txs`).catch(() => []),
+                        esploraGet(`/address/${address}/utxo`).catch(() => []),
+                        esploraGet(`/address/${address}`).catch(() => null)
+                    ]);
+                    if (Array.isArray(txs)) {
+                        txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
+                    }
+                    if (Array.isArray(addressUtxos)) {
+                        addressUtxos.forEach((utxo: any) => {
+                            utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
+                        });
+                    }
+                    if (addressInfo && addressInfo.chain_stats?.tx_count > 0) {
+                        addressInfos.push({
+                            address,
+                            n_tx: addressInfo.chain_stats.tx_count,
+                            balance: addressInfo.chain_stats.funded_txo_sum - addressInfo.chain_stats.spent_txo_sum,
+                        });
+                    }
+                } catch {
+                    // Skip this address on failure
+                }
             }
-            
-            if (Array.isArray(addressUtxos)) {
-                addressUtxos.forEach((utxo: any) => {
-                    utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
-                });
-            }
-
-            if (addressInfo && addressInfo.chain_stats.tx_count > 0) {
-                addressInfos.push({
-                    address,
-                    n_tx: addressInfo.chain_stats.tx_count,
-                    balance: addressInfo.chain_stats.funded_txo_sum - addressInfo.chain_stats.spent_txo_sum,
-                });
-            }
-        }));
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, usedAddresses.length) }, () => worker()));
 
         const transactionDates = Array.from(allTxs.values())
             .map(tx => new Date(tx.status.confirmed ? tx.status.block_time * 1000 : Date.now()));

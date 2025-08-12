@@ -5,6 +5,13 @@
 import type { Transaction, AddressInfo, Currency } from '@/lib/types';
 
 const BLOCKSTREAM_API_BASE = 'https://blockstream.info/api';
+const MEMPOOL_SPACE_API_BASE = 'https://mempool.space/api';
+
+const ESPLORA_BASES = [BLOCKSTREAM_API_BASE, MEMPOOL_SPACE_API_BASE];
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export async function fetchJson(url: string, options?: RequestInit, revalidate?: number): Promise<any> {
     const headers: HeadersInit = {
@@ -31,12 +38,10 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
 
         // Check for Blockstream's non-JSON notice page FIRST.
         if (textBody.includes("Blockstream Explorer API NOTICE")) {
-             console.warn(`Blockstream API notice received for ${url}, treating as empty response.`);
-             if (url.includes('/txs')) return []; // Expected: array
-             if (url.includes('/utxo')) return []; // Expected: array
-             if (url.includes('/address/')) return null; // Expected: object or null
-             if (url.includes('/blocks/tip/height')) return null; // Expected: number or null
-             return null; // Default graceful failure
+             // Signal to callers that this provider is temporarily unusable so they can fallback
+             const err: any = new Error('ESPLORA_PROVIDER_NOTICE');
+             err.code = 'ESPLORA_PROVIDER_NOTICE';
+             throw err;
         }
         
         if (!response.ok) {
@@ -65,6 +70,38 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
         }
         throw e;
     }
+}
+
+/**
+ * Fetch an Esplora endpoint with retry and provider fallback (Blockstream -> mempool.space).
+ * Path must start with '/'.
+ */
+export async function esploraGet(path: string, revalidate?: number): Promise<any> {
+    const attemptsPerProvider = 2;
+    let lastError: any = null;
+    for (const base of ESPLORA_BASES) {
+        const url = `${base}${path}`;
+        for (let attempt = 0; attempt < attemptsPerProvider; attempt++) {
+            try {
+                return await fetchJson(url, {}, revalidate);
+            } catch (e: any) {
+                lastError = e;
+                // If Blockstream served a notice, immediately break to try next provider
+                if (e?.code === 'ESPLORA_PROVIDER_NOTICE') {
+                    break;
+                }
+                // Backoff for network/5xx/timeout
+                if (e?.message?.includes('timed out') || /5\d\d/.test(e?.message || '')) {
+                    await sleep(300 * (attempt + 1));
+                    continue;
+                }
+                // For other errors, retry once, then move on
+                await sleep(150 * (attempt + 1));
+            }
+        }
+        // Try next provider
+    }
+    throw lastError ?? new Error('Failed to fetch from any Esplora provider');
 }
 
 // Cache for historical prices to avoid redundant API calls for the same day.
@@ -105,13 +142,13 @@ export async function getHistoricalPriceRange(days: number, currency: Currency):
 
 export async function getAddressData(address: string): Promise<{ data: { addressInfo: AddressInfo, transactions: Transaction[], btcPrice: number } | null; error: string | null; }> {
     try {
-        const addressUrl = `${BLOCKSTREAM_API_BASE}/address/${address}`;
-        const addressTxsUrl = `${BLOCKSTREAM_API_BASE}/address/${address}/txs`;
+        const addressUrl = `/address/${address}`;
+        const addressTxsUrl = `/address/${address}/txs`;
         const tickerUrl = 'https://blockchain.info/ticker';
 
         const [addressStats, txsData, btcTicker] = await Promise.all([
-            fetchJson(addressUrl, {}, 300), // Cache address stats for 5 mins
-            fetchJson(addressTxsUrl, {}, 300).catch(() => []), 
+            esploraGet(addressUrl, 300), // Cache address stats for 5 mins
+            esploraGet(addressTxsUrl, 300).catch(() => []), 
             fetchJson(tickerUrl, {}, 60), // Cache price for 1 min
         ]);
 
@@ -138,7 +175,7 @@ export async function getAddressData(address: string): Promise<{ data: { address
             });
         }
         
-        const latestBlockHeight = (await fetchJson(`${BLOCKSTREAM_API_BASE}/blocks/tip/height`, {}, 60));
+        const latestBlockHeight = (await esploraGet(`/blocks/tip/height`, 60));
         
         const transactions: Transaction[] = (Array.isArray(txsData) ? txsData : []).map((tx: any): Transaction => {
             let netAmountSatoshis = 0;
@@ -173,11 +210,11 @@ export async function getAddressData(address: string): Promise<{ data: { address
 
 export async function getTransactionData(txid: string): Promise<{ data: Transaction | null; error: string | null; }> {
     try {
-        const txUrl = `${BLOCKSTREAM_API_BASE}/tx/${txid}`;
-        const txData = await fetchJson(txUrl, {}, 86400); // Cache confirmed tx for a day
+        const txUrl = `/tx/${txid}`;
+        const txData = await esploraGet(txUrl, 86400); // Cache confirmed tx for a day
         if (!txData) return { data: null, error: `Could not fetch data for this transaction ID (${txid}).` };
 
-        const latestBlockHeight = await fetchJson(`${BLOCKSTREAM_API_BASE}/blocks/tip/height`, {}, 60);
+        const latestBlockHeight = await esploraGet(`/blocks/tip/height`, 60);
         const isConfirmed = txData.status.confirmed;
         const confirmations = isConfirmed && latestBlockHeight ? latestBlockHeight - txData.status.block_height + 1 : 0;
         const txDate = isConfirmed ? new Date(txData.status.block_time * 1000) : new Date();
@@ -202,8 +239,8 @@ export async function getTransactionData(txid: string): Promise<{ data: Transact
 
 export async function getAddressStats(address: string): Promise<{ data: AddressInfo | null; error: string | null; }> {
     try {
-        const addressStatsUrl = `${BLOCKSTREAM_API_BASE}/address/${address}`;
-        const stats = await fetchJson(addressStatsUrl, {}, 300); // Cache for 5 mins
+        const addressStatsUrl = `/address/${address}`;
+        const stats = await esploraGet(addressStatsUrl, 300); // Cache for 5 mins
         if (!stats) return { data: null, error: 'Could not fetch stats for this address.' };
 
         const addressInfo: AddressInfo = {

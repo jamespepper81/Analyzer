@@ -479,10 +479,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setActiveXpub(newXpub);
     if (newXpub) {
       localStorage.setItem('activeXpub', newXpub);
+      // Load cached data for a smoother UX on account switch
+      try {
+        const cached = localStorage.getItem(`walletCache:${newXpub}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setData(parsed);
+        } else {
+          setData(null);
+        }
+      } catch {
+        setData(null);
+      }
     } else {
       localStorage.removeItem('activeXpub');
+      setData(null);
     }
-    setData(null);
     setRecommendations([]);
     setMessages([generateInitialGreetingMessage()]);
     setIsInitialAiContentLoaded(false);
@@ -560,14 +572,25 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     setIsLoading(true);
     setError(null);
+    // Show cached data immediately if available (stale-while-revalidate)
+    try {
+      const cached = localStorage.getItem(`walletCache:${activeXpub}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setData((prev) => prev ?? parsed);
+      }
+    } catch {}
     
     const response = await fetchWalletData(activeXpub, currency);
 
     if (response.error) {
+      // Keep last known good data; do not clear UI on transient errors
       setError(response.error);
-      setData(null);
     } else if (response.data) {
       setData(response.data);
+      try {
+        localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(response.data));
+      } catch {}
     }
     
     setIsLoading(false);
