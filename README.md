@@ -132,4 +132,16 @@ Notes:
 
 ---
 
+## License
+
+**PROPRIETARY SOFTWARE** - Copyright (c) 2025 BitSleuth. All rights reserved.
+
+This software is the proprietary and confidential information of BitSleuth. 
+It is provided solely for use by BitSleuth and its authorized personnel. 
+This software is not intended for public distribution or open source use.
+
+For licensing inquiries, contact: legal@bitsleuth.ai
+
+---
+
 Built with ❤️ by BitSleuth.
