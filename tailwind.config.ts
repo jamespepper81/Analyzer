@@ -66,6 +66,17 @@ export default {
           received: 'hsl(var(--chart-received))',
           sent: 'hsl(var(--chart-sent))',
         },
+        // Add standard colors for compatibility
+        emerald: {
+          500: '#10b981',
+          400: '#34d399',
+          600: '#059669',
+        },
+        rose: {
+          500: '#f43f5e',
+          400: '#fb7185',
+          600: '#e11d48',
+        },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',
