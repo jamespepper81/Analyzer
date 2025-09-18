@@ -43,6 +43,7 @@ import type { Currency } from '@/lib/types';
 import { ToastAction } from '@/components/ui/toast';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { logger } from '@/lib/logger';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', description: "Get a high-level overview of your wallet's balance, security, and recent activity." },
@@ -430,7 +431,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             return () => clearTimeout(supportTimeout);
         }
     } catch (e) {
-        console.warn("Could not access local storage for usage tracking.", e);
+        logger.warn("Could not access local storage for usage tracking.", e);
     }
   }, [toast]);
 

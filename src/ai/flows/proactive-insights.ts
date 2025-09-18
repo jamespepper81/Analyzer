@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import { logger } from '@/lib/logger';
 
 const ProactiveInsightInputSchema = z.object({
   walletData: z.string().describe('JSON string containing wallet data including balance, transaction history, security analysis, UTXOs, etc.'),
@@ -69,7 +70,7 @@ const proactiveInsightFlow = ai.defineFlow(
       }
       return output;
     } catch (e) {
-      console.error("Error in proactiveInsightFlow:", e);
+      logger.error("Error in proactiveInsightFlow:", e);
       const errorMessage = e instanceof Error ? e.message : String(e);
       return { insight: `An error occurred while generating an insight: ${errorMessage}` };
     }

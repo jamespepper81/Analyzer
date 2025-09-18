@@ -21,6 +21,7 @@ import { useAnalytics } from '@/hooks/use-analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { logger } from '@/lib/logger';
 
 const feedbackSchema = z.object({
   feedback: z.string().min(10, 'Please provide at least 10 characters of feedback.'),
@@ -82,7 +83,7 @@ export default function FeedbackPage() {
       form.reset();
 
     } catch (err: any) {
-      console.error('Feedback submission error:', err);
+      logger.error('Feedback submission error:', err);
       setError(err.message || 'Sorry, something went wrong while submitting your feedback. Please try again later.');
     } finally {
       setIsLoading(false);

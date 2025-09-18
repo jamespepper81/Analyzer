@@ -84,8 +84,9 @@ async function getBatchedHistoricalPrices(dates: Date[], currency: Currency): Pr
     const geckoPriceMap = new Map(prices.map(([timestamp, price]) => [format(startOfDay(new Date(timestamp)), 'yyyy-MM-dd'), price]));
 
     uniqueDates.forEach(dateStr => {
-        if(geckoPriceMap.has(dateStr)) {
-            priceMap.set(dateStr, geckoPriceMap.get(dateStr)!);
+        const price = geckoPriceMap.get(dateStr);
+        if (price !== undefined) {
+            priceMap.set(dateStr, price);
         }
     });
     

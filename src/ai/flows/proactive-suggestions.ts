@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import { logger } from '@/lib/logger';
 
 const ProactiveSuggestionsInputSchema = z.object({
   walletSummary: z.string().describe('JSON string containing a summary of wallet data, such as balance, number of transactions, security score, UTXO count, etc.'),
@@ -79,7 +80,7 @@ const proactiveSuggestionsFlow = ai.defineFlow(
       }
       return output;
     } catch (e) {
-      console.error("Error in proactiveSuggestionsFlow:", e);
+      logger.error("Error in proactiveSuggestionsFlow:", e);
       return { suggestions: [] };
     }
   }

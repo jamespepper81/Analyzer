@@ -10,6 +10,7 @@ import { getProactiveInsight } from '@/ai/flows/proactive-insights';
 import { getProactiveSuggestions } from '@/ai/flows/proactive-suggestions';
 import { getSecurityRecommendations } from '@/ai/flows/security-recommendations';
 import { useAnalytics } from '@/hooks/use-analytics';
+import { logger } from '@/lib/logger';
 
 const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP'];
 
@@ -402,7 +403,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('nostr_profile');
       localStorage.removeItem('nostr_save_preference');
     } catch (e) {
-      console.error('Could not access local storage', e);
+      logger.error('Could not access local storage', e);
     }
   }, []);
 
@@ -468,7 +469,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             setMessages([generateInitialGreetingMessage()]);
         }
       } catch (e) {
-        console.error('Could not access local storage', e);
+        logger.error('Could not access local storage', e);
         setIsLoading(false);
       }
     };
@@ -540,7 +541,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     
     const savePreference = localStorage.getItem('nostr_save_preference');
     if (nostrNsec && savePreference === 'accepted') {
-        saveXpubsToNostr(newXpubs).catch(e => console.error("Failed to auto-save xpubs to Nostr:", e));
+        saveXpubsToNostr(newXpubs).catch(e => logger.error("Failed to auto-save xpubs to Nostr:", e));
     }
   }, [xpubs, activeXpub, setActiveXpubAndPersist, nostrNsec, saveXpubsToNostr]);
 
@@ -557,7 +558,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('walletXpubs');
       localStorage.removeItem('activeXpub');
     } catch (e) {
-      console.error('Could not access local storage', e);
+      logger.error('Could not access local storage', e);
     }
     disconnectNostr();
   }, [disconnectNostr, track]);
@@ -603,30 +604,38 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect for periodically refreshing the fiat price
   useEffect(() => {
-    const intervalId = setInterval(async () => {
+    let timeoutId: NodeJS.Timeout;
+    
+    const scheduleNext = () => {
+      timeoutId = setTimeout(async () => {
         if (!activeXpub || document.hidden) {
-            return;
+          scheduleNext();
+          return;
         }
         try {
-            const tickerUrl = 'https://blockchain.info/ticker';
-            const response = await fetch(tickerUrl);
-            if (!response.ok) {
-                throw new Error('Failed to fetch ticker data');
-            }
-            const btcPrices = await response.json();
-            
-            // Update the price in the main data object to keep it consistent
-            setData(prevData => {
-                if (!prevData) return null;
-                return { ...prevData, btcPrices };
-            });
-            
+          const tickerUrl = 'https://blockchain.info/ticker';
+          const response = await fetch(tickerUrl);
+          if (!response.ok) {
+            throw new Error('Failed to fetch ticker data');
+          }
+          const btcPrices = await response.json();
+          
+          // Update the price in the main data object to keep it consistent
+          setData(prevData => {
+            if (!prevData) return null;
+            return { ...prevData, btcPrices };
+          });
+          
         } catch (e) {
-            console.warn("Could not refresh BTC price:", e);
+          logger.warn("Could not refresh BTC price:", e);
         }
-    }, 60000); // every 60 seconds
-
-    return () => clearInterval(intervalId);
+        scheduleNext(); // Schedule the next execution
+      }, 60000); // every 60 seconds
+    };
+    
+    scheduleNext();
+    
+    return () => clearTimeout(timeoutId);
   }, [activeXpub]);
 
   const refreshRecommendations = useCallback(async () => {
@@ -642,7 +651,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setRecommendations(recommendationsResult.recommendations);
       }
     } catch (e) {
-      console.error("Failed to refresh security recommendations:", e);
+      logger.error("Failed to refresh security recommendations:", e);
     }
   }, [data]);
 
