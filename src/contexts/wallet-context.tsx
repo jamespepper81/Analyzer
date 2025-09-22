@@ -705,7 +705,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   // Derived currency values
   const fiatPrice = data?.btcPrices?.[currency]?.last || 0;
-  const currencySymbol = data?.btcPrices?.[currency]?.symbol || '$';
+  
+  // Map currency codes to actual symbols
+  const getCurrencySymbol = (currencyCode: Currency): string => {
+    const symbols: Record<Currency, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+    };
+    return symbols[currencyCode] || '$';
+  };
+  
+  const currencySymbol = getCurrencySymbol(currency);
   const fiatBalance = (data?.balanceBTC || 0) * fiatPrice;
 
 
