@@ -73,8 +73,10 @@ export default function RootLayout({
                 {children}
               </WalletProvider>
               <Toaster />
-              <AnalyticsTracker />
             </ThemeProvider>
+          </Suspense>
+          <Suspense fallback={null}>
+            <AnalyticsTracker />
           </Suspense>
         </ErrorBoundary>
       </body>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { handleChunkError } from '@/lib/chunk-retry-service';
 
 interface Props {
   children: ReactNode;
@@ -24,12 +25,9 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
-    // Check if it's a chunk loading error
-    if (error.message?.includes('Loading chunk') || error.message?.includes('ChunkLoadError')) {
-      // Reload the page to retry loading chunks
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+    // Handle chunk loading errors through centralized service
+    if (handleChunkError(error)) {
+      return; // Chunk error is being handled, don't show fallback UI
     }
   }
 
