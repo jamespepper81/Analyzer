@@ -28,12 +28,16 @@ const nextConfig: NextConfig = {
   // Add chunk loading optimization
   experimental: {
     optimizeCss: false, // Disabled to fix critters module issue
+    // Enable WASM support for edge runtime
+    webpackBuildWorker: true,
   },
   // Improve chunk loading reliability
   webpack: (config, { isServer, dev }) => {
+    // Enable WebAssembly support
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
+      syncWebAssembly: true, // Add this for better WASM support
     };
     
     config.module.rules.push({
@@ -62,9 +66,36 @@ const nextConfig: NextConfig = {
     if (isServer) {
       config.externals = config.externals || [];
       if (Array.isArray(config.externals)) {
-        config.externals.push('handlebars', 'dotprompt');
+        config.externals.push('handlebars', 'dotprompt', '@bitcoinerlab/secp256k1');
       }
     }
+
+    // Add specific WASM handling for client-side and edge runtime
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Ensure WASM files are properly resolved
+        '@bitcoinerlab/secp256k1': '@bitcoinerlab/secp256k1/lib/index.js',
+      };
+    }
+
+    // Handle WASM files for edge runtime (next/og)
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      crypto: false,
+      stream: false,
+      util: false,
+      buffer: false,
+      process: false,
+    };
+
+    // Configure WASM loading for edge runtime
+    config.output = {
+      ...config.output,
+      webassemblyModuleFilename: 'static/wasm/[modulehash].wasm',
+    };
 
     // Add chunk loading error handling
     if (!isServer && !dev) {
