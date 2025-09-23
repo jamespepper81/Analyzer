@@ -10,6 +10,7 @@ import { getProactiveInsight } from '@/ai/flows/proactive-insights';
 import { getProactiveSuggestions } from '@/ai/flows/proactive-suggestions';
 import { getSecurityRecommendations } from '@/ai/flows/security-recommendations';
 import { useAnalytics } from '@/hooks/use-analytics';
+import { useChunkRetry } from '@/hooks/use-chunk-retry';
 import { logger } from '@/lib/logger';
 
 const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP'];
@@ -92,6 +93,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [recommendations, setRecommendations] = useState<SecurityRecommendation[]>([]);
   const [isInitialAiContentLoaded, setIsInitialAiContentLoaded] = useState(false);
   const { track } = useAnalytics();
+  
+  // Initialize chunk retry mechanism
+  useChunkRetry();
   
   // Currency state
   const [currency, _setCurrency] = useState<Currency>('USD');

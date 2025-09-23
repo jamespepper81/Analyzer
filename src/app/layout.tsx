@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics-tracker';
 import { WalletProvider } from '@/contexts/wallet-context';
 import { ThemeProvider } from '@/components/theme-provider';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -65,15 +66,17 @@ export default function RootLayout({
         <meta name="theme-color" content="#BF5FFF" />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <WalletProvider>
-            {children}
-          </WalletProvider>
-          <Toaster />
-          <Suspense fallback={null}>
-            <AnalyticsTracker />
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <WalletProvider>
+                {children}
+              </WalletProvider>
+              <Toaster />
+              <AnalyticsTracker />
+            </ThemeProvider>
           </Suspense>
-        </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

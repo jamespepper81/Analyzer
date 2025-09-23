@@ -25,7 +25,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
+  // Add chunk loading optimization
+  experimental: {
+    optimizeCss: true,
+  },
+  // Improve chunk loading reliability
+  webpack: (config, { isServer, dev }) => {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
@@ -38,6 +43,24 @@ const nextConfig: NextConfig = {
         filename: 'static/wasm/[name].[hash][ext]',
       },
     });
+
+    // Add chunk loading error handling
+    if (!isServer && !dev) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          cacheGroups: {
+            ...config.optimization.splitChunks.cacheGroups,
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
 
     return config;
   },
