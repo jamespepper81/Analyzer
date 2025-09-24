@@ -179,10 +179,10 @@ export default function ConnectWalletPage() {
               <Logo className="h-12 w-12" style={{ color: 'hsl(var(--brand))' }} />
             </div>
             <h1 className="font-headline text-3xl font-bold tracking-tighter text-black dark:text-foreground">
-                BitSleuth
+                BitSleuth - AI Bitcoin Wallet Analyzer
             </h1>
-            <p className="text-muted-foreground font-normal">
-                Enter a Bitcoin xpub key to get AI-powered insights.
+            <p className="text-muted-foreground font-normal max-w-md">
+                The most advanced AI-powered Bitcoin wallet security analyzer. Get comprehensive insights into your Bitcoin wallet's security, privacy, and transaction patterns instantly.
             </p>
         </div>
 
@@ -280,6 +280,29 @@ export default function ConnectWalletPage() {
         </div>
 
 
+        {/* SEO-friendly features section */}
+        <div className="w-full space-y-4 text-center">
+          <h2 className="text-lg font-semibold text-foreground">Key Features</h2>
+          <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <span>AI-powered Bitcoin wallet security analysis</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <span>Transaction pattern and privacy analysis</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <span>Real-time Bitcoin market and mempool data</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <span>Free Bitcoin wallet scanner and checker</span>
+            </div>
+          </div>
+        </div>
+
         <p className="px-8 text-center text-xs text-muted-foreground font-normal italic">
             By analyzing an xpub, you agree to our{" "}
             <Link href="https://www.bitsleuth.ai/terms-of-service" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
@@ -289,7 +312,7 @@ export default function ConnectWalletPage() {
             <Link href="https://www.bitsleuth.ai/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
                 Privacy Policy
             </Link>
-            . Only public data is used.
+            . Only public blockchain data is analyzed - your private keys are never accessed.
         </p>
       </div>
     </main>

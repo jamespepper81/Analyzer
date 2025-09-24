@@ -3,23 +3,56 @@ import { type MetadataRoute } from 'next'
 export default function robots(): MetadataRoute.Robots {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.bitsleuth.ai';
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      // Only disallow pages that strictly require a connected wallet for their primary function.
-      // Public-facing utility pages like /market, /mempool, /discover, and dynamic detail pages
-      // are now crawlable.
-      disallow: [
-        '/dashboard/',
-        '/analysis/',
-        '/security/',
-        '/chat/',
-        '/feedback/',
-        '/report/',
-        '/coin-control/',
-        '/transactions', // Disallow the generic transaction list page
-      ],
-    },
+    rules: [
+      {
+        userAgent: '*',
+        allow: [
+          '/',
+          '/landing',
+          '/market',
+          '/mempool',
+          '/discover',
+          '/feedback',
+          '/block/*',
+          '/transactions/*',
+          '/address/*',
+        ],
+        disallow: [
+          '/dashboard/',
+          '/analysis/',
+          '/security/',
+          '/chat/',
+          '/report/',
+          '/coin-control/',
+          '/transactions', // Disallow the generic transaction list page
+          '/api/',
+        ],
+      },
+      {
+        userAgent: 'Googlebot',
+        allow: [
+          '/',
+          '/landing',
+          '/market',
+          '/mempool',
+          '/discover',
+          '/feedback',
+          '/block/*',
+          '/transactions/*',
+          '/address/*',
+        ],
+        disallow: [
+          '/dashboard/',
+          '/analysis/',
+          '/security/',
+          '/chat/',
+          '/report/',
+          '/coin-control/',
+          '/transactions',
+          '/api/',
+        ],
+      },
+    ],
     sitemap: `${siteUrl}/sitemap.xml`,
   }
 }
