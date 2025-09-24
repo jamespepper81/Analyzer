@@ -113,6 +113,12 @@ export default function DiscoverPage() {
 
   const fetchAndExpandNode = useCallback(async (identifier: string, type: 'address' | 'transaction', depth: number) => {
     if (processedIds.has(identifier)) return;
+    
+    // Prevent excessive depth expansion to maintain performance
+    if (depth > 3) {
+      console.warn('Maximum expansion depth reached');
+      return;
+    }
 
     setIsLoadingGraph(true);
     setGraphError(null);
@@ -135,14 +141,19 @@ export default function DiscoverPage() {
         
         const transactions = data.transactions.slice(0, 5); // Limit expansion
         for (const tx of transactions) {
-            const { data: txInfo, error: txInfoError } = await getTransactionData(tx.id);
-            if (txInfoError) continue;
+            try {
+                const { data: txInfo, error: txInfoError } = await getTransactionData(tx.id);
+                if (txInfoError) continue;
 
             const interestLevel = getNodeInterestLevel('transaction', txInfo);
             const color = interestLevel === 'low' ? INTEREST_COLORS.low.transaction : INTEREST_COLORS[interestLevel];
             
             newNodes.push({ id: tx.id, type: 'transaction', color, val: 8, depth: depth + 1, interestLevel });
             newLinks.push({ source: identifier, target: tx.id, value: 1 });
+            } catch (error) {
+                console.warn(`Failed to fetch transaction ${tx.id}:`, error);
+                continue;
+            }
         }
     } else { // type === 'transaction'
         const { data, error } = await getTransactionData(identifier);
@@ -161,8 +172,9 @@ export default function DiscoverPage() {
 
         for (const input of inputs) {
           if (input.address) {
-            const { data: addrInfo, error: addrInfoError } = await getAddressStats(input.address);
-            if (addrInfoError) continue;
+            try {
+                const { data: addrInfo, error: addrInfoError } = await getAddressStats(input.address);
+                if (addrInfoError) continue;
 
             const interestLevel = getNodeInterestLevel('address', addrInfo);
             const color = interestLevel === 'low' ? INTEREST_COLORS.low.address : INTEREST_COLORS[interestLevel];
@@ -170,13 +182,18 @@ export default function DiscoverPage() {
             
             newNodes.push({ id: input.address, type: 'address', color, val: calculateNodeSize(balance), depth: depth + 1, interestLevel, value: balance });
             newLinks.push({ source: input.address, target: identifier, value: 1 });
+            } catch (error) {
+                console.warn(`Failed to fetch address ${input.address}:`, error);
+                continue;
+            }
           }
         }
 
         for (const output of outputs) {
           if (output.address) {
-            const { data: addrInfo, error: addrInfoError } = await getAddressStats(output.address);
-            if (addrInfoError) continue;
+            try {
+                const { data: addrInfo, error: addrInfoError } = await getAddressStats(output.address);
+                if (addrInfoError) continue;
             
             const interestLevel = getNodeInterestLevel('address', addrInfo);
             const color = interestLevel === 'low' ? INTEREST_COLORS.low.address : INTEREST_COLORS[interestLevel];
@@ -184,6 +201,10 @@ export default function DiscoverPage() {
 
             newNodes.push({ id: output.address, type: 'address', color, val: calculateNodeSize(balance), depth: depth + 1, interestLevel, value: balance });
             newLinks.push({ source: identifier, target: output.address, value: 1 });
+            } catch (error) {
+                console.warn(`Failed to fetch address ${output.address}:`, error);
+                continue;
+            }
           }
         }
     }
@@ -302,7 +323,7 @@ export default function DiscoverPage() {
           <CardHeader>
             <CardTitle>BitSeek Transaction Explorer</CardTitle>
             <CardDescription>
-                Enter a Bitcoin address or transaction ID to begin exploring its history. You can switch between a simple list view and an interactive graph view (beta).
+                Enter a Bitcoin address or transaction ID to begin exploring its history. You can switch between a simple list view and an interactive graph view.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -331,7 +352,7 @@ export default function DiscoverPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="list"><ListTree className="mr-2 h-4 w-4"/>List View</TabsTrigger>
-                <TabsTrigger value="graph"><GitGraph className="mr-2 h-4 w-4"/>Graph View (Beta)</TabsTrigger>
+                <TabsTrigger value="graph"><GitGraph className="mr-2 h-4 w-4"/>Graph View</TabsTrigger>
               </TabsList>
 
               <TabsContent value="list" className="mt-4 space-y-4">
