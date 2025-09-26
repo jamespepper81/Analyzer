@@ -3,13 +3,20 @@ import {genkit} from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
 
-// Initialize Firebase telemetry
-enableFirebaseTelemetry();
+// Initialize Firebase telemetry only in production
+if (process.env.NODE_ENV === 'production') {
+  enableFirebaseTelemetry();
+}
 
 // Google AI configuration - uses GOOGLE_GENAI_API_KEY from environment
 export const ai = genkit({
   plugins: [googleAI({
-    apiVersion: 'v1beta', // Google AI API version, not an API key
+    apiKey: process.env.GOOGLE_GENAI_API_KEY, // Explicitly set API key
+//    config: {
+//      thinkingConfig: {
+//        thinkingBudget: 0, // Disables thinking
+//      },
+//    },
   })],
-  model: 'googleai/gemini-1.5-flash-latest', // Model identifier, not an API key
+  model: 'googleai/gemini-2.0-flash-lite', // Use stable model name
 });

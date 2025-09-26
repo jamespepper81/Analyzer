@@ -39,6 +39,8 @@ next-env.d.ts
 
 .genkit/*
 .env*
+.env.local
+bitsleuth-firebase-adminsdk-fbsvc-ffcdc147ab.json
 
 # firebase
 firebase-debug.log

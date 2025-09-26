@@ -46,3 +46,9 @@ env:
     
   - variable: COINGECKO_API_KEY
     secret: COINGECKO_API_KEY
+  
+  - variable: GOOGLE_CLOUD_PROJECT
+    secret: GOOGLE_CLOUD_PROJECT
+    
+  - variable: GOOGLE_GENAI_API_KEY
+    secret: GOOGLE_GENAI_API_KEY
