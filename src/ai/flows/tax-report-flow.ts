@@ -56,7 +56,15 @@ export type TaxReportOutput = z.infer<typeof TaxReportOutputSchema>;
 
 async function getDailyPrices(startDate: Date, endDate: Date, currency: Currency): Promise<Record<string, number>> {
     const prices: Record<string, number> = {};
-    let currentStartDate = startDate;
+    
+    // Ensure we don't exceed CoinGecko's 365-day limit for free API
+    const today = new Date();
+    const maxAllowedStartDate = subDays(today, 365);
+    const actualStartDate = startDate < maxAllowedStartDate ? maxAllowedStartDate : startDate;
+    
+    console.log(`CoinGecko API: Requesting data from ${format(actualStartDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
+    
+    let currentStartDate = actualStartDate;
 
     try {
         while (currentStartDate <= endDate) {
