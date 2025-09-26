@@ -1,16 +1,17 @@
 // src/ai/genkit.ts
 import {genkit} from 'genkit';
-import { vertexAI } from '@genkit-ai/vertexai';
+import { googleAI } from '@genkit-ai/googleai';
 import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
 
-// Initialize Firebase telemetry
-enableFirebaseTelemetry();
+// Initialize Firebase telemetry only in production
+if (process.env.NODE_ENV === 'production') {
+  enableFirebaseTelemetry();
+}
 
 // Google AI configuration - uses GOOGLE_GENAI_API_KEY from environment
 export const ai = genkit({
-  plugins: [vertexAI({
-    project: process.env.GOOGLE_CLOUD_PROJECT,
-    location: 'us-central1',
+  plugins: [googleAI({
+    apiKey: process.env.GOOGLE_GENAI_API_KEY, // Explicitly set API key
   })],
-  model: 'gemini-2.5-flash',
+  model: 'googleai/gemini-1.5-flash', // Use stable model name
 });
