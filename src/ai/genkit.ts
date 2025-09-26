@@ -11,5 +11,5 @@ export const ai = genkit({
   plugins: [googleAI({
     apiVersion: 'v1beta', // Google AI API version, not an API key
   })],
-  model: 'googleai/gemini-1.5-flash-latest', // Model identifier, not an API key
+  model: 'googleai/gemini-1.5-flash', // Model identifier, not an API key
 });
