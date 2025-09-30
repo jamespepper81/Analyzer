@@ -405,8 +405,10 @@ export const bitcoinCAGRCalculatorTool = ai.defineTool(
 
     const scenario = input.scenario || 'moderate';
     const annualCAGR = historicalCAGR[scenario];
-    const currency = input.currency || 'USD';
+    const inputCurrency = input.currency || 'USD';
+    const currency = inputCurrency.toUpperCase();
     const currentBTCPrice = currencyRates[currency as keyof typeof currencyRates] || currencyRates.USD;
+    const effectiveCurrency = currencyRates[currency as keyof typeof currencyRates] ? currency : 'USD';
     
     // Calculate compound growth
     const finalAmountBTC = input.initialAmount;
@@ -431,7 +433,7 @@ export const bitcoinCAGRCalculatorTool = ai.defineTool(
       });
     }
 
-    const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'JPY' ? '¥' : currency;
+    const currencySymbol = effectiveCurrency === 'USD' ? '$' : effectiveCurrency === 'EUR' ? '€' : effectiveCurrency === 'GBP' ? '£' : effectiveCurrency === 'JPY' ? '¥' : effectiveCurrency === 'CAD' ? 'C$' : effectiveCurrency === 'AUD' ? 'A$' : effectiveCurrency;
     const keyAssumptions = [
       `Historical CAGR of ${(annualCAGR * 100).toFixed(1)}% per year`,
       'Bitcoin price appreciation continues at historical rates',
@@ -464,7 +466,7 @@ export const bitcoinCAGRCalculatorTool = ai.defineTool(
       calculation: {
         initialAmountBTC: input.initialAmount,
         initialAmountFiat: Math.round(initialAmountFiat),
-        currency: currency,
+        currency: effectiveCurrency,
         timeHorizon: input.timeHorizon,
         scenario: scenario.charAt(0).toUpperCase() + scenario.slice(1),
         annualCAGR: annualCAGR,
@@ -527,7 +529,9 @@ export const bitcoinPensionAnalysisTool = ai.defineTool(
     const currentAge = input.age || 35;
     const retirementAge = input.retirementAge || 65;
     const monthlyContribution = input.monthlyContribution || 500;
-    const currency = input.currency || 'USD';
+    const inputCurrency = input.currency || 'USD';
+    const currency = inputCurrency.toUpperCase();
+    const effectiveCurrency = currency; // For pension analysis, we'll use the same logic
     const timeToRetirement = retirementAge - currentAge;
     const totalContributions = monthlyContribution * 12 * timeToRetirement;
 
@@ -612,7 +616,7 @@ export const bitcoinPensionAnalysisTool = ai.defineTool(
 
     const disclaimer = 'This analysis is for educational purposes only and is not financial advice. Bitcoin is a highly volatile asset and past performance does not guarantee future results. Retirement planning should be done with a qualified financial advisor who understands your complete financial situation, risk tolerance, and retirement goals. Never invest more than you can afford to lose.';
 
-    const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'JPY' ? '¥' : currency;
+    const currencySymbol = effectiveCurrency === 'USD' ? '$' : effectiveCurrency === 'EUR' ? '€' : effectiveCurrency === 'GBP' ? '£' : effectiveCurrency === 'JPY' ? '¥' : effectiveCurrency === 'CAD' ? 'C$' : effectiveCurrency === 'AUD' ? 'A$' : effectiveCurrency;
     const summary = `If you're ${currentAge} years old and contribute ${currencySymbol}${monthlyContribution.toLocaleString()} monthly to Bitcoin until age ${retirementAge}, you would contribute ${currencySymbol}${totalContributions.toLocaleString()} total over ${timeToRetirement} years. Based on moderate growth assumptions (18% CAGR), this could potentially grow to approximately ${currencySymbol}${projectedValue.moderate.toLocaleString()}. However, Bitcoin's extreme volatility makes this highly uncertain, and it should only represent a small portion of your retirement portfolio alongside traditional investments.`;
 
     return {
