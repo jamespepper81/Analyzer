@@ -12,11 +12,13 @@ if (process.env.NODE_ENV === 'production') {
 export const ai = genkit({
   plugins: [googleAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY, // Explicitly set API key
-//    config: {
-//      thinkingConfig: {
-//        thinkingBudget: 0, // Disables thinking
-//      },
-//    },
+    config: {
+      // Enable context caching for better performance with repeated wallet analyses
+      contextCaching: {
+        enabled: true,
+        ttl: 3600, // 1 hour cache for wallet data
+      },
+    },
   })],
   model: 'googleai/gemini-2.0-flash-lite', // Use stable model name
 });

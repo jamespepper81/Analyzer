@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { securityRecommendationsTool } from './security-recommendations';
+import { analyzeBitcoinTransaction, analyzeBitcoinAddress } from './enhanced-bitcoin-analysis';
 
 const HistoryMessageSchema = z.object({
     role: z.enum(['user', 'assistant', 'system']),
@@ -92,6 +93,56 @@ const WalletInsightsChatOutputSchema = z.object({
 });
 export type WalletInsightsChatOutput = z.infer<typeof WalletInsightsChatOutputSchema>;
 
+// Enhanced Bitcoin analysis tools
+export const enhancedTransactionAnalysisTool = ai.defineTool(
+  {
+    name: 'analyzeBitcoinTransaction',
+    description: 'Provides detailed Bitcoin transaction analysis including privacy score, fee efficiency, risk factors, and recommendations. Use when user asks for "detailed transaction analysis", "privacy analysis", or "transaction insights".',
+    inputSchema: z.object({
+      transactionId: z.string(),
+      walletData: z.string(),
+    }),
+    outputSchema: z.object({
+      analysis: z.object({
+        transactionType: z.enum(['send', 'receive', 'self-transfer', 'exchange', 'unknown']),
+        privacyScore: z.number().min(0).max(100),
+        feeEfficiency: z.enum(['excellent', 'good', 'fair', 'poor']),
+        riskFactors: z.array(z.string()),
+        recommendations: z.array(z.string()),
+        associatedEntities: z.array(z.string()).optional(),
+      }),
+      summary: z.string(),
+    }),
+  },
+  async (input) => {
+    return await analyzeBitcoinTransaction(input);
+  }
+);
+
+export const enhancedAddressAnalysisTool = ai.defineTool(
+  {
+    name: 'analyzeBitcoinAddress',
+    description: 'Provides detailed Bitcoin address analysis including address type, privacy risk, reuse patterns, and associated entities. Use when user asks for "address analysis", "privacy assessment", or "address insights".',
+    inputSchema: z.object({
+      address: z.string(),
+      walletData: z.string(),
+    }),
+    outputSchema: z.object({
+      analysis: z.object({
+        addressType: z.enum(['p2pkh', 'p2sh', 'p2wpkh', 'p2wsh', 'p2tr']),
+        reuseCount: z.number(),
+        privacyRisk: z.enum(['low', 'medium', 'high', 'critical']),
+        associatedEntities: z.array(z.string()),
+        clusteringScore: z.number().min(0).max(100).optional(),
+      }),
+      summary: z.string(),
+    }),
+  },
+  async (input) => {
+    return await analyzeBitcoinAddress(input);
+  }
+);
+
 
 export async function walletInsightsChat(input: WalletInsightsChatInput): Promise<WalletInsightsChatOutput> {
   return walletInsightsChatFlow(input);
@@ -102,6 +153,32 @@ const systemPrompt = `You are BitSleuth, a helpful AI assistant and expert Bitco
 Analyze the user's request and the provided wallet data to give a helpful and accurate response. If the user asks for a chart or visualization, you must generate the chart data in the \`chart\` field.
 
 **CRITICAL RULE:** Your \`answer\` field MUST ONLY contain human-readable Markdown text. NEVER include JSON code blocks, chart data, or placeholders like "[Chart would be displayed here]" within the 'answer' field. All chart data MUST go into the separate 'chart' field of the JSON output.
+
+### Enhanced Bitcoin Analysis Tools
+
+You have access to advanced Bitcoin analysis tools powered by Gemini 2.0 Flash Lite:
+
+1. **Enhanced Transaction Analysis** (\`analyzeBitcoinTransaction\`):
+   - Provides detailed privacy scoring (0-100)
+   - Analyzes fee efficiency (excellent/good/fair/poor)
+   - Identifies risk factors and provides recommendations
+   - Detects transaction types (send/receive/exchange/self-transfer)
+   - Identifies associated entities (exchanges, services)
+
+2. **Enhanced Address Analysis** (\`analyzeBitcoinAddress\`):
+   - Classifies address types (p2pkh, p2sh, p2wpkh, p2wsh, p2tr)
+   - Assesses privacy risk levels (low/medium/high/critical)
+   - Analyzes address reuse patterns
+   - Provides clustering scores
+   - Identifies associated entities
+
+Use these tools when users ask for:
+- "Detailed transaction analysis"
+- "Privacy analysis" 
+- "Transaction insights"
+- "Address analysis"
+- "Privacy assessment"
+- "Address insights"
 
 ### Comprehensive Security Review Instructions
 
@@ -186,7 +263,7 @@ ${input.question}
           output: {
               schema: WalletInsightsChatOutputSchema,
           },
-          tools: [securityRecommendationsTool],
+          tools: [securityRecommendationsTool, enhancedTransactionAnalysisTool, enhancedAddressAnalysisTool],
       });
 
       if (!output) {

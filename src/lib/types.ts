@@ -213,6 +213,29 @@ export type BlockDetails = LatestBlock & {
 
 export type Currency = 'USD' | 'EUR' | 'GBP';
 
+// Enhanced Bitcoin-specific types for Gemini 2.0 Flash Lite analysis
+export type BitcoinTransactionType = 'send' | 'receive' | 'self-transfer' | 'exchange' | 'unknown';
+export type BitcoinAddressType = 'p2pkh' | 'p2sh' | 'p2wpkh' | 'p2wsh' | 'p2tr';
+export type PrivacyRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type FeeEfficiencyLevel = 'excellent' | 'good' | 'fair' | 'poor';
+
+export type BitcoinTransactionAnalysis = {
+  transactionType: BitcoinTransactionType;
+  privacyScore: number; // 0-100
+  feeEfficiency: FeeEfficiencyLevel;
+  riskFactors: string[];
+  recommendations: string[];
+  associatedEntities?: string[]; // Exchange names, known addresses
+};
+
+export type BitcoinAddressAnalysis = {
+  addressType: BitcoinAddressType;
+  reuseCount: number;
+  privacyRisk: PrivacyRiskLevel;
+  associatedEntities: string[];
+  clusteringScore?: number; // 0-100, higher = more clustered
+};
+
 export type Holding = {
     address: string;
     balance: number;
