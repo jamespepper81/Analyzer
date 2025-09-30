@@ -255,7 +255,7 @@ export default function ChatPage() {
             <div key={index} className={cn('flex items-start gap-4', message.role === 'user' && 'justify-end')}>
               {message.role === 'assistant' && (
                 <Avatar className="h-8 w-8 border">
-                    <AvatarFallback><Bot className="h-5 w-5 text-primary"/></AvatarFallback>
+                    <AvatarFallback><Bot className="h-5 w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
               )}
 
@@ -295,7 +295,7 @@ export default function ChatPage() {
               
               {message.role === 'user' && (
                  <Avatar className="h-8 w-8 border">
-                     <AvatarFallback><User className="h-5 w-5 text-accent"/></AvatarFallback>
+                     <AvatarFallback><User className="h-5 w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
               )}
             </div>
@@ -303,7 +303,7 @@ export default function ChatPage() {
           {isAiLoading && (
             <div className="flex items-start gap-4" aria-label="AI is thinking">
                 <Avatar className="h-8 w-8 border">
-                    <AvatarFallback><Bot className="h-5 w-5 text-primary"/></AvatarFallback>
+                    <AvatarFallback><Bot className="h-5 w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
               <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-3">
                 <CircleDashed className="h-5 w-5 animate-spin text-muted-foreground" />
