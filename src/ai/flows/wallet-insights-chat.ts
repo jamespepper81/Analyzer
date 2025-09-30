@@ -24,6 +24,7 @@ const WalletInsightsChatInputSchema = z.object({
   question: z.string().describe('The user question about their Bitcoin wallet.'),
   walletData: z.string().describe('JSON string containing wallet data including balance, transaction history, security analysis, UTXOs, etc.'),
   history: z.array(HistoryMessageSchema).optional().describe("The history of the conversation so far."),
+  preferredCurrency: z.string().optional().describe('The user\'s preferred fiat currency (e.g., "USD", "EUR", "GBP", "CAD", "AUD", "JPY"). Use this as the default currency unless the user explicitly specifies a different currency in their question.'),
 });
 export type WalletInsightsChatInput = z.infer<typeof WalletInsightsChatInputSchema>;
 
@@ -349,27 +350,29 @@ export const investmentInsightsTool = ai.defineTool(
 export const bitcoinCAGRCalculatorTool = ai.defineTool(
   {
     name: 'calculateBitcoinCAGR',
-    description: 'Calculates Bitcoin investment projections using historical CAGR data. Use when user asks about investment projections, "if I invested X Bitcoin", "what would X Bitcoin be worth in Y years", or similar CAGR calculation questions.',
+    description: 'Calculates Bitcoin investment projections using historical CAGR data. Use when user asks about investment projections, "if I invested X Bitcoin", "what would X Bitcoin be worth in Y years", or similar CAGR calculation questions. If user doesn\'t specify amounts, use 0.1 BTC and 10 years as reasonable defaults.',
     inputSchema: z.object({
       initialAmount: z.number().describe('Initial investment amount in Bitcoin (BTC)'),
       timeHorizon: z.number().describe('Investment time horizon in years'),
       scenario: z.enum(['conservative', 'moderate', 'optimistic']).optional().describe('Growth scenario assumption'),
+      currency: z.string().optional().describe('Preferred currency for calculations (e.g., USD, EUR, GBP). Defaults to USD if not specified.'),
     }),
     outputSchema: z.object({
       calculation: z.object({
         initialAmountBTC: z.number(),
-        initialAmountUSD: z.number(),
+        initialAmountFiat: z.number(),
+        currency: z.string(),
         timeHorizon: z.number(),
         scenario: z.string(),
         annualCAGR: z.number(),
         finalAmountBTC: z.number(),
-        finalAmountUSD: z.number(),
+        finalAmountFiat: z.number(),
         totalReturn: z.number(),
         totalReturnPercentage: z.number(),
         yearlyProjections: z.array(z.object({
           year: z.number(),
           amountBTC: z.number(),
-          amountUSD: z.number(),
+          amountFiat: z.number(),
           annualReturn: z.number(),
         })),
       }),
@@ -390,38 +393,52 @@ export const bitcoinCAGRCalculatorTool = ai.defineTool(
       optimistic: 0.35,   // 35% - Based on early Bitcoin growth rates
     };
 
+    // Currency conversion rates (approximate - in production, use real-time rates)
+    const currencyRates = {
+      USD: 70000,
+      EUR: 65000, // Approximate EUR/USD rate of 0.93
+      GBP: 56000, // Approximate GBP/USD rate of 0.80
+      CAD: 95000, // Approximate CAD/USD rate of 1.36
+      AUD: 105000, // Approximate AUD/USD rate of 1.50
+      JPY: 10500000, // Approximate JPY/USD rate of 150
+    };
+
     const scenario = input.scenario || 'moderate';
     const annualCAGR = historicalCAGR[scenario];
-    const currentBTCPrice = 70000; // Approximate current price - could be made dynamic
+    const inputCurrency = input.currency || 'USD';
+    const currency = inputCurrency.toUpperCase();
+    const currentBTCPrice = currencyRates[currency as keyof typeof currencyRates] || currencyRates.USD;
+    const effectiveCurrency = currencyRates[currency as keyof typeof currencyRates] ? currency : 'USD';
     
     // Calculate compound growth
     const finalAmountBTC = input.initialAmount;
-    const finalAmountUSD = finalAmountBTC * currentBTCPrice * Math.pow(1 + annualCAGR, input.timeHorizon);
-    const initialAmountUSD = input.initialAmount * currentBTCPrice;
-    const totalReturn = finalAmountUSD - initialAmountUSD;
-    const totalReturnPercentage = (totalReturn / initialAmountUSD) * 100;
+    const finalAmountFiat = finalAmountBTC * currentBTCPrice * Math.pow(1 + annualCAGR, input.timeHorizon);
+    const initialAmountFiat = input.initialAmount * currentBTCPrice;
+    const totalReturn = finalAmountFiat - initialAmountFiat;
+    const totalReturnPercentage = (totalReturn / initialAmountFiat) * 100;
 
     // Generate yearly projections
     const yearlyProjections = [];
     for (let year = 1; year <= input.timeHorizon; year++) {
-      const yearAmountUSD = initialAmountUSD * Math.pow(1 + annualCAGR, year);
-      const previousYearAmountUSD = year === 1 ? initialAmountUSD : initialAmountUSD * Math.pow(1 + annualCAGR, year - 1);
+      const yearAmountFiat = initialAmountFiat * Math.pow(1 + annualCAGR, year);
+      const previousYearAmountFiat = year === 1 ? initialAmountFiat : initialAmountFiat * Math.pow(1 + annualCAGR, year - 1);
       const yearAmountBTC = input.initialAmount; // BTC amount stays the same
-      const annualReturn = yearAmountUSD - previousYearAmountUSD; // Return for this specific year
+      const annualReturn = yearAmountFiat - previousYearAmountFiat; // Return for this specific year
       
       yearlyProjections.push({
         year,
         amountBTC: yearAmountBTC,
-        amountUSD: Math.round(yearAmountUSD),
+        amountFiat: Math.round(yearAmountFiat),
         annualReturn: Math.round(annualReturn),
       });
     }
 
+    const currencySymbol = effectiveCurrency === 'USD' ? '$' : effectiveCurrency === 'EUR' ? '€' : effectiveCurrency === 'GBP' ? '£' : effectiveCurrency === 'JPY' ? '¥' : effectiveCurrency === 'CAD' ? 'C$' : effectiveCurrency === 'AUD' ? 'A$' : effectiveCurrency;
     const keyAssumptions = [
       `Historical CAGR of ${(annualCAGR * 100).toFixed(1)}% per year`,
       'Bitcoin price appreciation continues at historical rates',
       'No major technological or regulatory disruptions',
-      'Current Bitcoin price of $70,000 as baseline',
+      `Current Bitcoin price of ${currencySymbol}${currentBTCPrice.toLocaleString()} as baseline`,
       'Compound growth without additional contributions'
     ];
 
@@ -443,17 +460,18 @@ export const bitcoinCAGRCalculatorTool = ai.defineTool(
 
     const disclaimer = 'This calculation is for educational purposes only and is not financial advice. Bitcoin is a highly volatile asset and past performance does not guarantee future results. The CAGR assumptions are based on historical data and may not reflect future performance. Always do your own research and consider consulting with a financial advisor before making investment decisions.';
 
-    const summary = `If you invested ${input.initialAmount} BTC ($${Math.round(initialAmountUSD).toLocaleString()}) today and Bitcoin grows at a ${(annualCAGR * 100).toFixed(1)}% annual rate over ${input.timeHorizon} years, your investment could be worth approximately $${Math.round(finalAmountUSD).toLocaleString()} (${totalReturnPercentage.toFixed(1)}% total return). This represents a ${(annualCAGR * 100).toFixed(1)}% compound annual growth rate. However, this is purely hypothetical and Bitcoin's actual performance could be significantly different.`;
+    const summary = `If you invested ${input.initialAmount} BTC (${currencySymbol}${Math.round(initialAmountFiat).toLocaleString()}) today and Bitcoin grows at a ${(annualCAGR * 100).toFixed(1)}% annual rate over ${input.timeHorizon} years, your investment could be worth approximately ${currencySymbol}${Math.round(finalAmountFiat).toLocaleString()} (${totalReturnPercentage.toFixed(1)}% total return). This represents a ${(annualCAGR * 100).toFixed(1)}% compound annual growth rate. However, this is purely hypothetical and Bitcoin's actual performance could be significantly different.`;
 
     return {
       calculation: {
         initialAmountBTC: input.initialAmount,
-        initialAmountUSD: Math.round(initialAmountUSD),
+        initialAmountFiat: Math.round(initialAmountFiat),
+        currency: effectiveCurrency,
         timeHorizon: input.timeHorizon,
         scenario: scenario.charAt(0).toUpperCase() + scenario.slice(1),
         annualCAGR: annualCAGR,
         finalAmountBTC: finalAmountBTC,
-        finalAmountUSD: Math.round(finalAmountUSD),
+        finalAmountFiat: Math.round(finalAmountFiat),
         totalReturn: Math.round(totalReturn),
         totalReturnPercentage: totalReturnPercentage,
         yearlyProjections,
@@ -477,12 +495,14 @@ export const bitcoinPensionAnalysisTool = ai.defineTool(
       question: z.string(),
       age: z.number().optional().describe('User\'s current age'),
       retirementAge: z.number().optional().describe('Target retirement age'),
-      monthlyContribution: z.number().optional().describe('Monthly contribution amount in USD'),
+      monthlyContribution: z.number().optional().describe('Monthly contribution amount in user\'s preferred currency'),
+      currency: z.string().optional().describe('Preferred currency for calculations (e.g., USD, EUR, GBP). Defaults to USD if not specified.'),
     }),
     outputSchema: z.object({
       pensionAnalysis: z.object({
         timeToRetirement: z.number(),
         totalContributions: z.number(),
+        currency: z.string(),
         projectedValue: z.object({
           conservative: z.number(),
           moderate: z.number(),
@@ -510,6 +530,20 @@ export const bitcoinPensionAnalysisTool = ai.defineTool(
     const currentAge = input.age || 35;
     const retirementAge = input.retirementAge || 65;
     const monthlyContribution = input.monthlyContribution || 500;
+    
+    // Currency conversion rates (approximate - in production, use real-time rates)
+    const currencyRates = {
+      USD: 70000,
+      EUR: 65000, // Approximate EUR/USD rate of 0.93
+      GBP: 56000, // Approximate GBP/USD rate of 0.80
+      CAD: 95000, // Approximate CAD/USD rate of 1.36
+      AUD: 105000, // Approximate AUD/USD rate of 1.50
+      JPY: 10500000, // Approximate JPY/USD rate of 150
+    };
+
+    const inputCurrency = input.currency || 'USD';
+    const currency = inputCurrency.toUpperCase();
+    const effectiveCurrency = currencyRates[currency as keyof typeof currencyRates] ? currency : 'USD';
     const timeToRetirement = retirementAge - currentAge;
     const totalContributions = monthlyContribution * 12 * timeToRetirement;
 
@@ -594,12 +628,14 @@ export const bitcoinPensionAnalysisTool = ai.defineTool(
 
     const disclaimer = 'This analysis is for educational purposes only and is not financial advice. Bitcoin is a highly volatile asset and past performance does not guarantee future results. Retirement planning should be done with a qualified financial advisor who understands your complete financial situation, risk tolerance, and retirement goals. Never invest more than you can afford to lose.';
 
-    const summary = `If you're ${currentAge} years old and contribute $${monthlyContribution.toLocaleString()} monthly to Bitcoin until age ${retirementAge}, you would contribute $${totalContributions.toLocaleString()} total over ${timeToRetirement} years. Based on moderate growth assumptions (18% CAGR), this could potentially grow to approximately $${projectedValue.moderate.toLocaleString()}. However, Bitcoin's extreme volatility makes this highly uncertain, and it should only represent a small portion of your retirement portfolio alongside traditional investments.`;
+    const currencySymbol = effectiveCurrency === 'USD' ? '$' : effectiveCurrency === 'EUR' ? '€' : effectiveCurrency === 'GBP' ? '£' : effectiveCurrency === 'JPY' ? '¥' : effectiveCurrency === 'CAD' ? 'C$' : effectiveCurrency === 'AUD' ? 'A$' : effectiveCurrency;
+    const summary = `If you're ${currentAge} years old and contribute ${currencySymbol}${monthlyContribution.toLocaleString()} monthly to Bitcoin until age ${retirementAge}, you would contribute ${currencySymbol}${totalContributions.toLocaleString()} total over ${timeToRetirement} years. Based on moderate growth assumptions (18% CAGR), this could potentially grow to approximately ${currencySymbol}${projectedValue.moderate.toLocaleString()}. However, Bitcoin's extreme volatility makes this highly uncertain, and it should only represent a small portion of your retirement portfolio alongside traditional investments.`;
 
     return {
       pensionAnalysis: {
         timeToRetirement,
         totalContributions: Math.round(totalContributions),
+        currency: effectiveCurrency,
         projectedValue,
         scenarios,
       },
@@ -757,6 +793,14 @@ export async function walletInsightsChat(input: WalletInsightsChatInput): Promis
 
 const systemPrompt = `You are BitSleuth, a helpful AI assistant and expert Bitcoin analyst. Your role is to answer questions about Bitcoin, blockchain technology, market conditions, wallet analysis, and security.
 
+**IMPORTANT CURRENCY GUIDELINES:**
+- Always respect the user's preferred currency (provided in preferredCurrency field) unless they explicitly specify a different currency in their question
+- If user asks "show me in dollars" or "convert to EUR" or mentions a specific currency, use that instead of their default
+- When displaying monetary amounts, always include the appropriate currency symbol ($, £, €, ¥, etc.)
+- For calculations and projections, use the user's preferred currency as the base unless they specify otherwise
+- When calling CAGR or pension analysis tools, pass the user's preferred currency unless they explicitly request a different one
+- Common currency indicators: "dollars" or "$" = USD, "euros" or "€" = EUR, "pounds" or "£" = GBP, "yen" or "¥" = JPY
+
 **IMPORTANT:** Analyze the user's question type first and respond appropriately:
 
 ### Question Types & Responses:
@@ -777,6 +821,10 @@ const systemPrompt = `You are BitSleuth, a helpful AI assistant and expert Bitco
    - Calculate Bitcoin investment projections using historical CAGR
    - Provide yearly projections and compound growth analysis
    - Include multiple scenarios (conservative, moderate, optimistic)
+   - **CRITICAL**: Extract parameters from user question or use reasonable defaults:
+     * If no amount specified, use 0.1 BTC as example
+     * If no time horizon specified, use 10 years as example
+     * If no scenario specified, use 'moderate' as default
    - Use Bitcoin CAGR calculator tool
 
 2b. **Pension/Retirement Questions** (Bitcoin for retirement, pension savings):
@@ -925,6 +973,11 @@ You have access to advanced Bitcoin analysis tools powered by Gemini 2.0 Flash L
 - "Bitcoin investment projections"
 - "Compound growth calculation"
 - "Bitcoin CAGR analysis"
+- "How much would Bitcoin be worth in X years"
+- "Bitcoin growth projections"
+- "Investment calculator"
+
+**IMPORTANT**: Even if users don't specify exact amounts, still use the CAGR calculator with reasonable defaults (0.1 BTC, 10 years) to provide helpful examples and projections.
 
 **Bitcoin Pension Analysis Tool** - Use when users ask about:
 - "Bitcoin for retirement"
@@ -1037,13 +1090,17 @@ Analyze my request based on our conversation history and respond appropriately t
 ${input.walletData}
 \`\`\`
 
+**My Preferred Currency:**
+${input.preferredCurrency || 'USD'}
+
 **My Question:**
 ${input.question}
 
 **Instructions:**
 1. First, identify what type of question this is (news, investment, CAGR calculator, pension analysis, market, wallet-specific, security, general Bitcoin, or technical)
-2. Respond appropriately to that question type
-3. Use the appropriate tool for each question type:
+2. Check if the user explicitly mentioned a currency in their question - if so, use that currency instead of their preferred currency
+3. Respond appropriately to that question type
+4. Use the appropriate tool for each question type:
    - News questions → Bitcoin News Analysis Tool
    - Investment questions → Investment Insights Tool
    - CAGR calculator questions → Bitcoin CAGR Calculator Tool
@@ -1051,14 +1108,14 @@ ${input.question}
    - Market questions → Market Analysis Tool
    - Security questions → Security Recommendations Tool
    - Transaction/Address analysis → Enhanced Analysis Tools
-4. For news questions, fetch and analyze the latest Bitcoin news
-5. For investment questions, provide investment insights with appropriate disclaimers
-6. For CAGR calculator questions, extract investment amount and time horizon, then calculate projections
-7. For pension questions, analyze Bitcoin as retirement savings with diversification advice
-8. For market questions, provide market analysis without defaulting to security reports
-9. For general Bitcoin questions, provide educational information
-10. For wallet-specific questions, use the provided wallet data
-11. **ALWAYS include 1-3 helpful follow-up suggestions** in the \`followUpSuggestions\` field that would be natural next steps for the user based on your response
+5. For news questions, fetch and analyze the latest Bitcoin news
+6. For investment questions, provide investment insights with appropriate disclaimers
+7. For CAGR calculator questions, extract investment amount and time horizon from the question, or use reasonable defaults (0.1 BTC, 10 years) if not specified, then calculate projections. Pass the appropriate currency (user's preferred unless they specified otherwise)
+8. For pension questions, analyze Bitcoin as retirement savings with diversification advice. Pass the appropriate currency (user's preferred unless they specified otherwise)
+9. For market questions, provide market analysis without defaulting to security reports
+10. For general Bitcoin questions, provide educational information
+11. For wallet-specific questions, use the provided wallet data
+12. **ALWAYS include 1-3 helpful follow-up suggestions** in the \`followUpSuggestions\` field that would be natural next steps for the user based on your response
       `;
 
 
