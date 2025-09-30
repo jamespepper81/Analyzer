@@ -318,7 +318,7 @@ export default function ChatPage() {
             <Form {...form}>
             <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="relative flex w-full items-start gap-2"
+                className="relative flex w-full items-center gap-2"
             >
                 <FormField
                 control={form.control}
