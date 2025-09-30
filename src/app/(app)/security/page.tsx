@@ -154,17 +154,19 @@ function SecurityMetric({ icon, title, value, description, level, levelText, too
   };
 
   const card = (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {icon}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col h-full">
         <div className="text-2xl font-bold">{value}</div>
         <p className="text-xs text-muted-foreground font-normal">{description}</p>
-        {level && (
-            <Badge variant="outline" className={cn('mt-4', levelClasses[level])}>{level} {levelText ?? 'Risk'}</Badge>
-        )}
+        <div className="mt-auto">
+          {level && (
+              <Badge variant="outline" className={cn('mt-4', levelClasses[level])}>{level} {levelText ?? 'Risk'}</Badge>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -322,14 +324,15 @@ export default function SecurityPage() {
           level={dustLevel}
           tooltipText='"Dust" refers to tiny, unspent amounts of Bitcoin in your wallet. While not a direct security risk, a large number of dust UTXOs can impact privacy and may lead to higher transaction fees in the future.'
         />
-        <Card>
+        <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Spread the Word</CardTitle>
                 <Share2 className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col h-full">
                 <div className="text-2xl font-bold mb-2">Share</div>
                 <div className="text-xs text-muted-foreground font-normal mb-4">Help others improve their Bitcoin privacy.</div>
+                <div className="mt-auto">
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button
@@ -389,6 +392,7 @@ export default function SecurityPage() {
                     </AlertDialogContent>
                 </AlertDialog>
                 {!nostrNpub && <div className="text-xs text-center text-muted-foreground mt-2 font-normal">Connect Nostr to share.</div>}
+                </div>
             </CardContent>
         </Card>
       </div>
