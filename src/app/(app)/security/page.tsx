@@ -328,7 +328,8 @@ export default function SecurityPage() {
                 <Share2 className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <p className="text-xs text-muted-foreground mb-4 font-normal">Help others improve their Bitcoin privacy.</p>
+                <div className="text-2xl font-bold mb-2">Share</div>
+                <div className="text-xs text-muted-foreground font-normal mb-4">Help others improve their Bitcoin privacy.</div>
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button
@@ -387,7 +388,7 @@ export default function SecurityPage() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                {!nostrNpub && <p className="text-xs text-center text-muted-foreground mt-2 font-normal">Connect Nostr to share.</p>}
+                {!nostrNpub && <div className="text-xs text-center text-muted-foreground mt-2 font-normal">Connect Nostr to share.</div>}
             </CardContent>
         </Card>
       </div>
