@@ -88,9 +88,15 @@ const ChartDataSchema = z.object({
 }).describe('Structured data for rendering a chart.');
 
 
+const FollowUpSuggestionSchema = z.object({
+  question: z.string().describe('A helpful follow-up question or suggestion'),
+  context: z.string().describe('Brief context explaining why this follow-up is relevant'),
+});
+
 const WalletInsightsChatOutputSchema = z.object({
   answer: z.string().describe('The AI answer to the user question. This should summarize the findings and mention that a chart was created if applicable.'),
   chart: ChartDataSchema.optional().nullable().describe('If the user asks for a visualization or a chart, generate the data for it here.'),
+  followUpSuggestions: z.array(FollowUpSuggestionSchema).optional().describe('Helpful follow-up questions or suggestions based on the response. Include 1-3 relevant suggestions that would be natural next steps for the user.'),
 });
 export type WalletInsightsChatOutput = z.infer<typeof WalletInsightsChatOutputSchema>;
 
@@ -609,6 +615,141 @@ export const bitcoinPensionAnalysisTool = ai.defineTool(
 );
 
 
+// Helper function to generate contextual follow-up suggestions
+function generateFollowUpSuggestions(questionType: string, userQuestion: string, responseContent: string): Array<{question: string, context: string}> {
+  const suggestions: Array<{question: string, context: string}> = [];
+
+  switch (questionType.toLowerCase()) {
+    case 'cagr calculator':
+    case 'investment projections':
+      suggestions.push(
+        {
+          question: "Would you like to see projections for a different time horizon?",
+          context: "You can explore how Bitcoin might perform over 20, 30, or even 50 years to see the long-term potential."
+        },
+        {
+          question: "Would you like to see a conservative or optimistic scenario?",
+          context: "Different growth assumptions can help you understand the range of possible outcomes."
+        },
+        {
+          question: "Would you like to calculate monthly Bitcoin contributions instead?",
+          context: "Regular contributions can help reduce timing risk and build wealth over time."
+        }
+      );
+      break;
+
+    case 'pension analysis':
+    case 'retirement':
+      suggestions.push(
+        {
+          question: "Would you like to see different contribution amounts?",
+          context: "Exploring various monthly contribution levels can help you find the right balance for your budget."
+        },
+        {
+          question: "Would you like to analyze Bitcoin as part of a diversified retirement portfolio?",
+          context: "Understanding how Bitcoin fits with traditional retirement investments can help optimize your strategy."
+        },
+        {
+          question: "Would you like to see the impact of different retirement ages?",
+          context: "Earlier or later retirement can significantly affect your Bitcoin accumulation strategy."
+        }
+      );
+      break;
+
+    case 'news analysis':
+    case 'bitcoin news':
+      suggestions.push(
+        {
+          question: "Would you like to know how this news might affect Bitcoin's price?",
+          context: "Understanding market implications can help you make more informed investment decisions."
+        },
+        {
+          question: "Would you like to see more Bitcoin news from different sources?",
+          context: "Getting multiple perspectives on Bitcoin developments can provide a more complete picture."
+        },
+        {
+          question: "Would you like investment insights based on this news?",
+          context: "Connecting news events to investment strategies can help you navigate market changes."
+        }
+      );
+      break;
+
+    case 'market analysis':
+    case 'market sentiment':
+      suggestions.push(
+        {
+          question: "Would you like investment timing advice based on current market conditions?",
+          context: "Understanding when to buy or hold can help optimize your Bitcoin investment strategy."
+        },
+        {
+          question: "Would you like to see how this market sentiment compares to historical patterns?",
+          context: "Historical context can help you understand if current conditions are typical or unusual."
+        },
+        {
+          question: "Would you like portfolio allocation recommendations?",
+          context: "Market conditions can inform how much of your portfolio should be allocated to Bitcoin."
+        }
+      );
+      break;
+
+    case 'security analysis':
+    case 'security recommendations':
+      suggestions.push(
+        {
+          question: "Would you like specific steps to improve your wallet security?",
+          context: "Getting actionable security improvements can help protect your Bitcoin holdings."
+        },
+        {
+          question: "Would you like to analyze your transaction privacy?",
+          context: "Understanding your privacy risks can help you make more private transactions in the future."
+        },
+        {
+          question: "Would you like to see advanced security features for your wallet?",
+          context: "Exploring advanced security options can provide additional protection for your Bitcoin."
+        }
+      );
+      break;
+
+    case 'general bitcoin':
+    case 'bitcoin education':
+      suggestions.push(
+        {
+          question: "Would you like to learn about Bitcoin's technical aspects?",
+          context: "Understanding how Bitcoin works technically can help you make better investment decisions."
+        },
+        {
+          question: "Would you like to know about Bitcoin's role in a portfolio?",
+          context: "Understanding Bitcoin's unique properties can help you decide how much to allocate."
+        },
+        {
+          question: "Would you like to explore Bitcoin's history and adoption?",
+          context: "Learning about Bitcoin's journey can help you understand its potential future."
+        }
+      );
+      break;
+
+    default:
+      // Generic follow-ups for any question type
+      suggestions.push(
+        {
+          question: "Would you like to explore this topic in more detail?",
+          context: "I can provide more specific information or analysis on any aspect of this topic."
+        },
+        {
+          question: "Would you like to see how this relates to Bitcoin investment?",
+          context: "Understanding the investment implications can help you make informed decisions."
+        },
+        {
+          question: "Would you like to learn about related Bitcoin concepts?",
+          context: "Exploring related topics can give you a more complete understanding of Bitcoin."
+        }
+      );
+  }
+
+  // Return 1-3 suggestions, prioritizing the most relevant ones
+  return suggestions.slice(0, Math.min(3, suggestions.length));
+}
+
 export async function walletInsightsChat(input: WalletInsightsChatInput): Promise<WalletInsightsChatOutput> {
   return walletInsightsChatFlow(input);
 }
@@ -670,6 +811,60 @@ const systemPrompt = `You are BitSleuth, a helpful AI assistant and expert Bitco
    - Explain technical concepts clearly
 
 **CRITICAL RULE:** Your \`answer\` field MUST ONLY contain human-readable Markdown text. NEVER include JSON code blocks, chart data, or placeholders like "[Chart would be displayed here]" within the 'answer' field. All chart data MUST go into the separate 'chart' field of the JSON output.
+
+### Follow-Up Suggestions Guidelines
+
+After providing your main response, include 1-3 helpful follow-up suggestions in the \`followUpSuggestions\` field. These should be natural next steps that users might want to explore based on your response.
+
+**Follow-Up Categories:**
+
+1. **CAGR Calculator Follow-ups:**
+   - Suggest different time horizons (e.g., "Would you like to see projections for 30 years?")
+   - Suggest different scenarios (e.g., "Would you like to see a conservative scenario?")
+   - Suggest related calculations (e.g., "Would you like to calculate monthly contributions instead?")
+
+2. **Pension Analysis Follow-ups:**
+   - Suggest different contribution amounts
+   - Suggest different retirement ages
+   - Suggest portfolio diversification analysis
+
+3. **News Analysis Follow-ups:**
+   - Suggest market impact analysis
+   - Suggest investment implications
+   - Suggest related news topics
+
+4. **Market Analysis Follow-ups:**
+   - Suggest investment timing questions
+   - Suggest risk assessment
+   - Suggest portfolio allocation advice
+
+5. **Security Analysis Follow-ups:**
+   - Suggest specific security improvements
+   - Suggest privacy enhancement strategies
+   - Suggest wallet optimization tips
+
+6. **General Bitcoin Follow-ups:**
+   - Suggest related educational topics
+   - Suggest practical applications
+   - Suggest advanced concepts
+
+**Follow-Up Format:**
+- Make suggestions conversational and helpful
+- Provide brief context for why the follow-up is relevant
+- Keep suggestions specific and actionable
+- Avoid overwhelming users with too many options
+
+**Example Follow-Up Suggestions:**
+
+For CAGR Calculator: "Would you like to see projections for 30 years?" with context "Longer time horizons can show even more dramatic compound growth effects."
+
+For Pension Analysis: "Would you like to see different contribution amounts?" with context "Exploring various monthly contribution levels can help you find the right balance for your budget."
+
+For News Analysis: "Would you like to know how this news might affect Bitcoin's price?" with context "Understanding market implications can help you make more informed investment decisions."
+
+For Market Analysis: "Would you like investment timing advice based on current market conditions?" with context "Understanding when to buy or hold can help optimize your Bitcoin investment strategy."
+
+For Security Analysis: "Would you like specific steps to improve your wallet security?" with context "Getting actionable security improvements can help protect your Bitcoin holdings."
 
 ### Enhanced Bitcoin Analysis Tools
 
@@ -862,6 +1057,7 @@ ${input.question}
 8. For market questions, provide market analysis without defaulting to security reports
 9. For general Bitcoin questions, provide educational information
 10. For wallet-specific questions, use the provided wallet data
+11. **ALWAYS include 1-3 helpful follow-up suggestions** in the \`followUpSuggestions\` field that would be natural next steps for the user based on your response
       `;
 
 
