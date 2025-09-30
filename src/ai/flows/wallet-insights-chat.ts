@@ -405,8 +405,9 @@ export const bitcoinCAGRCalculatorTool = ai.defineTool(
     const yearlyProjections = [];
     for (let year = 1; year <= input.timeHorizon; year++) {
       const yearAmountUSD = initialAmountUSD * Math.pow(1 + annualCAGR, year);
+      const previousYearAmountUSD = year === 1 ? initialAmountUSD : initialAmountUSD * Math.pow(1 + annualCAGR, year - 1);
       const yearAmountBTC = input.initialAmount; // BTC amount stays the same
-      const annualReturn = yearAmountUSD - initialAmountUSD;
+      const annualReturn = yearAmountUSD - previousYearAmountUSD; // Return for this specific year
       
       yearlyProjections.push({
         year,
