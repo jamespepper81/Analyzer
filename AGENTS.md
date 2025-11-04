@@ -67,6 +67,7 @@ Analyzer/
 │   │   │   ├── wallet-insights-chat.ts
 │   │   │   ├── security-recommendations.ts
 │   │   │   ├── proactive-insights.ts
+│   │   │   ├── proactive-suggestions.ts
 │   │   │   ├── summarize-transaction.ts
 │   │   │   ├── summarize-address.ts
 │   │   │   ├── tax-report-flow.ts
@@ -309,6 +310,12 @@ Automated insights that run periodically:
 - Unusual activity detection
 - Fee optimization opportunities
 - Privacy improvement suggestions
+
+### `proactive-suggestions.ts`
+Context-aware recommendations based on wallet state:
+- Actionable suggestions for users
+- Optimization tips for transactions
+- Security best practices
 
 ### `summarize-transaction.ts`
 AI-generated transaction summaries:
