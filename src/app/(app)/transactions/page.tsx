@@ -48,31 +48,31 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
 
   return (
     <TableRow>
-      <TableCell>
+      <TableCell className="pl-4 sm:pl-0">
         <Link href={`/transactions/${tx.id}`} className="hover:underline cursor-pointer">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span
               className={cn(
-                "flex items-center justify-center rounded-full p-2 w-8 h-8",
+                "flex items-center justify-center rounded-full p-1.5 sm:p-2 w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0",
                 isReceived
                   ? "bg-chart-positive/10 text-chart-positive"
                   : "bg-chart-negative/10 text-chart-negative"
               )}
             >
-              {isReceived ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+              {isReceived ? <ArrowDownLeft className="h-3 w-3 sm:h-4 sm:w-4" /> : <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4" />}
             </span>
-            <div>
-              <div className="font-medium flex items-center gap-1.5">
-                <span>{isReceived ? 'Received from' : 'Sent to'}</span>
-                <span className="font-mono text-xs">{addressToShow && addressToShow.length > 10 ? `${addressToShow.substring(0, 10)}...` : addressToShow}</span>
+            <div className="min-w-0">
+              <div className="font-medium flex items-center gap-1.5 flex-wrap text-sm sm:text-base">
+                <span className="whitespace-nowrap">{isReceived ? 'Received from' : 'Sent to'}</span>
+                <span className="font-mono text-xs truncate max-w-[80px] sm:max-w-none">{addressToShow && addressToShow.length > 10 ? `${addressToShow.substring(0, 10)}...` : addressToShow}</span>
                 {uniqueLabels.map(label => (
-                  <Badge key={label.address} variant="secondary" className="font-sans">
-                    <Building className="mr-1.5 h-3 w-3 text-muted-foreground"/>
+                  <Badge key={label.address} variant="secondary" className="font-sans text-xs">
+                    <Building className="mr-1 h-3 w-3 text-muted-foreground"/>
                     {label.label}
                   </Badge>
                 ))}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 {new Date(tx.date).toLocaleString()}
               </div>
             </div>
@@ -81,7 +81,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
       </TableCell>
       <TableCell
         className={cn(
-          'text-right font-mono',
+          'text-right font-mono text-xs sm:text-sm whitespace-nowrap',
           isReceived ? 'text-chart-positive' : 'text-chart-negative'
         )}
       >
@@ -89,16 +89,17 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
       </TableCell>
       <TableCell 
         className={cn(
-          'hidden text-right md:table-cell',
+          'hidden text-right md:table-cell whitespace-nowrap',
           isReceived ? 'text-chart-positive' : 'text-chart-negative'
         )}
       >
         {isReceived ? '+' : '-'}{formatCurrency(fiatAmount)}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right pr-4 sm:pr-0">
         <Badge
           variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'}
           className={cn(
+            'text-xs',
             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
             tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
           )}
@@ -182,27 +183,28 @@ export default function TransactionsPage() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-                <CardTitle>Transaction History</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Transaction History</CardTitle>
+                <CardDescription className="text-sm">
                 A complete list of all your wallet's transactions.
                 </CardDescription>
             </div>
-            <Button variant="outline" onClick={handleExportCSV}>
+            <Button variant="outline" onClick={handleExportCSV} size="sm" className="w-full sm:w-auto">
                 <Download className="mr-2 h-4 w-4" />
                 Export to CSV
             </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="px-0 sm:px-6">
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Details</TableHead>
+              <TableHead className="pl-4 sm:pl-0">Details</TableHead>
               <TableHead className="text-right">Amount (BTC)</TableHead>
               <TableHead className="hidden text-right md:table-cell">Amount (Fiat)</TableHead>
-              <TableHead className="text-right">Status</TableHead>
+              <TableHead className="text-right pr-4 sm:pr-0">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -219,9 +221,10 @@ export default function TransactionsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
         {visibleCount < data.transactions.length && (
-            <div className="mt-6 flex justify-center">
-                <Button onClick={handleLoadMore} variant="outline">
+            <div className="mt-4 sm:mt-6 flex justify-center px-4 sm:px-0">
+                <Button onClick={handleLoadMore} variant="outline" size="sm" className="w-full sm:w-auto">
                     <Download className="mr-2 h-4 w-4" />
                     Load More
                 </Button>

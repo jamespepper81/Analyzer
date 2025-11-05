@@ -90,19 +90,19 @@ function AddressScreener() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Address Screener</CardTitle>
-                <CardDescription className="font-normal">
+                <CardTitle className="text-base sm:text-lg">Address Screener</CardTitle>
+                <CardDescription className="font-normal text-sm">
                     Check any Bitcoin address against the TRM Labs scam database.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-end gap-2">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col sm:flex-row items-start sm:items-end gap-3 sm:gap-2">
                         <FormField
                             control={form.control}
                             name="address"
                             render={({ field }) => (
-                                <FormItem className="flex-grow">
+                                <FormItem className="flex-grow w-full">
                                     <FormLabel>Bitcoin Address</FormLabel>
                                     <FormControl>
                                         <Input placeholder="Enter address to check..." {...field} />
@@ -111,7 +111,7 @@ function AddressScreener() {
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" disabled={isLoading}>
+                        <Button type="submit" disabled={isLoading} size="default" className="w-full sm:w-auto">
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                             Check
                         </Button>
@@ -298,10 +298,10 @@ export default function SecurityPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <SecurityMetric
-          icon={<ShieldCheck className="h-5 w-5 text-muted-foreground" />}
+          icon={<ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
           title="Privacy Threat Level"
           value={data.opsecThreat}
           description="Risk from address reuse. Low is good."
@@ -309,7 +309,7 @@ export default function SecurityPage() {
           tooltipText="This assesses the risk to your privacy based on address reuse. 'Low' means you follow best practices. 'Medium' indicates some reuse. 'High' suggests significant address reuse, which can link your transactions together and compromise your privacy."
         />
         <SecurityMetric
-          icon={<Wallet className="h-5 w-5 text-muted-foreground" />}
+          icon={<Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
           title="Used Address Count"
           value={usedAddressCount}
           description="Total unique addresses with transaction history."
@@ -318,7 +318,7 @@ export default function SecurityPage() {
           tooltipText="This shows the total number of unique addresses in your wallet that have been involved in at least one transaction. A very high number can sometimes indicate extensive wallet usage."
         />
         <SecurityMetric
-          icon={<TestTube2 className="h-5 w-5 text-muted-foreground" />}
+          icon={<TestTube2 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
           title="Dust Value"
           value={formatCurrency(dustAmountFiat)}
           description={`Across ${data.dustUtxoCount} UTXOs worth <${currencySymbol}1 each.`}
@@ -328,10 +328,10 @@ export default function SecurityPage() {
         <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Spread the Word</CardTitle>
-                <Share2 className="h-5 w-5 text-muted-foreground" />
+                <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent className="flex flex-col h-full">
-                <div className="text-2xl font-bold mb-2">Share</div>
+                <div className="text-xl sm:text-2xl font-bold mb-2">Share</div>
                 <div className="text-xs text-muted-foreground font-normal">Help others improve their Bitcoin privacy.</div>
                 <div className="flex justify-start mt-3">
                  <AlertDialog>
@@ -403,8 +403,8 @@ export default function SecurityPage() {
       
        <Card>
         <CardHeader>
-          <CardTitle>AI-Powered Recommendations</CardTitle>
-          <CardDescription className="font-normal">Personalized tips to improve your wallet security and privacy.</CardDescription>
+          <CardTitle className="text-base sm:text-lg">AI-Powered Recommendations</CardTitle>
+          <CardDescription className="font-normal text-sm">Personalized tips to improve your wallet security and privacy.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             {recommendations.length > 0 ? (
@@ -419,43 +419,45 @@ export default function SecurityPage() {
       
        <Card>
           <CardHeader>
-            <CardTitle>Active Addresses</CardTitle>
-            <CardDescription className="font-normal">
+            <CardTitle className="text-base sm:text-lg">Active Addresses</CardTitle>
+            <CardDescription className="font-normal text-sm">
               A list of addresses from this xpub with transaction activity. Addresses with more than 1 transaction are being reused.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-             <Table>
+          <CardContent className="px-0 sm:px-6">
+            <div className="overflow-x-auto">
+              <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Address</TableHead>
-                    <TableHead className="text-right">Transaction Count</TableHead>
+                    <TableHead className="pl-4 sm:pl-0">Address</TableHead>
+                    <TableHead className="text-right pr-4 sm:pr-0">Transaction Count</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.addresses && data.addresses.length > 0 ? (
                     data.addresses.map((addr) => (
                       <TableRow key={addr.address}>
-                        <TableCell className="font-mono text-xs break-all">
+                        <TableCell className="font-mono text-xs pl-4 sm:pl-0 max-w-[200px] sm:max-w-none">
                           <Link
                             href={`/address/${addr.address}`}
-                            className="hover:underline cursor-pointer"
+                            className="hover:underline cursor-pointer truncate block"
                           >
                             {addr.address}
                           </Link>
                         </TableCell>
-                        <TableCell className="text-right font-medium">{addr.n_tx}</TableCell>
+                        <TableCell className="text-right font-medium text-sm pr-4 sm:pr-0 whitespace-nowrap">{addr.n_tx}</TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                        <TableCell colSpan={2} className="text-center text-muted-foreground">
+                        <TableCell colSpan={2} className="text-center text-muted-foreground text-sm">
                             No active addresses found.
                         </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
+            </div>
           </CardContent>
         </Card>
     </div>

@@ -590,21 +590,25 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 grid h-16 grid-cols-3 items-center border-b bg-background/80 px-4 backdrop-blur-sm">
-            <div className="flex items-center justify-start gap-4">
-              <SidebarTrigger className="md:hidden" />
-              <SidebarTrigger className="hidden md:flex" />
-              <CurrencySwitcher />
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm gap-2">
+            <div className="flex items-center justify-start gap-2 sm:gap-4 min-w-0">
+              <SidebarTrigger />
+              <div className="hidden sm:block">
+                <CurrencySwitcher />
+              </div>
             </div>
-            <div className="text-center">
-              <h1 className="text-xl font-bold tracking-tighter">{pageTitle}</h1>
+            <div className="text-center flex-shrink truncate px-2">
+              <h1 className="text-base sm:text-lg md:text-xl font-bold tracking-tighter truncate">{pageTitle}</h1>
             </div>
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
+              <div className="block sm:hidden">
+                <CurrencySwitcher />
+              </div>
               <ThemeToggle />
               {activeXpub ? (
-                 <Button variant="outline" onClick={handleDisconnect}>Disconnect</Button>
+                 <Button variant="outline" size="sm" onClick={handleDisconnect} className="hidden sm:inline-flex">Disconnect</Button>
               ) : (
-                <Button asChild>
+                <Button asChild size="sm" className="hidden sm:inline-flex">
                     <Link href="/">Connect Wallet</Link>
                 </Button>
               )}
