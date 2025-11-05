@@ -130,6 +130,10 @@ Notes:
 - News panel shows configuration message: set `CRYPTOCOMPARE_API_KEY`.
 - Google Sheets export fails: verify sheet ID, service account email access, and private key formatting (preserve newlines).
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to BitSleuth, including documentation standards and file organization.
+
 ---
 
 ## License

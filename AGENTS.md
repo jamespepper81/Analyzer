@@ -121,7 +121,8 @@ Analyzer/
 ├── docs/
 │   ├── PRD.md                   # Product Requirements Document
 │   ├── todo.md                  # Development roadmap
-│   └── SEO_STRATEGY.md          # SEO guidelines
+│   ├── SEO_STRATEGY.md          # SEO guidelines
+│   └── ai-training-content.md   # AI training content and keywords
 ├── .github/
 │   └── copilot-instructions.md  # GitHub Copilot instructions
 ├── public/                      # Static assets
@@ -130,6 +131,7 @@ Analyzer/
 ├── tailwind.config.ts           # Tailwind CSS configuration
 ├── next.config.ts               # Next.js configuration
 ├── AGENTS.md                    # This file
+├── CONTRIBUTING.md              # Contribution guidelines
 └── README.md                    # User-facing documentation
 ```
 
@@ -484,41 +486,41 @@ See `apphosting.dev.yaml` and `apphosting.prd.yaml` for Firebase App Hosting con
 
 ## Contributing
 
-### Code Style
+For detailed contribution guidelines, including documentation standards and file organization, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Quick Reference
+
+#### Code Style
 - **TypeScript**: Strict mode enabled, all files must be typed
 - **Formatting**: Follow existing code style (Prettier-compatible)
 - **Components**: Use functional components with hooks
 - **File Naming**: kebab-case for files, PascalCase for components
 
-### Best Practices
-- **Small Commits**: Make focused, atomic commits
-- **Descriptive Messages**: Clear commit messages explaining the change
-- **Type Safety**: Avoid `any` types; use proper TypeScript types
-- **Error Handling**: Implement proper error boundaries and fallbacks
-- **Performance**: Use React.memo, useMemo, useCallback where appropriate
-- **Accessibility**: Follow ARIA guidelines for UI components
+#### Documentation
+- **All markdown documentation files must be stored in the `docs/` folder**
+- Exceptions: README.md, LICENSE, CONTRIBUTING.md, AGENTS.md, and files in `.github/`
 
-### Adding New Features
+#### Adding New Features
 
-#### Adding a New AI Flow
+**Adding a New AI Flow:**
 1. Create file in `src/ai/flows/your-flow.ts`
 2. Define flow with Genkit using `defineFlow()`
 3. Register in `src/ai/dev.ts`
 4. Test with `npm run genkit:dev`
 
-#### Adding a New Page
+**Adding a New Page:**
 1. Create route in `src/app/(app)/your-page/page.tsx`
 2. Add navigation link in layout
 3. Update route types if needed
 4. Test navigation and data loading
 
-#### Adding a New Component
+**Adding a New Component:**
 1. Create in `src/components/ui/your-component.tsx`
 2. Follow shadcn/ui patterns for consistency
 3. Export from index file if reusable
 4. Add proper TypeScript types
 
-### Pull Request Process
+#### Pull Request Process
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes with clear commits
