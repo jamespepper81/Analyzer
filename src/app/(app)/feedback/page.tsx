@@ -92,28 +92,28 @@ export default function FeedbackPage() {
 
   if (isSubmitted) {
     return (
-        <div className="flex h-[calc(100vh-12rem)] flex-col items-center justify-center text-center">
-            <div className="rounded-xl border bg-card p-8 shadow-sm max-w-lg space-y-4">
+        <div className="flex h-[calc(100vh-12rem)] flex-col items-center justify-center text-center px-4">
+            <div className="rounded-xl border bg-card p-6 sm:p-8 shadow-sm max-w-lg space-y-4 w-full">
                 <div className="flex justify-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                        <ThumbsUp className="h-8 w-8 text-primary" />
+                    <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-primary/10">
+                        <ThumbsUp className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                     </div>
                 </div>
-                <AlertTitle className="text-2xl font-bold">Thank You!</AlertTitle>
-                <AlertDescription className="text-muted-foreground">
+                <AlertTitle className="text-xl sm:text-2xl font-bold">Thank You!</AlertTitle>
+                <AlertDescription className="text-muted-foreground text-sm sm:text-base">
                     Your feedback has been submitted successfully. We appreciate you taking the time to help us improve BitSleuth.
                 </AlertDescription>
-                <Button onClick={() => setIsSubmitted(false)}>Submit More Feedback</Button>
+                <Button onClick={() => setIsSubmitted(false)} className="w-full sm:w-auto">Submit More Feedback</Button>
             </div>
         </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-6 sm:space-y-8 px-2 sm:px-0">
         <div className="text-center space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tighter">Submit Feedback</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tighter">Submit Feedback</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
                 We'd love to hear your thoughts! Let us know what you like, what could be better, or if you've found a bug.
             </p>
         </div>
@@ -158,28 +158,28 @@ export default function FeedbackPage() {
       
       <Card>
           <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-xl md:text-2xl font-bold'><Zap className='text-amber-500'/>Support BitSleuth</CardTitle>
-            <CardDescription>
+            <CardTitle className='flex items-center gap-2 text-base sm:text-lg md:text-xl font-bold'><Zap className='h-5 w-5 sm:h-6 sm:w-6 text-amber-500'/>Support BitSleuth</CardTitle>
+            <CardDescription className="text-sm">
               If you find this tool helpful, consider sending a few sats. Your support helps us keep the servers running and continue development.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+          <CardContent className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div className="flex-shrink-0">
                 <Image
                   src="/lightning-qr.png"
                   alt="A QR code for sending a Lightning Network donation to support BitSleuth."
-                  width={160}
-                  height={160}
-                  className="rounded-lg border bg-white p-1"
+                  width={140}
+                  height={140}
+                  className="rounded-lg border bg-white p-1 sm:w-[160px] sm:h-[160px]"
                 />
             </div>
-            <div className="w-full text-center md:text-left space-y-4">
+            <div className="w-full text-center sm:text-left space-y-3 sm:space-y-4">
                 <div>
-                    <p className="text-sm text-muted-foreground">Lightning Address:</p>
-                    <div className="flex items-center justify-center md:justify-start gap-2 mt-1">
-                        <code className="font-mono text-sm break-all">{lightningAddress}</code>
-                        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => handleCopy(lightningAddress, 'Lightning Address')} aria-label="Copy Lightning Address">
-                            <Copy className="h-4 w-4" />
+                    <p className="text-xs sm:text-sm text-muted-foreground">Lightning Address:</p>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 flex-wrap">
+                        <code className="font-mono text-xs sm:text-sm break-all">{lightningAddress}</code>
+                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => handleCopy(lightningAddress, 'Lightning Address')} aria-label="Copy Lightning Address">
+                            <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                     </div>
                 </div>
@@ -187,11 +187,11 @@ export default function FeedbackPage() {
                 <Separator />
                 
                 <div>
-                    <p className="text-sm text-muted-foreground">Or copy the LNURL:</p>
-                    <div className="flex items-center justify-center md:justify-start gap-2 mt-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground">Or copy the LNURL:</p>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 flex-wrap">
                         <code className="font-mono text-xs break-all">{lnurl}</code>
-                        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => handleCopy(lnurl, 'LNURL')} aria-label="Copy LNURL">
-                            <Copy className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => handleCopy(lnurl, 'LNURL')} aria-label="Copy LNURL">
+                            <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                     </div>
                 </div>
@@ -201,8 +201,8 @@ export default function FeedbackPage() {
       
       <Alert>
         <Bot className="h-4 w-4" />
-        <AlertTitle>How it works</AlertTitle>
-        <AlertDescription>
+        <AlertTitle className="text-sm sm:text-base">How it works</AlertTitle>
+        <AlertDescription className="text-sm">
           Your feedback is processed by BitSleuth AI-powered agent to help us categorize and understand it. This helps our developers quickly identify issues and prioritize new features. Thank you for helping us improve BitSleuth!
         </AlertDescription>
       </Alert>

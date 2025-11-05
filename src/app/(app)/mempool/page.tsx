@@ -15,9 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const FeeCard = ({ title, fee, description }: { title: string; fee: number; description: string }) => (
-  <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-card-foreground/5 text-center">
-    <p className="text-sm text-muted-foreground">{title}</p>
-    <p className="text-2xl font-bold">{Math.round(fee)}</p>
+  <div className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-lg bg-card-foreground/5 text-center">
+    <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
+    <p className="text-xl sm:text-2xl font-bold">{Math.round(fee)}</p>
     <p className="text-xs text-muted-foreground">sat/vB</p>
     <p className="text-xs text-muted-foreground mt-1">{description}</p>
   </div>
@@ -130,13 +130,13 @@ export default function MempoolPage() {
     const { recommendedFees, mempoolInfo, latestBlocks, mempoolBlocks, networkFeeRate, networkFeeLevel } = data;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Recommended Fees</CardTitle>
-                    <CardDescription>Live fee estimates for your transactions.</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">Recommended Fees</CardTitle>
+                    <CardDescription className="text-sm">Live fee estimates for your transactions.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <FeeCard title="High Priority" fee={recommendedFees.fastestFee} description="~10 minutes" />
                     <FeeCard title="Medium Priority" fee={recommendedFees.halfHourFee} description="~30 minutes" />
                     <FeeCard title="Low Priority" fee={recommendedFees.hourFee} description="~1 hour" />
@@ -144,10 +144,10 @@ export default function MempoolPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Mempool Summary</CardTitle>
+                        <CardTitle className="text-base sm:text-lg">Mempool Summary</CardTitle>
                         <CardDescription>A snapshot of unconfirmed transactions.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">

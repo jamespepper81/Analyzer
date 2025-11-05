@@ -224,16 +224,16 @@ export default function AnalysisPage() {
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Portfolio Value Over Time</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Portfolio Value Over Time</CardTitle>
+            <CardDescription className="text-sm">
               This chart visualizes the total value of your wallet's Bitcoin balance in your selected currency.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={balanceChartConfig} className="h-[400px] w-full">
+          <CardContent className="px-2 sm:px-6">
+            <ChartContainer config={balanceChartConfig} className="h-[300px] sm:h-[400px] w-full">
               <AreaChart data={balanceChartData} margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
                 <defs>
                     <linearGradient id="fillBalance" x1="0" y1="0" x2="0" y2="1">
@@ -286,11 +286,11 @@ export default function AnalysisPage() {
 
        <Card>
           <CardHeader>
-              <CardTitle>Monthly Volume</CardTitle>
-              <CardDescription>Sent vs. Received volume in satoshis by month.</CardDescription>
+              <CardTitle className="text-base sm:text-lg">Monthly Volume</CardTitle>
+              <CardDescription className="text-sm">Sent vs. Received volume in satoshis by month.</CardDescription>
           </CardHeader>
-          <CardContent>
-              <ChartContainer config={monthlyVolumeConfig} className="h-[250px] w-full">
+          <CardContent className="px-2 sm:px-6">
+              <ChartContainer config={monthlyVolumeConfig} className="h-[200px] sm:h-[250px] w-full">
                   <BarChart data={monthlyVolumeData} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" />
                       <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
@@ -319,11 +319,11 @@ export default function AnalysisPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>UTXO Distribution</CardTitle>
-                <CardDescription>Breakdown of your Unspent Transaction Outputs.</CardDescription>
+                <CardTitle className="text-base sm:text-lg">UTXO Distribution</CardTitle>
+                <CardDescription className="text-sm">Breakdown of your Unspent Transaction Outputs.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={utxoChartConfig} className="h-[250px] w-full">
+            <CardContent className="px-2 sm:px-6">
+                <ChartContainer config={utxoChartConfig} className="h-[200px] sm:h-[250px] w-full">
                     <BarChart data={utxoChartData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid horizontal={false} strokeDasharray="3 3" />
                         <XAxis type="number" hide />
@@ -337,11 +337,11 @@ export default function AnalysisPage() {
 
         <Card>
           <CardHeader>
-              <CardTitle>Fee Analysis</CardTitle>
-              <CardDescription>Total transaction fees paid over time (in satoshis).</CardDescription>
+              <CardTitle className="text-base sm:text-lg">Fee Analysis</CardTitle>
+              <CardDescription className="text-sm">Total transaction fees paid over time (in satoshis).</CardDescription>
           </CardHeader>
-          <CardContent>
-              <ChartContainer config={feeAnalysisConfig} className="h-[400px] w-full">
+          <CardContent className="px-2 sm:px-6">
+              <ChartContainer config={feeAnalysisConfig} className="h-[300px] sm:h-[400px] w-full">
                   <BarChart data={monthlyFeeData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" />
                       <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
@@ -374,11 +374,11 @@ export default function AnalysisPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Transaction Fee Analysis</CardTitle>
-                <CardDescription>Fee (sats) vs. transaction size (bytes). Helps spot high-fee transactions.</CardDescription>
+                <CardTitle className="text-base sm:text-lg">Transaction Fee Analysis</CardTitle>
+                <CardDescription className="text-sm">Fee (sats) vs. transaction size (bytes). Helps spot high-fee transactions.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={feeScatterConfig} className="h-[400px] w-full">
+            <CardContent className="px-2 sm:px-6">
+                <ChartContainer config={feeScatterConfig} className="h-[300px] sm:h-[400px] w-full">
                     <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 40, }}>
                         <CartesianGrid strokeDasharray="3 3"/>
                         <XAxis type="number" dataKey="size" name="Size" tickFormatter={satsFormatter} label={{ value: 'bytes', position: 'insideBottom', offset: 0 }} />
@@ -399,29 +399,30 @@ export default function AnalysisPage() {
 
         <Card className="lg:col-span-2">
             <CardHeader>
-                <CardTitle>Largest UTXOs</CardTitle>
-                <CardDescription>A list of your top 10 largest unspent "coins".</CardDescription>
+                <CardTitle className="text-base sm:text-lg">Largest UTXOs</CardTitle>
+                <CardDescription className="text-sm">A list of your top 10 largest unspent "coins".</CardDescription>
             </CardHeader>
-            <CardContent>
-                 <Table>
+            <CardContent className="px-0 sm:px-6">
+                <div className="overflow-x-auto">
+                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Value (BTC)</TableHead>
+                            <TableHead className="pl-4 sm:pl-0">Value (BTC)</TableHead>
                             <TableHead>Address</TableHead>
-                            <TableHead className="text-right">Transaction ID</TableHead>
+                            <TableHead className="text-right pr-4 sm:pr-0">Transaction ID</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {[...data.utxos].sort((a, b) => b.value - a.value).slice(0, 10).map((utxo) => (
                             <TableRow key={`${utxo.txid}:${utxo.vout}`}>
-                                <TableCell className="font-mono">{(utxo.value / 1e8).toFixed(8)}</TableCell>
-                                <TableCell className="font-mono text-xs truncate">
-                                    <Link href={`/address/${utxo.address}`} className="hover:underline cursor-pointer">
+                                <TableCell className="font-mono text-xs sm:text-sm pl-4 sm:pl-0 whitespace-nowrap">{(utxo.value / 1e8).toFixed(8)}</TableCell>
+                                <TableCell className="font-mono text-xs max-w-[150px] sm:max-w-none">
+                                    <Link href={`/address/${utxo.address}`} className="hover:underline cursor-pointer truncate block">
                                     {utxo.address}
                                     </Link>
                                 </TableCell>
-                                <TableCell className="text-right font-mono text-xs">
-                                     <Link href={`/transactions/${utxo.txid}`} className="hover:underline cursor-pointer">
+                                <TableCell className="text-right font-mono text-xs pr-4 sm:pr-0">
+                                     <Link href={`/transactions/${utxo.txid}`} className="hover:underline cursor-pointer whitespace-nowrap">
                                         {utxo.txid.slice(0,10)}...
                                     </Link>
                                 </TableCell>
@@ -429,13 +430,14 @@ export default function AnalysisPage() {
                         ))}
                          {data.utxos.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={3} className="h-24 text-center">
+                                <TableCell colSpan={3} className="h-24 text-center text-sm">
                                     No unspent transaction outputs (UTXOs) found.
                                 </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                  </Table>
+                </div>
             </CardContent>
         </Card>
     </div>

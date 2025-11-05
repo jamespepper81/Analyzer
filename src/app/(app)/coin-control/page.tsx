@@ -114,16 +114,16 @@ export default function CoinControlPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl">UTXO Distribution</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">UTXO Distribution</CardTitle>
+                    <CardDescription className="text-sm">
                         This treemap visualizes all the Unspent Transaction Outputs (UTXOs) in your wallet. Each rectangle represents a single UTXO, and its size corresponds to its value in satoshis.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" height={400}>
+                <CardContent className="px-2 sm:px-6">
+                    <ResponsiveContainer width="100%" height={300}>
                           <Treemap
                             data={treemapData}
                             dataKey="value"
@@ -140,11 +140,11 @@ export default function CoinControlPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <Card className="lg:col-span-2">
                     <CardHeader>
-                         <CardTitle className="flex items-center gap-2"><Coins className="h-5 w-5" /> All Wallet UTXOs ({utxos.length})</CardTitle>
-                         <CardDescription>
+                         <CardTitle className="flex items-center gap-2 text-base sm:text-lg"><Coins className="h-4 w-4 sm:h-5 sm:w-5" /> All Wallet UTXOs ({utxos.length})</CardTitle>
+                         <CardDescription className="text-sm">
                             A list of all individual "coins" in your wallet. Select UTXOs to simulate a consolidation transaction.
                          </CardDescription>
                     </CardHeader>

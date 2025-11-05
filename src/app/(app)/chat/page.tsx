@@ -249,13 +249,13 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
-      <div className="flex-1 overflow-y-auto px-4" ref={scrollAreaRef} aria-live="polite">
-        <div className="mx-auto max-w-3xl space-y-6 pt-4">
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4" ref={scrollAreaRef} aria-live="polite">
+        <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6 pt-4">
           {messages.map((message, index) => (
-            <div key={index} className={cn('flex items-start gap-4', message.role === 'user' && 'justify-end')}>
+            <div key={index} className={cn('flex items-start gap-2 sm:gap-4', message.role === 'user' && 'justify-end')}>
               {message.role === 'assistant' && (
-                <Avatar className="h-8 w-8 border">
-                    <AvatarFallback><Bot className="h-5 w-5 text-foreground"/></AvatarFallback>
+                <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border flex-shrink-0">
+                    <AvatarFallback><Bot className="h-4 w-4 sm:h-5 sm:w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
               )}
 
@@ -269,13 +269,13 @@ export default function ChatPage() {
               {message.role !== 'system' && (
                 <div
                     className={cn(
-                    'max-w-[90%] rounded-xl break-words overflow-hidden',
+                    'max-w-[85%] sm:max-w-[90%] rounded-xl break-words overflow-hidden',
                     message.role === 'user'
-                        ? 'rounded-br-none bg-primary text-primary-foreground p-3'
+                        ? 'rounded-br-none bg-primary text-primary-foreground p-2 sm:p-3'
                         : 'rounded-bl-none'
                     )}
                 >
-                  <div className={cn(message.role === 'assistant' && 'bg-card border rounded-xl p-3')}>
+                  <div className={cn(message.role === 'assistant' && 'bg-card border rounded-xl p-2 sm:p-3 text-sm sm:text-base')}>
                     <ReactMarkdown
                       components={{
                           p: ({node, ...props}) => <p className="m-0" {...props} />,
@@ -294,31 +294,31 @@ export default function ChatPage() {
               )}
               
               {message.role === 'user' && (
-                 <Avatar className="h-8 w-8 border">
-                     <AvatarFallback><User className="h-5 w-5 text-foreground"/></AvatarFallback>
+                 <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border flex-shrink-0">
+                     <AvatarFallback><User className="h-4 w-4 sm:h-5 sm:w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
               )}
             </div>
           ))}
           {isAiLoading && (
-            <div className="flex items-start gap-4" aria-label="AI is thinking">
-                <Avatar className="h-8 w-8 border">
-                    <AvatarFallback><Bot className="h-5 w-5 text-foreground"/></AvatarFallback>
+            <div className="flex items-start gap-2 sm:gap-4" aria-label="AI is thinking">
+                <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border flex-shrink-0">
+                    <AvatarFallback><Bot className="h-4 w-4 sm:h-5 sm:w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
-              <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-3">
-                <CircleDashed className="h-5 w-5 animate-spin text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Thinking...</span>
+              <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2 sm:px-4 sm:py-3">
+                <CircleDashed className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-muted-foreground" />
+                <span className="text-xs sm:text-sm text-muted-foreground">Thinking...</span>
               </div>
             </div>
           )}
         </div>
       </div>
-      <div className="sticky bottom-0 bg-background/50 pb-4 pt-2 backdrop-blur-sm">
-        <div className="mx-auto max-w-3xl px-4">
+      <div className="sticky bottom-0 bg-background/50 pb-3 sm:pb-4 pt-2 backdrop-blur-sm">
+        <div className="mx-auto max-w-3xl px-2 sm:px-4">
             <Form {...form}>
             <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="relative flex w-full items-center gap-2"
+                className="relative flex w-full items-center gap-1 sm:gap-2"
             >
                 <FormField
                 control={form.control}
@@ -330,7 +330,7 @@ export default function ChatPage() {
                         <Textarea
                         {...field}
                         placeholder={isRecording ? "Listening..." : `e.g., ${placeholder}`}
-                        className="min-h-12 resize-none"
+                        className="min-h-10 sm:min-h-12 resize-none text-sm sm:text-base"
                         rows={1}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
@@ -348,23 +348,23 @@ export default function ChatPage() {
                 size="icon"
                 onClick={handleMicClick}
                 disabled={!isSpeechSupported || isAiLoading}
-                className={cn(isRecording && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+                className={cn("h-10 w-10 sm:h-10 sm:w-10", isRecording && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
                 aria-label={isRecording ? "Stop recording" : "Start voice input"}
                 >
-                <Mic className="h-5 w-5" />
+                <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
-                <Button type="submit" size="icon" disabled={isAiLoading} aria-label="Send message">
-                <SendHorizonal className="h-5 w-5" />
+                <Button type="submit" size="icon" disabled={isAiLoading} aria-label="Send message" className="h-10 w-10 sm:h-10 sm:w-10">
+                <SendHorizonal className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
             </form>
             </Form>
-            <div className="mt-2 flex flex-wrap justify-center gap-2">
+            <div className="mt-2 flex flex-wrap justify-center gap-1.5 sm:gap-2">
                 {!isAiLoading && displayedSuggestions.map((suggestion) => (
                     <Button
                         key={suggestion}
                         variant="outline"
                         size="sm"
-                        className="h-auto px-3 py-1 text-xs text-muted-foreground"
+                        className="h-auto px-2 sm:px-3 py-1 text-xs text-muted-foreground"
                         onClick={() => {
                             form.setValue('message', suggestion);
                             form.setFocus('message');

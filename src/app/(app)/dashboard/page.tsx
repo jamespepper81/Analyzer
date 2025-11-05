@@ -45,18 +45,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
-            <Bitcoin className="h-5 w-5 text-muted-foreground" />
+            <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tighter">
               {formatCurrency(fiatBalance)}
             </div>
-            <p className="text-lg text-muted-foreground font-normal">
+            <p className="text-base sm:text-lg text-muted-foreground font-normal">
               {data.balanceBTC.toFixed(8)} BTC
             </p>
           </CardContent>
@@ -67,11 +67,11 @@ export default function DashboardPage() {
                     <Card className="cursor-help">
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium">Security Score</CardTitle>
-                        <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+                        <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tighter">{data.securityScore}%</div>
-                        <Progress value={data.securityScore} className="mt-2 h-3" />
+                        <Progress value={data.securityScore} className="mt-2 h-2 sm:h-3" />
                       </CardContent>
                     </Card>
                 </TooltipTrigger>
@@ -83,10 +83,10 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Performance (30d)</CardTitle>
-            {data.performance.change30d >= 0 ? <TrendingUp className="h-5 w-5 text-emerald-500" /> : <TrendingDown className="h-5 w-5 text-rose-500" />}
+            {data.performance.change30d >= 0 ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-rose-500" />}
           </CardHeader>
           <CardContent>
-            <div className={cn("text-3xl font-bold tracking-tighter", data.performance.change30d >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+            <div className={cn("text-2xl sm:text-3xl font-bold tracking-tighter", data.performance.change30d >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
               {data.performance.change30d >= 0 ? '+' : ''}{isFinite(data.performance.change30d) ? data.performance.change30d.toFixed(2) : '0.00'}%
             </div>
              <div className="flex justify-between text-xs text-muted-foreground mt-2 font-normal">
@@ -99,16 +99,16 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Activity (30d)</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 pt-1">
-              <div className="flex items-center gap-3">
-                  <ArrowUpCircle className="h-6 w-6 text-emerald-500 shrink-0" />
+          <CardContent className="space-y-2 sm:space-y-3 pt-1">
+              <div className="flex items-center gap-2 sm:gap-3">
+                  <ArrowUpCircle className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500 shrink-0" />
                   <div>
                       <p className="text-xs text-muted-foreground font-normal">Inflow</p>
                       <p className="font-bold text-sm">{data.inflowOutflow.inflowBTC.toFixed(6)} BTC</p>
                   </div>
               </div>
-              <div className="flex items-center gap-3">
-                  <ArrowDownCircle className="h-6 w-6 text-rose-500 shrink-0" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                  <ArrowDownCircle className="h-5 w-5 sm:h-6 sm:w-6 text-rose-500 shrink-0" />
                   <div>
                       <p className="text-xs text-muted-foreground font-normal">Outflow</p>
                       <p className="font-bold text-sm">{Math.abs(data.inflowOutflow.outflowBTC).toFixed(6)} BTC</p>
@@ -120,30 +120,31 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription className="font-normal">
+              <CardTitle className="text-lg sm:text-xl">Recent Transactions</CardTitle>
+              <CardDescription className="font-normal text-sm">
                 A summary of your latest wallet activity.
               </CardDescription>
             </div>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
               <Link href="/transactions">
                 View All <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Details</TableHead>
-                <TableHead className="text-right">Amount (BTC)</TableHead>
-                <TableHead className="hidden text-right md:table-cell">Amount (Fiat)</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="px-0 sm:px-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-4 sm:pl-0">Details</TableHead>
+                  <TableHead className="text-right">Amount (BTC)</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Amount (Fiat)</TableHead>
+                  <TableHead className="text-right pr-4 sm:pr-0">Status</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {recentTransactions.length === 0 && (
                  <TableRow>
@@ -157,21 +158,21 @@ export default function DashboardPage() {
                 const isReceived = tx.type === 'Received';
                 return (
                     <TableRow key={tx.id}>
-                    <TableCell>
-                        <div className="flex items-center gap-3">
+                    <TableCell className="pl-4 sm:pl-0">
+                        <div className="flex items-center gap-2 sm:gap-3">
                             <span
                                 className={cn(
-                                    "flex items-center justify-center rounded-full p-2 w-8 h-8",
+                                    "flex items-center justify-center rounded-full p-1.5 sm:p-2 w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0",
                                     isReceived
                                         ? "bg-chart-positive/10 text-chart-positive"
                                         : "bg-chart-negative/10 text-chart-negative"
                                 )}
                             >
-                                {isReceived ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                                {isReceived ? <ArrowDownLeft className="h-3 w-3 sm:h-4 sm:w-4" /> : <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4" />}
                             </span>
-                            <div>
-                                <div className="font-medium">{tx.type}</div>
-                                <div className="text-sm text-muted-foreground font-normal">
+                            <div className="min-w-0">
+                                <div className="font-medium text-sm sm:text-base">{tx.type}</div>
+                                <div className="text-xs sm:text-sm text-muted-foreground font-normal">
                                     {new Date(tx.date).toLocaleDateString()}
                                 </div>
                             </div>
@@ -179,7 +180,7 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell
                         className={cn(
-                        'text-right font-mono',
+                        'text-right font-mono text-xs sm:text-sm whitespace-nowrap',
                         isReceived ? 'text-chart-positive' : 'text-chart-negative'
                         )}
                     >
@@ -187,16 +188,17 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell
                         className={cn(
-                        'hidden text-right md:table-cell',
+                        'hidden text-right md:table-cell whitespace-nowrap',
                         isReceived ? 'text-chart-positive' : 'text-chart-negative'
                         )}
                     >
                         {isReceived ? '+' : '-'}{formatCurrency(fiatAmount)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right pr-4 sm:pr-0">
                         <Badge
                         variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'}
                         className={cn(
+                            'text-xs',
                             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
                             tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
                         )}
@@ -209,6 +211,7 @@ export default function DashboardPage() {
               })}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

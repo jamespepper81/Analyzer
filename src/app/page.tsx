@@ -145,7 +145,7 @@ export default function ConnectWalletPage() {
     }
 
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-8">
+      <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8">
         {/* Header with Theme Toggle */}
         <header className="absolute top-0 right-0 p-4 z-50">
           <ThemeToggle />
@@ -153,7 +153,7 @@ export default function ConnectWalletPage() {
         
         <div
           className={cn(
-            "flex w-full max-w-md flex-col items-center justify-center gap-6 rounded-2xl border bg-card p-8 text-center shadow-2xl",
+            "flex w-full max-w-md flex-col items-center justify-center gap-4 sm:gap-6 rounded-2xl border bg-card p-6 sm:p-8 text-center shadow-2xl",
             isFriendlyError
               ? "border-primary/20 shadow-primary/10"
               : "border-destructive/50 shadow-destructive/10"
@@ -161,14 +161,14 @@ export default function ConnectWalletPage() {
         >
           {icon}
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-card-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold text-card-foreground">
               {title}
             </h1>
-            <p className="text-muted-foreground font-normal">
+            <p className="text-muted-foreground font-normal text-sm sm:text-base">
               {error}
             </p>
           </div>
-          <Button variant="outline" onClick={handleTryAgain} className="mt-4 w-full">
+          <Button variant="outline" onClick={handleTryAgain} className="mt-2 sm:mt-4 w-full">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Try Again
           </Button>
@@ -178,24 +178,24 @@ export default function ConnectWalletPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8">
       {/* Header with Theme Toggle */}
       <header className="absolute top-0 right-0 p-4 z-50">
         <ThemeToggle />
       </header>
       
-      <div className="flex w-full max-w-md flex-col items-center justify-center gap-6 rounded-2xl border bg-card p-8 shadow-2xl shadow-primary/10">
+      <div className="flex w-full max-w-md flex-col items-center justify-center gap-4 sm:gap-6 rounded-2xl border bg-card p-6 sm:p-8 shadow-2xl shadow-primary/10">
         <div className="flex flex-col items-center gap-2 text-center">
-            <div className="mb-2 h-12 w-12 rounded-full grid place-items-center bg-white dark:bg-transparent">
-              <Logo className="h-12 w-12" style={{ color: 'hsl(var(--brand))' }} />
+            <div className="mb-2 h-10 w-10 sm:h-12 sm:w-12 rounded-full grid place-items-center bg-white dark:bg-transparent">
+              <Logo className="h-10 w-10 sm:h-12 sm:w-12" style={{ color: 'hsl(var(--brand))' }} />
             </div>
-            <h1 className="font-headline text-3xl font-bold tracking-tighter text-black dark:text-foreground">
+            <h1 className="font-headline text-2xl sm:text-3xl font-bold tracking-tighter text-black dark:text-foreground">
                 BitSleuth - AI Bitcoin Wallet Analyzer
             </h1>
-            <p className="text-muted-foreground font-normal max-w-md">
+            <p className="text-muted-foreground font-normal max-w-md text-sm sm:text-base">
                 The most advanced AI-powered Bitcoin wallet security analyzer. Get comprehensive insights into your Bitcoin wallet's security, privacy, and transaction patterns instantly.
             </p>
-            <p className="text-muted-foreground font-normal max-w-md">
+            <p className="text-muted-foreground font-normal max-w-md text-sm sm:text-base">
                 Enter a Bitcoin xpub key to get AI-powered insights.
             </p>
         </div>
@@ -295,23 +295,23 @@ export default function ConnectWalletPage() {
 
 
         {/* SEO-friendly features section */}
-        <div className="w-full space-y-4 text-center">
-          <h2 className="text-lg font-semibold text-foreground">Key Features</h2>
-          <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground">
+        <div className="w-full space-y-3 sm:space-y-4 text-center">
+          <h2 className="text-base sm:text-lg font-semibold text-foreground">Key Features</h2>
+          <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm text-muted-foreground">
             <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
               <span>AI-powered Bitcoin wallet security analysis</span>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
               <span>Transaction pattern and privacy analysis</span>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
               <span>Real-time Bitcoin market and mempool data</span>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary"></div>
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
               <span>Free Bitcoin wallet scanner and checker</span>
             </div>
           </div>

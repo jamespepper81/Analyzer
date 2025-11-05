@@ -43,12 +43,12 @@ function FearGreedNeedle({ value }: { value: number }) {
 
 function MarketStatItem({ label, value, subValue, change, tooltipText }: { label: string, value: string | number, subValue?: string | number, change?: number, tooltipText?: string }) {
     const content = (
-        <div className="flex flex-col p-3 rounded-lg bg-card-foreground/5 text-left h-full justify-between">
+        <div className="flex flex-col p-2 sm:p-3 rounded-lg bg-card-foreground/5 text-left h-full justify-between">
             <p className="text-xs text-muted-foreground">{label}</p>
             <div>
-                <p className="text-lg font-bold mt-1">{value}</p>
+                <p className="text-base sm:text-lg font-bold mt-1">{value}</p>
                 {subValue && (
-                     <div className="flex items-baseline gap-1.5">
+                     <div className="flex items-baseline gap-1 sm:gap-1.5">
                         <p className="text-xs text-muted-foreground">{subValue}</p>
                         {change !== undefined && (
                             <p className={cn("text-xs font-bold", change >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
@@ -222,23 +222,23 @@ export default function MarketPage() {
 
     return (
         <TooltipProvider>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
                 <Card className="lg:col-span-4">
                     <CardHeader>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <Bitcoin className="h-8 w-8 text-amber-500" />
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <Bitcoin className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 flex-shrink-0" />
                                 <div>
-                                    <CardTitle className="text-2xl font-bold">Bitcoin <span className="text-muted-foreground font-normal">BTC</span></CardTitle>
+                                    <CardTitle className="text-lg sm:text-2xl font-bold">Bitcoin <span className="text-muted-foreground font-normal">BTC</span></CardTitle>
                                     <CardDescription className="text-xs">
                                         Last updated: {formatDistanceToNow(new Date(marketData.last_updated), { addSuffix: true })}
                                     </CardDescription>
                                 </div>
                             </div>
-                            <div className="text-left sm:text-right">
-                                <p className="text-3xl md:text-4xl font-bold tracking-tighter">{formatCurrency(marketData.price)}</p>
-                                <div className={cn("flex items-center sm:justify-end gap-1 text-base font-bold", isPositiveChange ? 'text-emerald-500' : 'text-rose-500')}>
-                                    {isPositiveChange ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                            <div className="text-left sm:text-right w-full sm:w-auto">
+                                <p className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter">{formatCurrency(marketData.price)}</p>
+                                <div className={cn("flex items-center sm:justify-end gap-1 text-sm sm:text-base font-bold", isPositiveChange ? 'text-emerald-500' : 'text-rose-500')}>
+                                    {isPositiveChange ? <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4" />}
                                     {formatCurrency(priceChange)} ({priceChangePercentage.toFixed(2)}%)
                                 </div>
                             </div>
@@ -276,13 +276,13 @@ export default function MarketPage() {
 
                 <Card className="lg:col-span-4">
                     <Tabs defaultValue="price">
-                        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                            <div className='flex-grow'>
-                                <TabsList>
-                                    <TabsTrigger value="price">Price Chart</TabsTrigger>
-                                    <TabsTrigger value="candlestick">Candlestick Chart</TabsTrigger>
+                        <CardHeader className="flex flex-col items-start justify-between gap-3 sm:gap-2">
+                            <div className='w-full'>
+                                <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:inline-grid">
+                                    <TabsTrigger value="price" className="text-xs sm:text-sm">Price Chart</TabsTrigger>
+                                    <TabsTrigger value="candlestick" className="text-xs sm:text-sm">Candlestick</TabsTrigger>
                                 </TabsList>
-                                <CardDescription className="mt-2">
+                                <CardDescription className="mt-2 text-xs sm:text-sm">
                                     Price data by{' '}
                                     <a
                                         href="https://www.coingecko.com/"
@@ -294,7 +294,7 @@ export default function MarketPage() {
                                     </a>
                                 </CardDescription>
                             </div>
-                            <div className="flex gap-1 rounded-md bg-muted p-1 self-start sm:self-center">
+                            <div className="flex gap-1 rounded-md bg-muted p-1 w-full sm:w-auto overflow-x-auto">
                                 {timeRanges.map(r => (
                                     <Button
                                         key={r.value}
@@ -302,7 +302,7 @@ export default function MarketPage() {
                                         size="sm"
                                         onClick={() => setRange(r.value)}
                                         className={cn(
-                                            "h-8 px-3",
+                                            "h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm flex-shrink-0",
                                             range === r.value
                                                 ? "bg-background text-foreground shadow-sm hover:bg-background/90"
                                                 : "text-muted-foreground"
@@ -313,10 +313,10 @@ export default function MarketPage() {
                                 ))}
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-2 sm:px-6">
                             <TabsContent value="price">
-                                <ChartContainer config={chartConfig} className="h-[400px] w-full">
-                                <AreaChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+                                <ChartContainer config={chartConfig} className="h-[300px] sm:h-[400px] w-full">
+                                <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="5%" stopColor="var(--color-Price)" stopOpacity={0.4}/>
@@ -380,7 +380,7 @@ export default function MarketPage() {
                                 </ChartContainer>
                             </TabsContent>
                             <TabsContent value="candlestick">
-                                <ChartContainer config={{}} className="h-[400px] w-full">
+                                <ChartContainer config={{}} className="h-[300px] sm:h-[400px] w-full">
                                     <ComposedChart data={candlestickChartData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis
