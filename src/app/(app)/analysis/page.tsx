@@ -247,12 +247,14 @@ export default function AnalysisPage() {
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
+                  fontSize={12}
                   tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
+                  fontSize={12}
                   tickFormatter={(value) => new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(value as number)}
                   domain={[0, 'dataMax']}
                 />
