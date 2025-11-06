@@ -700,10 +700,28 @@ export default function ReportPage() {
                                         <SortableHeader<SortKey> sortKey="address" label="Address" sortConfig={sortConfig} requestSort={requestSort} />
                                         <SortableHeader<SortKey> sortKey="balance" label="Balance" sortConfig={sortConfig} requestSort={requestSort} />
                                         <SortableHeader<SortKey> sortKey="marketValue" label="Market Value" sortConfig={sortConfig} requestSort={requestSort} />
-                                        <SortableHeader<SortKey> sortKey="cost" label={`Cost (${currency})`} sortConfig={sortConfig} requestSort={requestSort} />
+                                        <TableHead className="hidden md:table-cell">
+                                            <Button variant="ghost" onClick={() => requestSort('cost')} className="p-1 items-center">
+                                                <span>Cost ({currency})</span>
+                                                {sortConfig.key === 'cost' ? (
+                                                    sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 inline-block" /> : <ArrowDown className="ml-2 h-4 w-4 inline-block" />
+                                                ) : (
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 inline-block" />
+                                                )}
+                                            </Button>
+                                        </TableHead>
                                         <SortableHeader<SortKey> sortKey="potentialGain" label="Potential Gain" sortConfig={sortConfig} requestSort={requestSort} />
-                                        <SortableHeader<SortKey> sortKey="roi" label="ROI" sortConfig={sortConfig} requestSort={requestSort} />
-                                        <TableHead className="text-right pr-4 sm:pr-0">Performance</TableHead>
+                                        <TableHead className="hidden lg:table-cell">
+                                            <Button variant="ghost" onClick={() => requestSort('roi')} className="p-1 items-center">
+                                                <span>ROI</span>
+                                                {sortConfig.key === 'roi' ? (
+                                                    sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 inline-block" /> : <ArrowDown className="ml-2 h-4 w-4 inline-block" />
+                                                ) : (
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 inline-block" />
+                                                )}
+                                            </Button>
+                                        </TableHead>
+                                        <TableHead className="hidden lg:table-cell text-right pr-4 sm:pr-0">Performance</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -711,29 +729,29 @@ export default function ReportPage() {
                                         return (
                                         <TableRow key={asset.address}>
                                             <TableCell className="pl-4 sm:pl-0">
-                                                <div className="flex items-center gap-2 font-mono text-xs min-w-[150px]">
+                                                <div className="flex items-center gap-2 font-mono text-xs min-w-[120px] max-w-[200px]">
                                                     <BitcoinIcon className="h-4 w-4 text-amber-500 shrink-0" />
                                                     <span className="truncate">{asset.address}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="whitespace-nowrap">
-                                                <p className="font-normal">{asset.balance.toFixed(8)}</p>
+                                                <p className="font-normal text-xs sm:text-sm">{asset.balance.toFixed(8)}</p>
                                             </TableCell>
                                             <TableCell className="whitespace-nowrap">
-                                                <p className="font-normal">{formatCurrencyFull(asset.marketValue)}</p>
-                                                <p className="text-xs text-muted-foreground font-normal">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : formatCurrencyFull(0)} / unit</p>
+                                                <p className="font-normal text-xs sm:text-sm">{formatCurrencyFull(asset.marketValue)}</p>
+                                                <p className="text-xs text-muted-foreground font-normal hidden sm:block">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : formatCurrencyFull(0)} / unit</p>
                                             </TableCell>
-                                            <TableCell className="whitespace-nowrap">
+                                            <TableCell className="hidden md:table-cell whitespace-nowrap">
                                                 <p className="font-normal">{formatCurrencyFull(asset.cost)}</p>
                                                 <p className="text-xs text-muted-foreground font-normal">{asset.balance > 0 ? formatCurrencyFull(asset.cost / asset.balance) : formatCurrencyFull(0)} / unit</p>
                                             </TableCell>
-                                            <TableCell className={cn("font-bold whitespace-nowrap", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                            <TableCell className={cn("font-bold whitespace-nowrap text-xs sm:text-sm", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                 {formatCurrencyFull(asset.potentialGain)}
                                             </TableCell>
-                                            <TableCell className={cn("font-bold whitespace-nowrap", asset.roi >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                            <TableCell className={cn("hidden lg:table-cell font-bold whitespace-nowrap", asset.roi >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                 {asset.roi.toFixed(2)}%
                                             </TableCell>
-                                            <TableCell className="text-right pr-4 sm:pr-0">
+                                            <TableCell className="hidden lg:table-cell text-right pr-4 sm:pr-0">
                                                 <div className="h-8 w-20 ml-auto flex items-center">
                                                     <ValueCostBar marketValue={asset.marketValue} cost={asset.cost} />
                                                 </div>
@@ -894,9 +912,36 @@ export default function ReportPage() {
                                         </TableHead>
                                         <SortableHeader<TaxSortKey> isTaxTable sortKey="address" label="Address" sortConfig={taxSortConfig} requestSort={requestTaxSort} />
                                         <SortableHeader<TaxSortKey> isTaxTable sortKey="balance" label="Amount held" sortConfig={taxSortConfig} requestSort={requestTaxSort} />
-                                        <SortableHeader<TaxSortKey> isTaxTable sortKey="rate" label={`${currency} rate`} sortConfig={taxSortConfig} requestSort={requestTaxSort} />
-                                        <SortableHeader<TaxSortKey> isTaxTable sortKey="marketValue" label="Market value" sortConfig={taxSortConfig} requestSort={requestTaxSort} />
-                                        <SortableHeader<TaxSortKey> isTaxTable sortKey="cost" label="Cost basis" sortConfig={taxSortConfig} requestSort={requestTaxSort} />
+                                        <TableHead className="hidden md:table-cell">
+                                            <Button variant="ghost" onClick={() => requestTaxSort('rate')} className="p-1 flex-col items-start whitespace-normal h-auto text-left">
+                                                <span>{currency} rate</span>
+                                                {taxSortConfig.key === 'rate' ? (
+                                                    taxSortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 inline-block" /> : <ArrowDown className="ml-2 h-4 w-4 inline-block" />
+                                                ) : (
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 inline-block" />
+                                                )}
+                                            </Button>
+                                        </TableHead>
+                                        <TableHead className="hidden sm:table-cell">
+                                            <Button variant="ghost" onClick={() => requestTaxSort('marketValue')} className="p-1 flex-col items-start whitespace-normal h-auto text-left">
+                                                <span>Market value</span>
+                                                {taxSortConfig.key === 'marketValue' ? (
+                                                    taxSortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 inline-block" /> : <ArrowDown className="ml-2 h-4 w-4 inline-block" />
+                                                ) : (
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 inline-block" />
+                                                )}
+                                            </Button>
+                                        </TableHead>
+                                        <TableHead className="hidden lg:table-cell">
+                                            <Button variant="ghost" onClick={() => requestTaxSort('cost')} className="p-1 flex-col items-start whitespace-normal h-auto text-left">
+                                                <span>Cost basis</span>
+                                                {taxSortConfig.key === 'cost' ? (
+                                                    taxSortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 inline-block" /> : <ArrowDown className="ml-2 h-4 w-4 inline-block" />
+                                                ) : (
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 inline-block" />
+                                                )}
+                                            </Button>
+                                        </TableHead>
                                         <SortableHeader<TaxSortKey> isTaxTable sortKey="potentialGain" label={
                                             <TooltipProvider>
                                                 <Tooltip>
@@ -911,20 +956,29 @@ export default function ReportPage() {
                                                 </Tooltip>
                                             </TooltipProvider>
                                         } sortConfig={taxSortConfig} requestSort={requestTaxSort} />
-                                        <SortableHeader<TaxSortKey> isTaxTable sortKey="amountToSell" label={
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <div className="flex items-center gap-1.5 cursor-help">
-                                                            Amount to sell <Info className="h-3 w-3" />
-                                                        </div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p className="font-normal">This column shows how much Bitcoin you are simulating selling from this address. Currently, it defaults to the full balance.</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        } sortConfig={taxSortConfig} requestSort={requestTaxSort} />
+                                        <TableHead className="hidden xl:table-cell">
+                                            <Button variant="ghost" onClick={() => requestTaxSort('amountToSell')} className="p-1 flex-col items-start whitespace-normal h-auto text-left">
+                                                <span>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <div className="flex items-center gap-1.5 cursor-help">
+                                                                    Amount to sell <Info className="h-3 w-3" />
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p className="font-normal">This column shows how much Bitcoin you are simulating selling from this address. Currently, it defaults to the full balance.</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </span>
+                                                {taxSortConfig.key === 'amountToSell' ? (
+                                                    taxSortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 inline-block" /> : <ArrowDown className="ml-2 h-4 w-4 inline-block" />
+                                                ) : (
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 inline-block" />
+                                                )}
+                                            </Button>
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -940,21 +994,21 @@ export default function ReportPage() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="flex items-center gap-2 min-w-[150px]">
-                                                        <BitcoinIcon className="h-4 w-4 sm:h-6 sm:w-6 text-amber-500 shrink-0" />
+                                                    <div className="flex items-center gap-2 min-w-[120px] max-w-[200px]">
+                                                        <BitcoinIcon className="h-4 w-4 text-amber-500 shrink-0" />
                                                         <div className="flex-1 overflow-hidden">
                                                             <p className="font-mono text-xs truncate" title={asset.address}>{asset.address}</p>
                                                         </div>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="font-normal whitespace-nowrap">{asset.balance.toFixed(8)}</TableCell>
-                                                <TableCell className="font-normal whitespace-nowrap">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : '-'}</TableCell>
-                                                <TableCell className="font-normal whitespace-nowrap">{formatCurrencyFull(asset.marketValue)}</TableCell>
-                                                <TableCell className="font-normal whitespace-nowrap">{formatCurrencyFull(asset.cost)}</TableCell>
-                                                <TableCell className={cn("font-bold whitespace-nowrap", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                <TableCell className="font-normal whitespace-nowrap text-xs sm:text-sm">{asset.balance.toFixed(8)}</TableCell>
+                                                <TableCell className="hidden md:table-cell font-normal whitespace-nowrap">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : '-'}</TableCell>
+                                                <TableCell className="hidden sm:table-cell font-normal whitespace-nowrap text-xs sm:text-sm">{formatCurrencyFull(asset.marketValue)}</TableCell>
+                                                <TableCell className="hidden lg:table-cell font-normal whitespace-nowrap">{formatCurrencyFull(asset.cost)}</TableCell>
+                                                <TableCell className={cn("font-bold whitespace-nowrap text-xs sm:text-sm", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                     {formatCurrencyFull(asset.potentialGain)}
                                                 </TableCell>
-                                                <TableCell className="font-normal whitespace-nowrap pr-4 sm:pr-0">
+                                                <TableCell className="hidden xl:table-cell font-normal whitespace-nowrap pr-4 sm:pr-0">
                                                     {selectedAssets[asset.address] ? `${asset.balance.toFixed(8)} BTC` : '-'}
                                                 </TableCell>
                                             </TableRow>
