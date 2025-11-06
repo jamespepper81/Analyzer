@@ -559,12 +559,10 @@ export default function ReportPage() {
                                     />
                                 </div>
                             </CardContent>
-                            <CardContent className="px-2 pt-0 h-[300px] w-full">
+                            <CardContent className="px-2 sm:px-6 pt-0 h-[300px] sm:h-[400px] w-full">
                             <ChartContainer config={chartConfig} className="h-full w-full">
                                     <AreaChart 
                                         data={chartData}
-                                        width={1198}
-                                        height={300}
                                         onMouseMove={(e) => {
                                             if (e.activePayload && e.activePayload.length > 0) {
                                                 setActiveChartDataPoint(e.activePayload[0].payload);
@@ -586,12 +584,14 @@ export default function ReportPage() {
                                             tickLine={false}
                                             axisLine={false}
                                             tickMargin={8}
+                                            fontSize={12}
                                             tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                         />
                                         <YAxis
                                             tickLine={false}
                                             axisLine={false}
                                             tickMargin={8}
+                                            fontSize={12}
                                             tickFormatter={(value) => formatCurrency(value as number)}
                                         />
                                         <RechartsTooltip
@@ -692,7 +692,8 @@ export default function ReportPage() {
                                 </Tooltip>
                             </TooltipProvider>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-0 sm:px-6">
+                            <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -702,37 +703,37 @@ export default function ReportPage() {
                                         <SortableHeader<SortKey> sortKey="cost" label={`Cost (${currency})`} sortConfig={sortConfig} requestSort={requestSort} />
                                         <SortableHeader<SortKey> sortKey="potentialGain" label="Potential Gain" sortConfig={sortConfig} requestSort={requestSort} />
                                         <SortableHeader<SortKey> sortKey="roi" label="ROI" sortConfig={sortConfig} requestSort={requestSort} />
-                                        <TableHead className="text-right">Performance</TableHead>
+                                        <TableHead className="text-right pr-4 sm:pr-0">Performance</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {sortedHoldings.map(asset => {
                                         return (
                                         <TableRow key={asset.address}>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2 font-mono text-xs">
+                                            <TableCell className="pl-4 sm:pl-0">
+                                                <div className="flex items-center gap-2 font-mono text-xs min-w-[150px]">
                                                     <BitcoinIcon className="h-4 w-4 text-amber-500 shrink-0" />
                                                     <span className="truncate">{asset.address}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="whitespace-nowrap">
                                                 <p className="font-normal">{asset.balance.toFixed(8)}</p>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="whitespace-nowrap">
                                                 <p className="font-normal">{formatCurrencyFull(asset.marketValue)}</p>
                                                 <p className="text-xs text-muted-foreground font-normal">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : formatCurrencyFull(0)} / unit</p>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="whitespace-nowrap">
                                                 <p className="font-normal">{formatCurrencyFull(asset.cost)}</p>
                                                 <p className="text-xs text-muted-foreground font-normal">{asset.balance > 0 ? formatCurrencyFull(asset.cost / asset.balance) : formatCurrencyFull(0)} / unit</p>
                                             </TableCell>
-                                            <TableCell className={cn("font-bold", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                            <TableCell className={cn("font-bold whitespace-nowrap", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                 {formatCurrencyFull(asset.potentialGain)}
                                             </TableCell>
-                                            <TableCell className={cn("font-bold", asset.roi >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                            <TableCell className={cn("font-bold whitespace-nowrap", asset.roi >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                 {asset.roi.toFixed(2)}%
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right pr-4 sm:pr-0">
                                                 <div className="h-8 w-20 ml-auto flex items-center">
                                                     <ValueCostBar marketValue={asset.marketValue} cost={asset.cost} />
                                                 </div>
@@ -741,6 +742,7 @@ export default function ReportPage() {
                                     )})}
                                 </TableBody>
                             </Table>
+                            </div>
                         </CardContent>
                         </Card>
                 </TabsContent>
@@ -837,21 +839,21 @@ export default function ReportPage() {
                     </div>
                     <Card>
                         <CardHeader>
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex flex-col gap-4">
                                 <Input 
                                     placeholder="Find address" 
-                                    className="max-w-xs" 
+                                    className="w-full sm:max-w-xs" 
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                                     <div className="flex items-center space-x-2">
                                         <Switch id="unknown-price" checked={showZeroBalance} onCheckedChange={setShowZeroBalance} />
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Label htmlFor="unknown-price" className="text-sm flex items-center gap-1.5 cursor-help">
-                                                        Addresses with Zero Balance <Info className="h-3 w-3 text-muted-foreground"/>
+                                                    <Label htmlFor="unknown-price" className="text-xs sm:text-sm flex items-center gap-1.5 cursor-help">
+                                                        Zero Balance <Info className="h-3 w-3 text-muted-foreground"/>
                                                     </Label>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
@@ -865,8 +867,8 @@ export default function ReportPage() {
                                          <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Label htmlFor="positive-gains" className="text-sm flex items-center gap-1.5 cursor-help">
-                                                        Addresses with Positive Gains <Info className="h-3 w-3 text-muted-foreground"/>
+                                                    <Label htmlFor="positive-gains" className="text-xs sm:text-sm flex items-center gap-1.5 cursor-help">
+                                                        Positive Gains <Info className="h-3 w-3 text-muted-foreground"/>
                                                     </Label>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
@@ -878,7 +880,8 @@ export default function ReportPage() {
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-0 sm:px-6">
+                            <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -928,7 +931,7 @@ export default function ReportPage() {
                                     {sortedTaxHoldings.map(asset => {
                                         return (
                                             <TableRow key={asset.address}>
-                                                <TableCell>
+                                                <TableCell className="pl-4 sm:pl-0">
                                                     <Checkbox 
                                                         checked={selectedAssets[asset.address] || false}
                                                         onCheckedChange={(checked) => {
@@ -937,21 +940,21 @@ export default function ReportPage() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <BitcoinIcon className="h-6 w-6 text-amber-500 shrink-0" />
+                                                    <div className="flex items-center gap-2 min-w-[150px]">
+                                                        <BitcoinIcon className="h-4 w-4 sm:h-6 sm:w-6 text-amber-500 shrink-0" />
                                                         <div className="flex-1 overflow-hidden">
                                                             <p className="font-mono text-xs truncate" title={asset.address}>{asset.address}</p>
                                                         </div>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="font-normal">{asset.balance.toFixed(8)}</TableCell>
-                                                <TableCell className="font-normal">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : '-'}</TableCell>
-                                                <TableCell className="font-normal">{formatCurrencyFull(asset.marketValue)}</TableCell>
-                                                <TableCell className="font-normal">{formatCurrencyFull(asset.cost)}</TableCell>
-                                                <TableCell className={cn("font-bold", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                <TableCell className="font-normal whitespace-nowrap">{asset.balance.toFixed(8)}</TableCell>
+                                                <TableCell className="font-normal whitespace-nowrap">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : '-'}</TableCell>
+                                                <TableCell className="font-normal whitespace-nowrap">{formatCurrencyFull(asset.marketValue)}</TableCell>
+                                                <TableCell className="font-normal whitespace-nowrap">{formatCurrencyFull(asset.cost)}</TableCell>
+                                                <TableCell className={cn("font-bold whitespace-nowrap", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                     {formatCurrencyFull(asset.potentialGain)}
                                                 </TableCell>
-                                                <TableCell className="font-normal">
+                                                <TableCell className="font-normal whitespace-nowrap pr-4 sm:pr-0">
                                                     {selectedAssets[asset.address] ? `${asset.balance.toFixed(8)} BTC` : '-'}
                                                 </TableCell>
                                             </TableRow>
@@ -959,7 +962,8 @@ export default function ReportPage() {
                                     })}
                                 </TableBody>
                             </Table>
-                            <p className="text-xs text-muted-foreground mt-4 italic">Cost basis method: Shared Pool (UK) / Average Cost (US) - This is a simplified model.</p>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-4 px-4 sm:px-0 italic">Cost basis method: Shared Pool (UK) / Average Cost (US) - This is a simplified model.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
