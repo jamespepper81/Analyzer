@@ -49,7 +49,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
+            <CardTitle className="text-base font-medium">Current Balance</CardTitle>
             <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
                 <TooltipTrigger asChild>
                     <Card className="cursor-help">
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Security Score</CardTitle>
+                        <CardTitle className="text-base font-medium">Security Score</CardTitle>
                         <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
@@ -82,7 +82,7 @@ export default function DashboardPage() {
         </TooltipProvider>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Performance (30d)</CardTitle>
+            <CardTitle className="text-base font-medium">Performance (30d)</CardTitle>
             {data.performance.change30d >= 0 ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-rose-500" />}
           </CardHeader>
           <CardContent>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Activity (30d)</CardTitle>
+              <CardTitle className="text-base font-medium">Activity (30d)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 sm:space-y-3 pt-1">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -122,8 +122,8 @@ export default function DashboardPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg sm:text-xl">Recent Transactions</CardTitle>
-              <CardDescription className="font-normal text-sm">
+              <CardTitle>Recent Transactions</CardTitle>
+              <CardDescription className="font-normal">
                 A summary of your latest wallet activity.
               </CardDescription>
             </div>
@@ -171,8 +171,8 @@ export default function DashboardPage() {
                                 {isReceived ? <ArrowDownLeft className="h-3 w-3 sm:h-4 sm:w-4" /> : <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4" />}
                             </span>
                             <div className="min-w-0">
-                                <div className="font-medium text-sm sm:text-base">{tx.type}</div>
-                                <div className="text-xs sm:text-sm text-muted-foreground font-normal">
+                                <div className="font-medium text-base">{tx.type}</div>
+                                <div className="text-sm text-muted-foreground font-normal">
                                     {new Date(tx.date).toLocaleDateString()}
                                 </div>
                             </div>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell
                         className={cn(
-                        'text-right font-mono text-xs sm:text-sm whitespace-nowrap',
+                        'text-right font-mono text-sm whitespace-nowrap',
                         isReceived ? 'text-chart-positive' : 'text-chart-negative'
                         )}
                     >
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                         <Badge
                         variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'}
                         className={cn(
-                            'text-xs',
+                            'text-xs sm:text-sm',
                             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
                             tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
                         )}
