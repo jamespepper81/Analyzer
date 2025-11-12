@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // Development-specific optimizations
   ...(process.env.NODE_ENV === 'development' && {
     onDemandEntries: {
@@ -111,6 +108,8 @@ const nextConfig: NextConfig = {
     // Enable better chunk splitting
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
   },
+  // Acknowledge use of webpack config (Next.js 16 uses Turbopack by default)
+  turbopack: {},
   // Improve chunk loading reliability
   webpack: (config, { isServer, dev }) => {
     // Enable WebAssembly support
