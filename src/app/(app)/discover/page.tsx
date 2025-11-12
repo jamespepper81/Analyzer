@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExplorerNode } from '@/components/ui/explorer-node';
-import { Tabs, TabsList, TabsTrigger, TabsContent, DialogDescription } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Network, Loader2, AlertCircle, GitGraph, ListTree } from 'lucide-react';
 import { getAddressData, getTransactionData, getAddressStats } from '@/lib/blockchain-api';
 import type { AddressInfo, Transaction } from '@/lib/types';

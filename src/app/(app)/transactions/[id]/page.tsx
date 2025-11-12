@@ -8,7 +8,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
- DialogDescription,
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

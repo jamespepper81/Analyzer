@@ -43,7 +43,8 @@ export async function submitFeedback(input: FeedbackInput): Promise<FeedbackOutp
   const processedFeedback = await feedbackProcessingFlow(input);
   
   // Get IP address from headers
-  const ipAddress = headers().get('x-forwarded-for') ?? 'IP Not Found';
+  const headersList = await headers();
+  const ipAddress = headersList.get('x-forwarded-for') ?? 'IP Not Found';
   
   const feedbackWithIp: FeedbackOutput = {
       ...processedFeedback,

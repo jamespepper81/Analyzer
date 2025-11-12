@@ -19,7 +19,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Transaction } from '@/lib/types';
 import { cn } from '@/lib/utils';

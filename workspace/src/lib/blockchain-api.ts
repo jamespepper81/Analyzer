@@ -7,10 +7,10 @@ import type { Transaction, AddressInfo, Currency } from '@/lib/types';
 const BLOCKSTREAM_API_BASE = 'https://blockstream.info/api';
 
 export async function fetchJson(url: string, options?: RequestInit, revalidate?: number): Promise<any> {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Accept': 'application/json',
       'User-Agent': 'BitSleuth/1.0',
-      ...options?.headers,
+      ...(options?.headers as Record<string, string> || {}),
     };
   
     if (url.includes('api.coingecko.com')) {

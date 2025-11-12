@@ -124,9 +124,9 @@ const enhancedTransactionAnalysisFlow = ai.defineFlow(
       if (!transaction) {
         return {
           analysis: {
-            transactionType: 'unknown',
+            transactionType: 'unknown' as const,
             privacyScore: 0,
-            feeEfficiency: 'fair',
+            feeEfficiency: 'fair' as const,
             riskFactors: ['Transaction not found in wallet'],
             recommendations: ['Verify transaction ID'],
           },
@@ -151,9 +151,9 @@ const enhancedTransactionAnalysisFlow = ai.defineFlow(
       if (!output) {
         return {
           analysis: {
-            transactionType: 'unknown',
+            transactionType: 'unknown' as const,
             privacyScore: 0,
-            feeEfficiency: 'fair',
+            feeEfficiency: 'fair' as const,
             riskFactors: ['Analysis failed'],
             recommendations: ['Try again later'],
           },
@@ -167,9 +167,9 @@ const enhancedTransactionAnalysisFlow = ai.defineFlow(
       const errorMessage = e instanceof Error ? e.message : String(e);
       return {
         analysis: {
-          transactionType: 'unknown',
+          transactionType: 'unknown' as const,
           privacyScore: 0,
-          feeEfficiency: 'fair',
+          feeEfficiency: 'fair' as const,
           riskFactors: ['Analysis error'],
           recommendations: ['Contact support if issue persists'],
         },
@@ -251,9 +251,9 @@ const enhancedAddressAnalysisFlow = ai.defineFlow(
       if (!addressInfo) {
         return {
           analysis: {
-            addressType: 'p2pkh', // Default assumption
+            addressType: 'p2pkh' as const, // Default assumption
             reuseCount: 0,
-            privacyRisk: 'low',
+            privacyRisk: 'low' as const,
             associatedEntities: [],
           },
           summary: `The address \`${input.address}\` was not found in this wallet or has no transaction history.`
@@ -273,9 +273,9 @@ const enhancedAddressAnalysisFlow = ai.defineFlow(
       if (!output) {
         return {
           analysis: {
-            addressType: 'p2pkh',
+            addressType: 'p2pkh' as const,
             reuseCount: addressInfo.n_tx,
-            privacyRisk: 'medium',
+            privacyRisk: 'medium' as const,
             associatedEntities: [],
           },
           summary: 'Unable to analyze this address at this time.'
@@ -288,9 +288,9 @@ const enhancedAddressAnalysisFlow = ai.defineFlow(
       const errorMessage = e instanceof Error ? e.message : String(e);
       return {
         analysis: {
-          addressType: 'p2pkh',
+          addressType: 'p2pkh' as const,
           reuseCount: 0,
-          privacyRisk: 'low',
+          privacyRisk: 'low' as const,
           associatedEntities: [],
         },
         summary: `An error occurred while analyzing the address: ${errorMessage}`
