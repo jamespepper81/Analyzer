@@ -89,7 +89,7 @@ export default function DiscoverPage() {
   const [activeTab, setActiveTab] = useState('list');
 
   // State for the graph view
-  const fgRef = useRef<any>();
+  const fgRef = useRef<any>(null);
   const [graphData, setGraphData] = useState<{ nodes: GraphNode[], links: GraphLink[] }>({ nodes: [], links: [] });
   const [isLoadingGraph, setIsLoadingGraph] = useState(false);
   const [graphError, setGraphError] = useState<string | null>(null);
