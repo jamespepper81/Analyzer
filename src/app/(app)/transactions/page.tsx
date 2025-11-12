@@ -63,7 +63,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
             <div className="min-w-0">
               <div className="font-medium flex items-center gap-1.5 flex-wrap text-sm sm:text-base">
                 <span className="whitespace-nowrap">{isReceived ? 'Received from' : 'Sent to'}</span>
-                <span className="font-mono text-xs truncate max-w-[80px] sm:max-w-none">{addressToShow && addressToShow.length > 10 ? `${addressToShow.substring(0, 10)}...` : addressToShow}</span>
+                <span className="font-mono text-sm truncate max-w-[80px] sm:max-w-none">{addressToShow && addressToShow.length > 10 ? `${addressToShow.substring(0, 10)}...` : addressToShow}</span>
                 {uniqueLabels.map(label => (
                   <Badge key={label.address} variant="secondary" className="font-sans text-xs">
                     <Building className="mr-1 h-3 w-3 text-muted-foreground"/>
@@ -71,7 +71,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
                   </Badge>
                 ))}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 {new Date(tx.date).toLocaleString()}
               </div>
             </div>
@@ -80,7 +80,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
       </TableCell>
       <TableCell
         className={cn(
-          'text-right font-mono text-xs sm:text-sm whitespace-nowrap',
+          'text-right font-mono text-sm whitespace-nowrap',
           isReceived ? 'text-chart-positive' : 'text-chart-negative'
         )}
       >
@@ -98,7 +98,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
         <Badge
           variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'}
           className={cn(
-            'text-xs',
+            'text-xs sm:text-sm',
             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
             tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
           )}
@@ -184,8 +184,8 @@ export default function TransactionsPage() {
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-                <CardTitle className="text-lg sm:text-xl">Transaction History</CardTitle>
-                <CardDescription className="text-sm">
+                <CardTitle>Transaction History</CardTitle>
+                <CardDescription>
                 A complete list of all your wallet's transactions.
                 </CardDescription>
             </div>

@@ -47,7 +47,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
               {isReceived ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
             </span>
             <div>
-              <div className="font-medium">
+              <div className="font-medium text-base">
                 {tx.type}
               </div>
               <div className="text-sm text-muted-foreground">
@@ -59,7 +59,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
       </TableCell>
       <TableCell
         className={cn(
-          'text-right font-mono',
+          'text-right font-mono text-sm',
           isReceived ? 'text-chart-positive' : 'text-chart-negative'
         )}
       >
@@ -77,6 +77,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
         <Badge
           variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'}
           className={cn(
+            'text-sm',
             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
             tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
           )}
@@ -200,7 +201,7 @@ export default function AddressDetailsPage() {
                       <Bitcoin className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                      <CardTitle className="text-lg font-mono break-all">{address}</CardTitle>
+                      <CardTitle className="font-mono break-all">{address}</CardTitle>
                       <CardDescription>Bitcoin Address ({addressInfo.n_tx} transactions)</CardDescription>
                   </div>
               </div>
@@ -208,7 +209,7 @@ export default function AddressDetailsPage() {
           <CardContent>
               <Card>
                   <CardHeader>
-                      <CardTitle className="text-sm font-medium">Address Balance</CardTitle>
+                      <CardTitle className="text-base font-medium">Address Balance</CardTitle>
                   </CardHeader>
                   <CardContent>
                       <div className="text-3xl font-bold tracking-tighter">
