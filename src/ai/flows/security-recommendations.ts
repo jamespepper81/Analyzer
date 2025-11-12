@@ -100,7 +100,7 @@ const securityRecommendationsFlow = ai.defineFlow(
             return { recommendations: [{
                 title: 'Error',
                 description: 'The AI model did not return a response for security recommendations. It might be temporarily unavailable.',
-                level: 'Warning'
+                level: 'Warning' as const
             }]};
         }
         return output;
@@ -109,7 +109,7 @@ const securityRecommendationsFlow = ai.defineFlow(
         return { recommendations: [{
             title: 'Analysis Error',
             description: `An error occurred while generating security recommendations: ${e instanceof Error ? e.message : String(e)}`,
-            level: 'Warning'
+            level: 'Warning' as const
         }] };
     }
   }

@@ -225,7 +225,7 @@ export function AiChart({ chart }: { chart: any }) {
       case 'scatter':
         const { scatter } = config || {};
         // The data keys 'x' and 'y' are fixed by the prompt instructions
-        if (!data.every(d => d.hasOwnProperty('x') && d.hasOwnProperty('y'))) {
+        if (!data.every((d: any) => Object.prototype.hasOwnProperty.call(d, 'x') && Object.prototype.hasOwnProperty.call(d, 'y'))) {
             return <p className="text-destructive text-center">Invalid data for scatter chart. Must contain 'x' and 'y' keys.</p>;
         }
         return (

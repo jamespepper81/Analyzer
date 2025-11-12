@@ -163,7 +163,7 @@ export default function ChatPage() {
   // Speech Recognition setup effect
   useEffect(() => {
     // This runs on the client to check for browser support and set up the API.
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       setIsSpeechSupported(true);
       const recognition = new SpeechRecognition();

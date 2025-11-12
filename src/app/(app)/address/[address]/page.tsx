@@ -8,7 +8,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  DialogDescription,
   CardDescription,
 } from '@/components/ui/card';
 import {
@@ -120,7 +119,7 @@ export default function AddressDetailsPage() {
 
     if (addressInWallet) {
         // Address is part of the user's wallet
-        const txsForAddress = walletData.transactions.filter(tx => 
+        const txsForAddress = (walletData?.transactions || []).filter(tx => 
             tx.fromAddress.includes(address) || tx.toAddress.includes(address)
         );
         setPageData({

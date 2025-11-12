@@ -177,9 +177,9 @@ export const marketAnalysisTool = ai.defineTool(
     
     return {
       marketAnalysis: {
-        currentSentiment: 'neutral',
-        marketPhase: 'sideways',
-        fearGreedLevel: 'neutral',
+        currentSentiment: 'neutral' as const,
+        marketPhase: 'sideways' as const,
+        fearGreedLevel: 'neutral' as const,
         keyFactors: [
           'Bitcoin adoption continues to grow globally',
           'Institutional interest remains strong',
@@ -224,7 +224,7 @@ export const bitcoinNewsAnalysisTool = ai.defineTool(
         return {
           newsAnalysis: {
             headlines: [],
-            overallSentiment: 'neutral',
+            overallSentiment: 'neutral' as const,
             keyThemes: ['News service unavailable'],
             marketImplications: 'Unable to assess market implications due to news service issues.',
           },
@@ -295,7 +295,7 @@ export const bitcoinNewsAnalysisTool = ai.defineTool(
       return {
         newsAnalysis: {
           headlines: [],
-          overallSentiment: 'neutral',
+          overallSentiment: 'neutral' as const,
           keyThemes: ['Error fetching news'],
           marketImplications: 'Unable to assess market implications due to technical issues.',
         },
@@ -330,8 +330,8 @@ export const investmentInsightsTool = ai.defineTool(
     return {
       investmentAnalysis: {
         currentConditions: 'Bitcoin continues to mature as a digital asset with growing institutional adoption, improving regulatory clarity, and strong network fundamentals.',
-        riskAssessment: 'high',
-        timeHorizon: 'long-term',
+        riskAssessment: 'high' as const,
+        timeHorizon: 'long-term' as const,
         recommendations: [
           'Only invest what you can afford to lose',
           'Consider Bitcoin as part of a diversified portfolio',
@@ -1122,7 +1122,7 @@ ${input.question}
       const { output } = await ai.generate({
           system: systemPrompt,
           prompt: userPrompt,
-          history: history,
+          messages: history,
           output: {
               schema: WalletInsightsChatOutputSchema,
           },

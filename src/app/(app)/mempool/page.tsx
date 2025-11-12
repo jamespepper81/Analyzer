@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FullPageLoader, ErrorDisplay, DialogDescription } from '@/components/ui/loader';
+import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { getMempoolData } from '@/lib/mempool';
 import type { MempoolData, MempoolBlock } from '@/lib/types';
 import { Cpu, Hourglass, Layers, Zap } from 'lucide-react';
