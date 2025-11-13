@@ -149,7 +149,7 @@ export default function CoinControlPage() {
                          </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="border rounded-md">
+                        <div className="overflow-x-auto border rounded-md">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -160,9 +160,9 @@ export default function CoinControlPage() {
                                                 aria-label="Select all"
                                             />
                                         </TableHead>
-                                        <TableHead>Value</TableHead>
-                                        <TableHead>Address</TableHead>
-                                        <TableHead>Transaction Origin</TableHead>
+                                        <TableHead className="min-w-[140px]">Value</TableHead>
+                                        <TableHead className="min-w-[120px]">Address</TableHead>
+                                        <TableHead className="min-w-[120px]">Transaction Origin</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -177,20 +177,20 @@ export default function CoinControlPage() {
                                                         }}
                                                     />
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="font-mono text-sm">{(utxo.value / 1e8).toFixed(8)} BTC</div>
-                                                    <div className="text-xs text-muted-foreground">{formatCurrency((utxo.value / 1e8) * fiatPrice)}</div>
+                                                <TableCell className="min-w-[140px]">
+                                                    <div className="font-mono text-sm whitespace-nowrap">{(utxo.value / 1e8).toFixed(8)} BTC</div>
+                                                    <div className="text-xs text-muted-foreground whitespace-nowrap">{formatCurrency((utxo.value / 1e8) * fiatPrice)}</div>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs truncate">
+                                                <TableCell className="font-mono text-xs max-w-[150px]">
                                                     <TooltipProvider>
                                                         <Tooltip>
-                                                            <TooltipTrigger>{`${utxo.address.slice(0,10)}...${utxo.address.slice(-5)}`}</TooltipTrigger>
+                                                            <TooltipTrigger className="truncate block">{`${utxo.address.slice(0,10)}...${utxo.address.slice(-5)}`}</TooltipTrigger>
                                                             <TooltipContent>{utxo.address}</TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs">
-                                                     <a href={`/transactions/${utxo.txid}`} className="hover:underline" target="_blank" rel="noopener noreferrer">
+                                                <TableCell className="font-mono text-xs max-w-[150px]">
+                                                     <a href={`/transactions/${utxo.txid}`} className="hover:underline truncate block" target="_blank" rel="noopener noreferrer">
                                                         {`${utxo.txid.slice(0, 10)}...`}
                                                     </a>
                                                 </TableCell>
