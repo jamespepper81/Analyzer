@@ -152,23 +152,23 @@ export default function CoinControlPage() {
                         <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[50px]">
+                                        <TableHead className="w-12 px-2">
                                             <Checkbox
                                                 checked={selectAllCheckedState}
                                                 onCheckedChange={handleSelectAll}
                                                 aria-label="Select all"
                                             />
                                         </TableHead>
-                                        <TableHead>Value</TableHead>
-                                        <TableHead className="hidden sm:table-cell">Address</TableHead>
-                                        <TableHead>Transaction Origin</TableHead>
+                                        <TableHead className="px-2">Value</TableHead>
+                                        <TableHead className="hidden lg:table-cell px-2">Address</TableHead>
+                                        <TableHead className="px-2">Tx Origin</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {utxos.length > 0 ? (
                                         utxos.map(utxo => (
                                             <TableRow key={`${utxo.txid}:${utxo.vout}`}>
-                                                <TableCell>
+                                                <TableCell className="px-2 py-3">
                                                     <Checkbox
                                                         checked={selectedUtxos[`${utxo.txid}:${utxo.vout}`] || false}
                                                         onCheckedChange={(checked) => {
@@ -176,20 +176,20 @@ export default function CoinControlPage() {
                                                         }}
                                                     />
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="font-mono text-sm">{(utxo.value / 1e8).toFixed(8)} BTC</div>
-                                                    <div className="text-xs text-muted-foreground">{formatCurrency((utxo.value / 1e8) * fiatPrice)}</div>
+                                                <TableCell className="px-2 py-3">
+                                                    <div className="font-mono text-sm whitespace-nowrap">{(utxo.value / 1e8).toFixed(8)} BTC</div>
+                                                    <div className="text-xs text-muted-foreground whitespace-nowrap">{formatCurrency((utxo.value / 1e8) * fiatPrice)}</div>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs hidden sm:table-cell">
+                                                <TableCell className="font-mono text-xs hidden lg:table-cell px-2 py-3">
                                                     <TooltipProvider>
                                                         <Tooltip>
-                                                            <TooltipTrigger className="truncate block">{`${utxo.address.slice(0,10)}...${utxo.address.slice(-5)}`}</TooltipTrigger>
+                                                            <TooltipTrigger className="truncate block max-w-[140px]">{`${utxo.address.slice(0,10)}...${utxo.address.slice(-5)}`}</TooltipTrigger>
                                                             <TooltipContent>{utxo.address}</TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs">
-                                                     <a href={`/transactions/${utxo.txid}`} className="hover:underline truncate block" target="_blank" rel="noopener noreferrer">
+                                                <TableCell className="font-mono text-xs px-2 py-3">
+                                                     <a href={`/transactions/${utxo.txid}`} className="hover:underline truncate block max-w-[120px]" target="_blank" rel="noopener noreferrer">
                                                         {`${utxo.txid.slice(0, 10)}...`}
                                                     </a>
                                                 </TableCell>
