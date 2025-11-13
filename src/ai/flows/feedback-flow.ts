@@ -40,25 +40,42 @@ export type FeedbackOutput = z.infer<typeof FeedbackOutputSchema>;
  * @returns A structured version of the feedback including the user's IP address.
  */
 export async function submitFeedback(input: FeedbackInput): Promise<FeedbackOutput> {
-  const processedFeedback = await feedbackProcessingFlow(input);
-  
-  // Get IP address from headers
-  const headersList = await headers();
-  const ipAddress = headersList.get('x-forwarded-for') ?? 'IP Not Found';
-  
-  const feedbackWithIp: FeedbackOutput = {
-      ...processedFeedback,
-      ipAddress,
-  };
+  try {
+    const processedFeedback = await feedbackProcessingFlow(input);
+    
+    // Get IP address from headers
+    const headersList = await headers();
+    const ipAddress = headersList.get('x-forwarded-for') ?? 'IP Not Found';
+    
+    const feedbackWithIp: FeedbackOutput = {
+        ...processedFeedback,
+        ipAddress,
+    };
 
-  // The Google Sheets integration is optional. We'll try to save the data,
-  // but we won't block the user's experience if it fails.
-  appendToSheet(feedbackWithIp).catch(error => {
-    // Log the error for debugging purposes on the server, but don't re-throw it.
-    console.error("Optional: Failed to write to Google Sheet. This does not affect the user.", error);
-  });
-  
-  return feedbackWithIp;
+    // The Google Sheets integration is optional. We'll try to save the data,
+    // but we won't block the user's experience if it fails.
+    appendToSheet(feedbackWithIp).catch(error => {
+      // Log the error for debugging purposes on the server, but don't re-throw it.
+      console.error("Optional: Failed to write to Google Sheet. This does not affect the user.", error);
+    });
+    
+    return feedbackWithIp;
+  } catch (error) {
+    console.error('Error in submitFeedback:', error);
+    
+    // Return a fallback response if AI processing fails
+    const headersList = await headers();
+    const ipAddress = headersList.get('x-forwarded-for') ?? 'IP Not Found';
+    
+    // Fallback: return feedback without AI processing
+    return {
+      category: 'Other',
+      summary: input.feedback.substring(0, 100) + (input.feedback.length > 100 ? '...' : ''),
+      sentiment: 'Neutral',
+      originalFeedback: input.feedback,
+      ipAddress,
+    };
+  }
 }
 
 const feedbackProcessorPrompt = ai.definePrompt({
