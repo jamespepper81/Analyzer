@@ -78,28 +78,6 @@ export async function submitFeedback(input: FeedbackInput): Promise<FeedbackOutp
   }
 }
 
-const feedbackProcessorPrompt = ai.definePrompt({
-    name: 'feedbackProcessorPrompt',
-    input: { schema: FeedbackInputSchema },
-    output: { schema: ProcessedFeedbackSchema }, // The AI only generates the processed part
-    prompt: `You are an AI assistant responsible for processing user feedback for a Bitcoin wallet analysis app called BitSleuth.
-    
-    Your task is to analyze the user's feedback, categorize it, summarize it, and determine its sentiment.
-    
-    User's feedback:
-    "{{{feedback}}}"
-    
-    User context (current page, etc.):
-    "{{{userContext}}}"
-
-    Please process this feedback and return a structured JSON object with three fields: 'category', 'summary', and 'sentiment'.
-    - Classify the feedback into one of the following categories: 'Bug Report', 'Feature Request', 'UI/UX Feedback', 'General Praise', 'Other'.
-    - Write a one-sentence summary of the core issue or suggestion.
-    - Determine if the sentiment is 'Positive', 'Negative', 'Neutral'.
-    `,
-});
-
-
 const feedbackProcessingFlow = ai.defineFlow(
   {
     name: 'feedbackProcessingFlow',
@@ -111,7 +89,24 @@ const feedbackProcessingFlow = ai.defineFlow(
     }),
   },
   async (input) => {
-    const { output } = await feedbackProcessorPrompt(input);
+    // Use ai.generate() instead of definePrompt to avoid role issues with Gemini API
+    const { output } = await ai.generate({
+      prompt: `Analyze the following user feedback for a Bitcoin wallet analysis app called BitSleuth.
+
+User's feedback:
+"${input.feedback}"
+
+User context (current page, etc.):
+${input.userContext || 'Not provided'}
+
+Task: Process this feedback and return a structured JSON object with three fields: 'category', 'summary', and 'sentiment'.
+- Classify the feedback into one of the following categories: 'Bug Report', 'Feature Request', 'UI/UX Feedback', 'General Praise', 'Other'.
+- Write a one-sentence summary of the core issue or suggestion.
+- Determine if the sentiment is 'Positive', 'Negative', 'Neutral'.`,
+      output: {
+        schema: ProcessedFeedbackSchema,
+      },
+    });
     
     // Combine the AI's processed output with the original feedback
     return {

@@ -1077,10 +1077,17 @@ const walletInsightsChatFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const history = (input.history || []).map(item => ({
+      // Map and filter the history, removing system messages
+      let history = (input.history || []).map(item => ({
           role: item.role === 'assistant' ? 'model' : 'user',
           content: [{text: item.content}]
       })).filter(item => item.role !== 'system') as ({role: 'user' | 'model', content: {text: string}[]}[]);
+      
+      // Ensure the first message is always from the user (Gemini API requirement)
+      // If history starts with a model message, remove leading model messages
+      while (history.length > 0 && history[0].role === 'model') {
+        history = history.slice(1);
+      }
 
       const userPrompt = `
 Analyze my request based on our conversation history and respond appropriately to the question type.
