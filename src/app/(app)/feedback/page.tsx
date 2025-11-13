@@ -73,18 +73,67 @@ export default function FeedbackPage() {
             walletSummary,
         }
 
+      // Step 1: Process feedback with AI
       const result = await submitFeedback({
         feedback: data.feedback,
         userContext: JSON.stringify(context, null, 2)
       });
       
       track('submit_feedback', { category: result.category, sentiment: result.sentiment });
-      setIsSubmitted(true);
-      form.reset();
+
+      // Step 2: Submit to Google Sheets via API
+      try {
+        const apiResponse = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ feedbackData: result }),
+        });
+
+        const apiResult = await apiResponse.json();
+
+        if (apiResult.success) {
+          // Show success toast
+          toast({
+            title: 'Feedback submitted!',
+            description: apiResult.warning || 'Thank you for your feedback. We appreciate your input!',
+          });
+          
+          setIsSubmitted(true);
+          form.reset();
+        } else {
+          // Show error toast but still consider it submitted (AI processed it)
+          toast({
+            title: 'Feedback received',
+            description: 'Your feedback was processed but could not be saved to our records. We still appreciate your input!',
+            variant: 'destructive',
+          });
+          
+          setIsSubmitted(true);
+          form.reset();
+        }
+      } catch (apiErr: any) {
+        logger.error('API submission error:', apiErr);
+        // Even if API fails, feedback was processed by AI
+        toast({
+          title: 'Feedback received',
+          description: 'Your feedback was processed successfully.',
+        });
+        
+        setIsSubmitted(true);
+        form.reset();
+      }
 
     } catch (err: any) {
       logger.error('Feedback submission error:', err);
       setError(err.message || 'Sorry, something went wrong while submitting your feedback. Please try again later.');
+      
+      toast({
+        title: 'Submission failed',
+        description: err.message || 'Sorry, something went wrong. Please try again later.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }

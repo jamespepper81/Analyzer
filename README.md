@@ -73,7 +73,7 @@ COINGECKO_API_KEY=
 CRYPTOCOMPARE_API_KEY=
 
 # Feedback export to Google Sheets (optional)
-GOOGLE_SHEETS_ID=
+GOOGLE_SHEETS_ID_FEEDBACK=
 GOOGLE_SHEETS_CLIENT_EMAIL=
 # Wrap the private key in double quotes in .env; newlines may be escaped ("\n")
 GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"

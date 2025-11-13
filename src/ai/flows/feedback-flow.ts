@@ -55,8 +55,13 @@ export async function submitFeedback(input: FeedbackInput): Promise<FeedbackOutp
     // The Google Sheets integration is optional. We'll try to save the data,
     // but we won't block the user's experience if it fails.
     appendToSheet(feedbackWithIp).catch(error => {
-      // Log the error for debugging purposes on the server, but don't re-throw it.
-      console.error("Optional: Failed to write to Google Sheet. This does not affect the user.", error);
+      // This catch block should rarely be reached since appendToSheet handles its own errors.
+      // If we're here, there's an unexpected error (e.g., syntax error, network issue).
+      console.error('[Feedback Flow] Unexpected error calling appendToSheet:', {
+        errorName: error?.name,
+        errorMessage: error?.message
+      });
+      console.error('[Feedback Flow] Note: Feedback was successfully processed by AI. Only the Google Sheets export failed.');
     });
     
     return feedbackWithIp;
