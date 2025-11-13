@@ -94,7 +94,7 @@
     --brand: 33 93% 54%; /* Bitcoin orange #F7931A */
     /* Dark-mode specific accents */
     --treemap: 33 93% 54%; /* Bitcoin orange in dark mode */
-    --progress: 33 93% 54%; /* Bitcoin orange indicator */
+    --progress: 158 82% 42%; /* emerald for positive progress bars */
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 33 93% 54%;
