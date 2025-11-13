@@ -41,8 +41,8 @@
     --chart-5: 27 87% 67%;
     --chart-positive: 158 82% 42%;
     --chart-negative: 350 89% 60%;
-    --chart-received: 330 100% 71%;
-    --chart-sent: 150 100% 71%;
+    --chart-received: 350 89% 60%; /* Match chart-negative for consistency */
+    --chart-sent: 158 82% 42%; /* Match chart-positive for consistency */
     --chart-purple: 276 100% 68.4%; /* Purple for specific charts */
     /* Brand color used for logos/icons regardless of theme */
     --brand: 33 93% 54%; /* Bitcoin orange #F7931A */
@@ -86,10 +86,10 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --chart-positive: 140 80% 55%;
-    --chart-negative: 0 90% 60%;
-    --chart-received: 330 100% 71%;
-    --chart-sent: 150 100% 71%;
+    --chart-positive: 158 82% 42%; /* Match light mode for consistency */
+    --chart-negative: 350 89% 60%; /* Match light mode for consistency */
+    --chart-received: 350 89% 60%; /* Match chart-negative for consistency */
+    --chart-sent: 158 82% 42%; /* Match chart-positive for consistency */
     --chart-purple: 276 100% 68.4%; /* Purple for specific charts */
     --brand: 33 93% 54%; /* Bitcoin orange #F7931A */
     /* Dark-mode specific accents */
