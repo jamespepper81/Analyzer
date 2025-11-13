@@ -114,7 +114,7 @@ export default function CoinControlPage() {
     }
 
     return (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-4 sm:space-y-6 max-w-full">
             <Card>
                 <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">UTXO Distribution</CardTitle>
@@ -140,8 +140,8 @@ export default function CoinControlPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                <Card className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 max-w-full">
+                <Card className="lg:col-span-2 min-w-0">
                     <CardHeader>
                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg"><Coins className="h-4 w-4 sm:h-5 sm:w-5" /> All Wallet UTXOs ({utxos.length})</CardTitle>
                          <CardDescription className="text-sm">
@@ -160,9 +160,9 @@ export default function CoinControlPage() {
                                                 aria-label="Select all"
                                             />
                                         </TableHead>
-                                        <TableHead className="min-w-[140px]">Value</TableHead>
-                                        <TableHead className="min-w-[120px]">Address</TableHead>
-                                        <TableHead className="min-w-[120px]">Transaction Origin</TableHead>
+                                        <TableHead>Value</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Address</TableHead>
+                                        <TableHead>Transaction Origin</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -177,20 +177,20 @@ export default function CoinControlPage() {
                                                         }}
                                                     />
                                                 </TableCell>
-                                                <TableCell className="min-w-[140px]">
-                                                    <div className="font-mono text-sm whitespace-nowrap">{(utxo.value / 1e8).toFixed(8)} BTC</div>
-                                                    <div className="text-xs text-muted-foreground whitespace-nowrap">{formatCurrency((utxo.value / 1e8) * fiatPrice)}</div>
+                                                <TableCell>
+                                                    <div className="font-mono text-sm">{(utxo.value / 1e8).toFixed(8)} BTC</div>
+                                                    <div className="text-xs text-muted-foreground">{formatCurrency((utxo.value / 1e8) * fiatPrice)}</div>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs max-w-[150px]">
+                                                <TableCell className="font-mono text-xs hidden sm:table-cell">
                                                     <TooltipProvider>
                                                         <Tooltip>
-                                                            <TooltipTrigger className="truncate block">{`${utxo.address.slice(0,10)}...${utxo.address.slice(-5)}`}</TooltipTrigger>
+                                                            <TooltipTrigger className="truncate block max-w-[200px]">{`${utxo.address.slice(0,10)}...${utxo.address.slice(-5)}`}</TooltipTrigger>
                                                             <TooltipContent>{utxo.address}</TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs max-w-[150px]">
-                                                     <a href={`/transactions/${utxo.txid}`} className="hover:underline truncate block" target="_blank" rel="noopener noreferrer">
+                                                <TableCell className="font-mono text-xs">
+                                                     <a href={`/transactions/${utxo.txid}`} className="hover:underline truncate block max-w-[150px]" target="_blank" rel="noopener noreferrer">
                                                         {`${utxo.txid.slice(0, 10)}...`}
                                                     </a>
                                                 </TableCell>
@@ -208,8 +208,8 @@ export default function CoinControlPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <div className="space-y-6">
-                    <Card>
+                <div className="space-y-6 min-w-0">
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Puzzle className="h-5 w-5" />Consolidation Simulator</CardTitle>
                         </CardHeader>
@@ -255,7 +255,7 @@ export default function CoinControlPage() {
 
                         </CardContent>
                     </Card>
-                     <Card>
+                     <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Wallet Health</CardTitle>
                         </CardHeader>
