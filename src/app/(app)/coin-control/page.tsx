@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const DUST_THRESHOLD = 546; // satoshis
 const TRANSACTION_OVERHEAD = 10; // bytes
@@ -50,6 +51,7 @@ const CustomTreemapTooltip = ({ active, payload, currency, fiatPrice }: any) => 
 
 export default function CoinControlPage() {
     const { data, isLoading, error, activeXpub, fiatPrice, currency, recommendations } = useWallet();
+    const { state: sidebarState } = useSidebar(); // Force responsive widgets to remount when the sidebar width changes
     const [selectedUtxos, setSelectedUtxos] = useState<Record<string, boolean>>({});
     
     // Using recommended fee from wallet context if available, otherwise fallback
@@ -124,7 +126,7 @@ export default function CoinControlPage() {
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6 min-w-0">
                     <div className="w-full min-w-0">
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer key={`treemap-${sidebarState}`} width="100%" height={300}>
                               <Treemap
                                 data={treemapData}
                                 dataKey="value"
@@ -149,7 +151,7 @@ export default function CoinControlPage() {
                          </CardDescription>
                     </CardHeader>
                     <CardContent className="min-w-0 px-0 sm:px-6">
-                        <div className="overflow-x-auto rounded-md border">
+                        <div key={`utxo-table-${sidebarState}`} className="overflow-x-auto rounded-md border">
                             <Table className="min-w-[540px] table-fixed">
                                 <TableHeader>
                                     <TableRow>
