@@ -53,6 +53,14 @@ export default function CoinControlPage() {
     const { data, isLoading, error, activeXpub, fiatPrice, currency, recommendations } = useWallet();
     const { state: sidebarState } = useSidebar(); // Force responsive widgets to remount when the sidebar width changes
     const [selectedUtxos, setSelectedUtxos] = useState<Record<string, boolean>>({});
+
+    // Trigger a resize after sidebar transition to let ResponsiveContainer & tables recalc width.
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 120); // delay to allow layout animation to finish
+        return () => clearTimeout(timer);
+    }, [sidebarState]);
     
     // Using recommended fee from wallet context if available, otherwise fallback
     const recommendedFeeRate = recommendations.find(r => r.title.includes('fastestFee'))?.level ? parseFloat(recommendations.find(r => r.title.includes('fastestFee'))!.level) : (data?.averageFeeRate || 50);
