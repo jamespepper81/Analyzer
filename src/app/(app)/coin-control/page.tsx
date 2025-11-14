@@ -58,7 +58,7 @@ export default function CoinControlPage() {
     React.useEffect(() => {
         const timer = setTimeout(() => {
             window.dispatchEvent(new Event('resize'));
-        }, 120); // delay to allow layout animation to finish
+        }, 250); // delay to allow layout animation to finish (sidebar has 200ms transition)
         return () => clearTimeout(timer);
     }, [sidebarState]);
     
