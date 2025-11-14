@@ -295,7 +295,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { setOpenMobile, state: sidebarState, isMobile } = useSidebar();
   // Reserve horizontal space so content never sits behind the sidebar.
   const sidebarReservedWidth = !isMobile ? (sidebarState === 'expanded' ? 240 : 56) : 0;
-   const sidebarReservedWidth = !isMobile ? (sidebarState === 'expanded' ? 240 : 56) : 0;
   const { toast } = useToast();
   const [isNostrDialogOpen, setNostrDialogOpen] = React.useState(false);
   const [isEditProfileOpen, setEditProfileOpen] = React.useState(false);
