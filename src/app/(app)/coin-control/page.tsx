@@ -151,20 +151,20 @@ export default function CoinControlPage() {
                          </CardDescription>
                     </CardHeader>
                     <CardContent className="min-w-0 px-0 sm:px-6">
-                        <div key={`utxo-table-${sidebarState}`} className="overflow-x-auto rounded-md border">
-                            <Table className="min-w-[540px] table-fixed">
+                        <div key={`utxo-table-${sidebarState}`} className="overflow-x-auto rounded-md border min-w-0">
+                            <Table className="w-full table-auto">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-10 px-3">
+                                        <TableHead className="w-12 px-3">
                                             <Checkbox
                                                 checked={selectAllCheckedState}
                                                 onCheckedChange={handleSelectAll}
                                                 aria-label="Select all"
                                             />
                                         </TableHead>
-                                        <TableHead className="px-3 text-right w-32">Value</TableHead>
-                                        <TableHead className="hidden xl:table-cell px-3 w-64">Address</TableHead>
-                                        <TableHead className="px-3 w-40">Tx Origin</TableHead>
+                                        <TableHead className="px-3 text-right min-w-[140px]">Value</TableHead>
+                                        <TableHead className="hidden xl:table-cell px-3 min-w-[180px]">Address</TableHead>
+                                        <TableHead className="px-3 min-w-[120px]">Tx Origin</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
