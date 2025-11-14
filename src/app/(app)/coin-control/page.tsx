@@ -114,16 +114,16 @@ export default function CoinControlPage() {
     }
 
     return (
-        <div className="space-y-4 sm:space-y-6">
-            <Card>
+        <div className="flex flex-col gap-4 sm:gap-6">
+            <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">UTXO Distribution</CardTitle>
                     <CardDescription className="text-sm">
                         This treemap visualizes all the Unspent Transaction Outputs (UTXOs) in your wallet. Each rectangle represents a single UTXO, and its size corresponds to its value in satoshis.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="px-2 sm:px-6">
-                    <div className="w-full">
+                <CardContent className="px-2 sm:px-6 min-w-0">
+                    <div className="w-full min-w-0">
                         <ResponsiveContainer width="100%" height={300}>
                               <Treemap
                                 data={treemapData}
@@ -140,15 +140,15 @@ export default function CoinControlPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                <Card className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
+                <Card className="lg:col-span-2 min-w-0">
                     <CardHeader>
                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg"><Coins className="h-4 w-4 sm:h-5 sm:w-5" /> All Wallet UTXOs ({utxos.length})</CardTitle>
                          <CardDescription className="text-sm">
                             A list of all individual "coins" in your wallet. Select UTXOs to simulate a consolidation transaction.
                          </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="min-w-0">
                         <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -206,8 +206,8 @@ export default function CoinControlPage() {
                             </Table>
                     </CardContent>
                 </Card>
-                <div className="space-y-6">
-                    <Card>
+                <div className="space-y-6 min-w-0">
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Puzzle className="h-5 w-5" />Consolidation Simulator</CardTitle>
                         </CardHeader>
@@ -253,7 +253,7 @@ export default function CoinControlPage() {
 
                         </CardContent>
                     </Card>
-                     <Card>
+                     <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Wallet Health</CardTitle>
                         </CardHeader>
