@@ -87,12 +87,13 @@ const CustomTreemapTooltip = ({ active, payload, currency, fiatPrice }: any) => 
     return null;
 };
 
-const CustomTreemapContent = (props: any) => {
-    const { x, y, width, height, name, value, fill, root, depth, index } = props;
+const CustomTreemapContent = (props: any, selectedUtxos: Record<string, boolean>) => {
+    const { x, y, width, height, name, value, fill, root, depth, index, id } = props;
     // Only render if this is a leaf node (actual UTXO, not a parent container)
     if (depth !== 1) return null;
     
     const showLabel = width > 50 && height > 40;
+    const isSelected = selectedUtxos[id];
     
     return (
         <g>
@@ -103,27 +104,49 @@ const CustomTreemapContent = (props: any) => {
                 height={height}
                 style={{
                     fill,
-                    stroke: 'hsl(var(--border))',
-                    strokeWidth: 2,
-                    opacity: 0.9,
+                    stroke: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                    strokeWidth: isSelected ? 4 : 2,
+                    opacity: isSelected ? 1 : 0.9,
                     cursor: 'pointer',
                 }}
                 rx={4}
             />
+            {/* Selection highlight overlay */}
+            {isSelected && (
+                <rect
+                    x={x + 2}
+                    y={y + 2}
+                    width={width - 4}
+                    height={height - 4}
+                    style={{
+                        fill: 'none',
+                        stroke: 'hsl(var(--primary))',
+                        strokeWidth: 2,
+                        opacity: 0.6,
+                        pointerEvents: 'none',
+                    }}
+                    rx={3}
+                />
+            )}
             {showLabel && (
                 <text
                     x={x + width / 2}
                     y={y + height / 2}
                     textAnchor="middle"
                     fill="hsl(var(--background))"
-                    fontSize={11}
-                    fontWeight="600"
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    fontSize={13}
+                    fontWeight="700"
+                    style={{ 
+                        pointerEvents: 'none', 
+                        userSelect: 'none',
+                        textRendering: 'geometricPrecision',
+                        shapeRendering: 'crispEdges',
+                    }}
                 >
                     <tspan x={x + width / 2} dy="-0.3em">
                         {value.toLocaleString()}
                     </tspan>
-                    <tspan x={x + width / 2} dy="1.2em" fontSize={9} opacity={0.9}>
+                    <tspan x={x + width / 2} dy="1.3em" fontSize={11} fontWeight="600" opacity={0.95}>
                         sats
                     </tspan>
                 </text>
@@ -265,7 +288,7 @@ export default function CoinControlPage() {
                                 fill="hsl(var(--primary))"
                                 isAnimationActive={true}
                                 animationDuration={300}
-                                content={<CustomTreemapContent />}
+                                content={(props) => CustomTreemapContent(props, selectedUtxos)}
                                 onClick={(data: any) => {
                                     if (data && data.id) {
                                         setSelectedUtxos(prev => ({ 
