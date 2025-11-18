@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { AlertTriangle, Bitcoin, Coins, Info, Link as LinkIcon, Puzzle } from 'lucide-react';
-import { Treemap, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { Treemap, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 import type { UTXO } from '@/lib/types';
 import {
@@ -24,29 +24,135 @@ import {
 } from '@/components/ui/alert-dialog';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useSidebar } from '@/components/ui/sidebar';
+import { Badge } from '@/components/ui/badge';
 
 const DUST_THRESHOLD = 546; // satoshis
 const TRANSACTION_OVERHEAD = 10; // bytes
 const INPUT_SIZE = 68; // bytes, a conservative estimate for a P2WPKH input
 const OUTPUT_SIZE = 31; // bytes, for a P2WPKH output
 
+// UTXO size categories for visual differentiation
+const UTXO_CATEGORIES = {
+  DUST: { threshold: 546, label: 'Dust', color: 'hsl(var(--destructive))' },
+  TINY: { threshold: 10000, label: 'Tiny', color: 'hsl(var(--chart-5))' }, // < 0.0001 BTC
+  SMALL: { threshold: 100000, label: 'Small', color: 'hsl(var(--chart-4))' }, // < 0.001 BTC
+  MEDIUM: { threshold: 1000000, label: 'Medium', color: 'hsl(var(--chart-3))' }, // < 0.01 BTC
+  LARGE: { threshold: 10000000, label: 'Large', color: 'hsl(var(--chart-2))' }, // < 0.1 BTC
+  WHALE: { threshold: Infinity, label: 'Whale', color: 'hsl(var(--chart-1))' }, // >= 0.1 BTC
+};
+
+const getUtxoCategory = (value: number) => {
+  if (value < UTXO_CATEGORIES.DUST.threshold) return UTXO_CATEGORIES.DUST;
+  if (value < UTXO_CATEGORIES.TINY.threshold) return UTXO_CATEGORIES.TINY;
+  if (value < UTXO_CATEGORIES.SMALL.threshold) return UTXO_CATEGORIES.SMALL;
+  if (value < UTXO_CATEGORIES.MEDIUM.threshold) return UTXO_CATEGORIES.MEDIUM;
+  if (value < UTXO_CATEGORIES.LARGE.threshold) return UTXO_CATEGORIES.LARGE;
+  return UTXO_CATEGORIES.WHALE;
+};
+
 const CustomTreemapTooltip = ({ active, payload, currency, fiatPrice }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const valueBtc = data.value / 1e8;
       const valueFiat = valueBtc * fiatPrice;
+      const category = getUtxoCategory(data.value);
       return (
-        <div className="rounded-lg border bg-background p-2 shadow-sm text-xs">
-          <p className="font-bold mb-1">UTXO Details</p>
-          <p className="font-mono text-muted-foreground">{data.id.slice(0, 10)}...:{data.vout}</p>
-          <div className="mt-2 pt-2 border-t">
-            <p>Value: <span className="font-semibold">{data.value.toLocaleString()} sats</span></p>
-            <p className="text-muted-foreground">{new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valueFiat)}</p>
+        <div className="rounded-lg border bg-background p-3 shadow-lg text-xs max-w-[280px]">
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-bold">UTXO Details</p>
+            <Badge variant="outline" className="text-[10px] py-0" style={{ borderColor: category.color }}>
+              {category.label}
+            </Badge>
+          </div>
+          <p className="font-mono text-muted-foreground text-[10px] mb-2">{data.id.slice(0, 10)}...:{data.vout}</p>
+          <div className="space-y-1 pt-2 border-t">
+            <div className="flex justify-between items-baseline">
+              <span className="text-muted-foreground">Value:</span>
+              <span className="font-semibold font-mono">{data.value.toLocaleString()} sats</span>
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-muted-foreground">BTC:</span>
+              <span className="font-mono text-[10px]">{valueBtc.toFixed(8)} BTC</span>
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-muted-foreground">Fiat:</span>
+              <span className="font-semibold">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valueFiat)}
+              </span>
+            </div>
           </div>
         </div>
       );
     }
     return null;
+};
+
+const CustomTreemapContent = (props: any, selectedUtxos: Record<string, boolean>) => {
+    const { x, y, width, height, name, value, fill, root, depth, index, id } = props;
+    // Only render if this is a leaf node (actual UTXO, not a parent container)
+    if (depth !== 1) return null;
+    
+    const showLabel = width > 50 && height > 40;
+    const isSelected = selectedUtxos[id];
+    
+    return (
+        <g>
+            <rect
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                style={{
+                    fill,
+                    stroke: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                    strokeWidth: isSelected ? 4 : 2,
+                    opacity: isSelected ? 1 : 0.9,
+                    cursor: 'pointer',
+                }}
+                rx={4}
+            />
+            {/* Selection highlight overlay */}
+            {isSelected && (
+                <rect
+                    x={x + 2}
+                    y={y + 2}
+                    width={width - 4}
+                    height={height - 4}
+                    style={{
+                        fill: 'none',
+                        stroke: 'hsl(var(--primary))',
+                        strokeWidth: 2,
+                        opacity: 0.6,
+                        pointerEvents: 'none',
+                    }}
+                    rx={3}
+                />
+            )}
+            {showLabel && (
+                <text
+                    x={x + width / 2}
+                    y={y + height / 2}
+                    textAnchor="middle"
+                    fill="hsl(var(--background))"
+                    fontSize={13}
+                    fontWeight="700"
+                    style={{ 
+                        pointerEvents: 'none', 
+                        userSelect: 'none',
+                        textRendering: 'geometricPrecision',
+                        shapeRendering: 'crispEdges',
+                    }}
+                >
+                    <tspan x={x + width / 2} dy="-0.3em">
+                        {value.toLocaleString()}
+                    </tspan>
+                    <tspan x={x + width / 2} dy="1.3em" fontSize={11} fontWeight="600" opacity={0.95}>
+                        sats
+                    </tspan>
+                </text>
+            )}
+        </g>
+    );
 };
 
 export default function CoinControlPage() {
@@ -67,10 +173,34 @@ export default function CoinControlPage() {
 
     const treemapData = useMemo(() => {
         if (!data?.utxos) return [];
-        return data.utxos.map(utxo => ({
-          ...utxo,
-          id: `${utxo.txid}:${utxo.vout}`, // Create a stable, unique ID for each UTXO
-        }));
+        return data.utxos.map(utxo => {
+          const category = getUtxoCategory(utxo.value);
+          return {
+            ...utxo,
+            id: `${utxo.txid}:${utxo.vout}`, // Create a stable, unique ID for each UTXO
+            category: category.label,
+            fill: category.color,
+          };
+        });
+    }, [data?.utxos]);
+
+    const categoryStats = useMemo(() => {
+        if (!data?.utxos) return [];
+        const stats = new Map<string, { count: number; totalValue: number; color: string }>();
+        
+        data.utxos.forEach(utxo => {
+            const category = getUtxoCategory(utxo.value);
+            const existing = stats.get(category.label) || { count: 0, totalValue: 0, color: category.color };
+            stats.set(category.label, {
+                count: existing.count + 1,
+                totalValue: existing.totalValue + utxo.value,
+                color: category.color,
+            });
+        });
+        
+        return Array.from(stats.entries())
+            .map(([label, data]) => ({ label, ...data }))
+            .sort((a, b) => b.totalValue - a.totalValue);
     }, [data?.utxos]);
 
     const handleSelectAll = (checked: boolean | string) => {
@@ -129,23 +259,70 @@ export default function CoinControlPage() {
                 <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">UTXO Distribution</CardTitle>
                     <CardDescription className="text-sm">
-                        This treemap visualizes all the Unspent Transaction Outputs (UTXOs) in your wallet. Each rectangle represents a single UTXO, and its size corresponds to its value in satoshis.
+                        Visual representation of your wallet's UTXOs by size. Each block represents one UTXO, with size proportional to its value. Click to select UTXOs for consolidation.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="px-2 sm:px-6 min-w-0 w-full">
-                    <div className="w-full min-w-0 max-w-full">
-                        <ResponsiveContainer key={`treemap-${sidebarState}`} width="100%" height={300}>
+                <CardContent className="px-2 sm:px-6 min-w-0 w-full space-y-4">
+                    {/* Category Legend */}
+                    <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start text-xs">
+                        {categoryStats.map(stat => (
+                            <div key={stat.label} className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card">
+                                <div 
+                                    className="w-3 h-3 rounded-sm" 
+                                    style={{ backgroundColor: stat.color }}
+                                />
+                                <span className="font-medium">{stat.label}</span>
+                                <span className="text-muted-foreground">({stat.count})</span>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {/* Treemap Visualization */}
+                    <div className="w-full min-w-0 max-w-full rounded-lg border bg-card/50 p-2">
+                        <ResponsiveContainer key={`treemap-${sidebarState}`} width="100%" height={400}>
                               <Treemap
                                 data={treemapData}
                                 dataKey="value"
                                 nameKey="id"
-                                stroke="hsl(var(--background))"
-                                fill="hsl(var(--treemap))"
-                                isAnimationActive={false}
+                                stroke="hsl(var(--border))"
+                                fill="hsl(var(--primary))"
+                                isAnimationActive={true}
+                                animationDuration={300}
+                                content={(props) => CustomTreemapContent(props, selectedUtxos)}
+                                onClick={(data: any) => {
+                                    if (data && data.id) {
+                                        setSelectedUtxos(prev => ({ 
+                                            ...prev, 
+                                            [data.id]: !prev[data.id] 
+                                        }));
+                                    }
+                                }}
                              >
                                 <RechartsTooltip content={<CustomTreemapTooltip currency={currency} fiatPrice={fiatPrice} />} />
                              </Treemap>
                         </ResponsiveContainer>
+                    </div>
+                    
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="p-3 rounded-lg border bg-card text-center">
+                            <div className="text-muted-foreground mb-1">Total UTXOs</div>
+                            <div className="text-lg font-bold">{utxos.length}</div>
+                        </div>
+                        <div className="p-3 rounded-lg border bg-card text-center">
+                            <div className="text-muted-foreground mb-1">Selected</div>
+                            <div className="text-lg font-bold text-primary">{numSelected}</div>
+                        </div>
+                        <div className="p-3 rounded-lg border bg-card text-center">
+                            <div className="text-muted-foreground mb-1">Total Value</div>
+                            <div className="text-lg font-bold">{(data.balanceBTC || 0).toFixed(4)} BTC</div>
+                        </div>
+                        <div className="p-3 rounded-lg border bg-card text-center">
+                            <div className="text-muted-foreground mb-1">Avg UTXO</div>
+                            <div className="text-lg font-bold">
+                                {utxos.length > 0 ? ((data.balanceBTC || 0) / utxos.length * 100000000).toFixed(0) : '0'} sats
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
