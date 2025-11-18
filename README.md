@@ -130,6 +130,17 @@ Notes:
 - News panel shows configuration message: set `CRYPTOCOMPARE_API_KEY`.
 - Google Sheets export fails: verify sheet ID, service account email access, and private key formatting (preserve newlines).
 
+## AI Development Tools
+
+BitSleuth includes Model Context Protocol (MCP) support for enhanced AI-assisted development:
+
+- **next-devtools-mcp**: Real-time Next.js diagnostics, errors, and automated upgrades
+- **chrome-devtools-mcp**: Browser automation and testing with Playwright
+
+MCP enables AI coding assistants (GitHub Copilot, Claude, Cursor) to interact directly with your running Next.js app for context-aware suggestions and debugging.
+
+See [docs/MCP_SETUP.md](docs/MCP_SETUP.md) for configuration details and usage guide.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to BitSleuth, including documentation standards and file organization.
