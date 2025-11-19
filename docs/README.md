@@ -12,6 +12,11 @@ This directory contains all documentation files for the BitSleuth project.
 - **[SEO_STRATEGY.md](SEO_STRATEGY.md)** - SEO guidelines and optimization strategies
 - **[ai-training-content.md](ai-training-content.md)** - AI training content and SEO keywords
 
+### Development & Tools
+- **[MCP_SETUP.md](MCP_SETUP.md)** - Model Context Protocol setup and configuration guide
+- **[GOOGLE_SHEETS_TROUBLESHOOTING.md](GOOGLE_SHEETS_TROUBLESHOOTING.md)** - Google Sheets integration troubleshooting
+- **[TESTING_FEEDBACK_FIX.md](TESTING_FEEDBACK_FIX.md)** - Feedback system testing guide
+
 ## Documentation Guidelines
 
 **Important:** All markdown documentation files must be stored in this `docs/` folder.
