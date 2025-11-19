@@ -19,9 +19,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { DateRange } from 'react-day-picker';
 import { format, subMonths, startOfYear, endOfYear, getYear } from 'date-fns';
-import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, Bitcoin as BitcoinIcon, AlertTriangle, CheckCircle2, FileText, Download } from 'lucide-react';
+import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, Bitcoin as BitcoinIcon, AlertTriangle, CheckCircle2, FileText, Download, Package } from 'lucide-react';
 
 import { useWallet } from '@/contexts/wallet-context';
+import { 
+  exportFullTaxPackage,
+  downloadFile,
+  generateCapitalGainsCSV,
+  generateTaxSummaryCSV,
+  generateTextReport,
+  generateForm8949Data
+} from '@/lib/tax-export';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -782,16 +790,67 @@ export default function EnhancedReportPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <Button variant="outline">
+          <div className="flex flex-wrap gap-4">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                const timestamp = format(new Date(), 'yyyy-MM-dd');
+                const csv = generateCapitalGainsCSV(reportData.disposals, reportData.jurisdiction, currency);
+                downloadFile(csv, `bitcoin-capital-gains-${timestamp}.csv`, 'text/csv');
+              }}
+            >
               <FileText className="mr-2 h-4 w-4" />
-              Export to CSV
+              Export Capital Gains CSV
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                const timestamp = format(new Date(), 'yyyy-MM-dd');
+                const csv = generateTaxSummaryCSV(reportData, currency);
+                downloadFile(csv, `bitcoin-tax-summary-${timestamp}.csv`, 'text/csv');
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Export Summary CSV
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                const timestamp = format(new Date(), 'yyyy-MM-dd');
+                const text = generateTextReport(reportData, currency, currencySymbol);
+                downloadFile(text, `bitcoin-tax-report-${timestamp}.txt`, 'text/plain');
+              }}
+            >
               <Download className="mr-2 h-4 w-4" />
-              Download PDF Report
+              Download Text Report
+            </Button>
+            {reportData.jurisdiction === 'US' && (
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  const timestamp = format(new Date(), 'yyyy-MM-dd');
+                  const form8949 = generateForm8949Data(reportData.disposals, currency);
+                  downloadFile(form8949.shortTerm, `form-8949-short-term-${timestamp}.csv`, 'text/csv');
+                  setTimeout(() => {
+                    downloadFile(form8949.longTerm, `form-8949-long-term-${timestamp}.csv`, 'text/csv');
+                  }, 100);
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Export Form 8949 (US)
+              </Button>
+            )}
+            <Button 
+              onClick={() => exportFullTaxPackage(reportData, currency, currencySymbol)}
+            >
+              <Package className="mr-2 h-4 w-4" />
+              Download Complete Package
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            The complete package includes: tax summary, capital gains, income events, tax lots, text report
+            {reportData.jurisdiction === 'US' && ', and IRS Form 8949 data'}.
+          </p>
         </CardContent>
       </Card>
     </div>
