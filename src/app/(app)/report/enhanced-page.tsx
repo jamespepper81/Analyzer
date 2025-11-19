@@ -51,6 +51,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { TaxHelpDialog } from '@/components/tax-help-dialog';
 
 const ACCOUNTING_METHODS: { value: AccountingMethod; label: string; description: string }[] = [
   { value: 'FIFO', label: 'FIFO', description: 'First In, First Out - Default for US. Sells oldest assets first.' },
@@ -232,8 +233,13 @@ export default function EnhancedReportPage() {
       {/* Configuration Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Tax Report Configuration</CardTitle>
-          <CardDescription>Select your accounting method and tax jurisdiction</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Tax Report Configuration</CardTitle>
+              <CardDescription>Select your accounting method and tax jurisdiction</CardDescription>
+            </div>
+            <TaxHelpDialog />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
