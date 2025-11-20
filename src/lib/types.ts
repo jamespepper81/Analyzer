@@ -268,3 +268,97 @@ export type TaxReportOutput = {
     }>;
     holdings: Array<Holding>;
   };
+
+export type TaxCategory = 'SHORT_TERM' | 'LONG_TERM' | 'INCOME' | 'NON_TAXABLE';
+export type AccountingMethod = 'FIFO' | 'LIFO' | 'HIFO' | 'SPEC_ID' | 'AVG_COST' | 'SHARED_POOL';
+export type Jurisdiction = 'US' | 'UK' | 'CANADA' | 'AUSTRALIA' | 'GERMANY' | 'OTHER';
+
+export type EnhancedHolding = Holding & {
+  taxCategory?: TaxCategory;
+  holdingPeriodDays?: number;
+};
+
+export type TaxLotDetail = {
+  id: string;
+  txid: string;
+  date: string;
+  amount: number;
+  costBasis: number;
+  costPerUnit: number;
+  remaining: number;
+  currentValue: number;
+  unrealizedGain: number;
+  taxCategory: TaxCategory;
+  holdingPeriodDays: number;
+  address?: string;
+};
+
+export type DisposalDetail = {
+  txid: string;
+  date: string;
+  amount: number;
+  proceeds: number;
+  costBasis: number;
+  realizedGain: number;
+  type: 'SALE' | 'TRADE' | 'SPEND' | 'GIFT';
+  lots: Array<{
+    lotId: string;
+    amount: number;
+    costBasis: number;
+    acquisitionDate: string;
+    holdingPeriodDays: number;
+    taxCategory: TaxCategory;
+  }>;
+};
+
+export type IncomeDetail = {
+  txid: string;
+  date: string;
+  amount: number;
+  fairMarketValue: number;
+  type: 'MINING' | 'STAKING' | 'AIRDROP' | 'GIFT' | 'FORK' | 'INTEREST' | 'OTHER';
+};
+
+export type EnhancedTaxReportOutput = {
+  summary: {
+    startDate: string;
+    endDate: string;
+    startValue: number;
+    endValue: number;
+    totalValueChange: number;
+    totalValueChangePercentage: number;
+    costBasis: number;
+    unrealizedGains: number;
+    inflow: number;
+    outflow: number;
+    tradingFees: number;
+    realizedGains: number;
+    shortTermGains: number;
+    longTermGains: number;
+    totalCapitalGains: number;
+    ordinaryIncome: number;
+    deductibleFees: number;
+    harvestableShortTermLosses: number;
+    harvestableLongTermLosses: number;
+  };
+  portfolioHistory: Array<{
+    date: string;
+    totalValue: number;
+    costBasis: number;
+  }>;
+  holdings: Array<EnhancedHolding>;
+  disposals: Array<DisposalDetail>;
+  income: Array<IncomeDetail>;
+  lots: Array<TaxLotDetail>;
+  accountingMethod: string;
+  jurisdiction: string;
+  jurisdictionRules: {
+    longTermHoldingPeriodDays: number;
+    washSalePeriodDays?: number;
+    sameDayMatching?: boolean;
+    bedAndBreakfastDays?: number;
+    superficialLossDays?: number;
+    capitalGainsDiscount?: number;
+    taxFreeThreshold?: number;
+  };
+};
