@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DateRange } from 'react-day-picker';
 import { format, subMonths, startOfYear, endOfYear, getYear } from 'date-fns';
-import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, Bitcoin as BitcoinIcon, AlertTriangle, CheckCircle2, FileText, Download, Package } from 'lucide-react';
+import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, Bitcoin as BitcoinIcon, AlertTriangle, CheckCircle2, FileText, Download, Package, FileOutput, Edit2 } from 'lucide-react';
 
 import { useWallet } from '@/contexts/wallet-context';
 import { 
@@ -52,6 +52,9 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { TaxHelpDialog } from '@/components/tax-help-dialog';
+import { TransactionCategoryDialog } from '@/components/transaction-category-dialog';
+import { UTXOLotTracking } from '@/components/utxo-lot-tracking';
+import { generateTaxReportPDF, generateForm8949PDF, downloadPDF } from '@/lib/pdf-export';
 
 const ACCOUNTING_METHODS: { value: AccountingMethod; label: string; description: string }[] = [
   { value: 'FIFO', label: 'FIFO', description: 'First In, First Out - Default for US. Sells oldest assets first.' },
@@ -108,6 +111,17 @@ export default function EnhancedReportPage() {
 
   const [accountingMethod, setAccountingMethod] = useState<AccountingMethod>('FIFO');
   const [jurisdiction, setJurisdiction] = useState<Jurisdiction>('US');
+  
+  // Transaction category editing
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<{
+    txid: string;
+    date: string;
+    amount: number;
+    type: 'disposal' | 'income';
+    currentCategory?: any;
+  } | null>(null);
+  const [transactionCategories, setTransactionCategories] = useState<Record<string, any>>({});
 
   const [date, setDate] = useState<DateRange | undefined>(() => {
     const endDate = new Date();
@@ -164,6 +178,51 @@ export default function EnhancedReportPage() {
       generateReport();
     }
   }, [walletData, date, accountingMethod, jurisdiction, generateReport]);
+
+  const handleEditTransactionCategory = (txid: string, type: 'disposal' | 'income', currentCategory?: any) => {
+    if (!reportData) return;
+    
+    const transaction = type === 'disposal' 
+      ? reportData.disposals.find(d => d.txid === txid)
+      : reportData.income.find(i => i.txid === txid);
+    
+    if (transaction) {
+      setSelectedTransaction({
+        txid: transaction.txid,
+        date: transaction.date,
+        amount: transaction.amount,
+        type,
+        currentCategory: currentCategory || (type === 'disposal' ? (transaction as any).type : (transaction as any).type),
+      });
+      setCategoryDialogOpen(true);
+    }
+  };
+
+  const handleSaveTransactionCategory = (txid: string, newCategory: any) => {
+    setTransactionCategories(prev => ({
+      ...prev,
+      [txid]: newCategory,
+    }));
+    // In a full implementation, this would trigger a report regeneration with the new category
+    // For now, we just store it in state
+  };
+
+  const handleGeneratePDF = () => {
+    if (!reportData) return;
+    
+    const pdf = generateTaxReportPDF(reportData, currency, currencySymbol);
+    const timestamp = format(new Date(), 'yyyy-MM-dd');
+    downloadPDF(pdf, `bitcoin-tax-report-${timestamp}.pdf`);
+  };
+
+  const handleGenerateForm8949PDF = () => {
+    if (!reportData) return;
+    
+    const taxYear = getYear(new Date(reportData.summary.endDate));
+    const pdf = generateForm8949PDF(reportData.disposals, currency, currencySymbol, taxYear);
+    const timestamp = format(new Date(), 'yyyy-MM-dd');
+    downloadPDF(pdf, `form-8949-${taxYear}-${timestamp}.pdf`);
+  };
 
   const setDatePreset = (preset: 'thisYear' | 'lastYear' | 'last12Months' | number) => {
     const today = new Date();
@@ -345,11 +404,12 @@ export default function EnhancedReportPage() {
       </Alert>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="capital-gains">Capital Gains</TabsTrigger>
           <TabsTrigger value="lots">Tax Lots</TabsTrigger>
-          <TabsTrigger value="optimization">Tax Optimization</TabsTrigger>
+          <TabsTrigger value="utxo-tracking">UTXO Tracking</TabsTrigger>
+          <TabsTrigger value="optimization">Optimization</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -518,12 +578,14 @@ export default function EnhancedReportPage() {
                         <TableHead className="text-right">Cost Basis</TableHead>
                         <TableHead className="text-right">Gain/Loss</TableHead>
                         <TableHead>Term</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {reportData.disposals.map((disposal, idx) => {
                         const avgTerm = disposal.lots.reduce((sum, lot) => sum + lot.holdingPeriodDays, 0) / disposal.lots.length;
                         const isLongTerm = avgTerm >= reportData.jurisdictionRules.longTermHoldingPeriodDays;
+                        const currentCategory = transactionCategories[disposal.txid] || disposal.type;
                         
                         return (
                           <TableRow key={idx}>
@@ -531,7 +593,7 @@ export default function EnhancedReportPage() {
                               {format(new Date(disposal.date), 'MMM dd, yyyy')}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{disposal.type}</Badge>
+                              <Badge variant="outline">{currentCategory}</Badge>
                             </TableCell>
                             <TableCell className="text-right font-mono">{disposal.amount.toFixed(8)}</TableCell>
                             <TableCell className="text-right">{formatCurrencyFull(disposal.proceeds)}</TableCell>
@@ -543,6 +605,15 @@ export default function EnhancedReportPage() {
                               <Badge variant={isLongTerm ? "default" : "secondary"}>
                                 {isLongTerm ? 'Long' : 'Short'}
                               </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditTransactionCategory(disposal.txid, 'disposal', disposal.type)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         );
@@ -571,21 +642,34 @@ export default function EnhancedReportPage() {
                         <TableHead>Type</TableHead>
                         <TableHead className="text-right">Amount (BTC)</TableHead>
                         <TableHead className="text-right">Fair Market Value</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {reportData.income.map((income, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell className="font-medium">
-                            {format(new Date(income.date), 'MMM dd, yyyy')}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{income.type}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-mono">{income.amount.toFixed(8)}</TableCell>
-                          <TableCell className="text-right">{formatCurrencyFull(income.fairMarketValue)}</TableCell>
-                        </TableRow>
-                      ))}
+                      {reportData.income.map((income, idx) => {
+                        const currentCategory = transactionCategories[income.txid] || income.type;
+                        return (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">
+                              {format(new Date(income.date), 'MMM dd, yyyy')}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{currentCategory}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{income.amount.toFixed(8)}</TableCell>
+                            <TableCell className="text-right">{formatCurrencyFull(income.fairMarketValue)}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditTransactionCategory(income.txid, 'income', income.type)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -646,6 +730,17 @@ export default function EnhancedReportPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* UTXO Tracking Tab */}
+        <TabsContent value="utxo-tracking" className="space-y-6 mt-6">
+          <UTXOLotTracking
+            lots={reportData.lots}
+            disposals={reportData.disposals}
+            formatCurrency={formatCurrencyFull}
+            currentPrice={walletData?.btcPrice || 0}
+            jurisdictionRules={reportData.jurisdictionRules}
+          />
         </TabsContent>
 
         {/* Tax Optimization Tab */}
@@ -797,6 +892,24 @@ export default function EnhancedReportPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
+            {/* PDF Exports (New) */}
+            <Button 
+              onClick={handleGeneratePDF}
+            >
+              <FileOutput className="mr-2 h-4 w-4" />
+              Generate PDF Report
+            </Button>
+            {reportData.jurisdiction === 'US' && (
+              <Button 
+                variant="outline"
+                onClick={handleGenerateForm8949PDF}
+              >
+                <FileOutput className="mr-2 h-4 w-4" />
+                Generate Form 8949 PDF
+              </Button>
+            )}
+            
+            {/* CSV Exports */}
             <Button 
               variant="outline"
               onClick={() => {
@@ -843,10 +956,11 @@ export default function EnhancedReportPage() {
                 }}
               >
                 <FileText className="mr-2 h-4 w-4" />
-                Export Form 8949 (US)
+                Export Form 8949 CSV
               </Button>
             )}
             <Button 
+              variant="outline"
               onClick={() => exportFullTaxPackage(reportData, currency, currencySymbol)}
             >
               <Package className="mr-2 h-4 w-4" />
@@ -859,6 +973,14 @@ export default function EnhancedReportPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Transaction Category Dialog */}
+      <TransactionCategoryDialog
+        open={categoryDialogOpen}
+        onOpenChange={setCategoryDialogOpen}
+        transaction={selectedTransaction}
+        onSave={handleSaveTransactionCategory}
+      />
     </div>
   );
 }
