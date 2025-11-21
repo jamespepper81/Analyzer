@@ -15,7 +15,7 @@ export default function ReportWrapper() {
     <div className="space-y-6">
       <Alert className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20">
         <Sparkles className="h-4 w-4 text-amber-500" />
-        <AlertTitle>Enhanced Tax Reporting - Beta</AlertTitle>
+        <AlertTitle>Enhanced Tax Reporting</AlertTitle>
         <AlertDescription>
           Professional-grade Bitcoin tax reporting with multiple accounting methods and jurisdiction-specific rules.
           This tool helps you understand your tax obligations and optimize your tax strategy.

@@ -50,7 +50,7 @@ const navItems = [
   { href: '/transactions', icon: ArrowLeftRight, label: 'Transactions', description: "View a complete list of all your incoming and outgoing transactions." },
   { href: '/analysis', icon: LineChart, label: 'Analysis', description: "Visualize your wallet's data with charts for balance history, transaction volume, and more." },
   { href: '/security', icon: Shield, label: 'Security', description: "Analyze your wallet's privacy practices, see security recommendations, and check for address reuse." },
-  { href: '/report', icon: FileSpreadsheet, label: 'Report (Beta)', description: "Generate financial reports for tax summary, profit & loss, and performance analysis." },
+  { href: '/report', icon: FileSpreadsheet, label: 'Report', description: "Generate financial reports for tax summary, profit & loss, and performance analysis." },
   { href: '/coin-control', icon: Coins, label: 'Coin Control', description: "Manage your UTXOs to optimize transaction fees and privacy." },
   { href: '/discover', icon: Compass, label: 'Discover', description: "Explore any Bitcoin address or transaction on the blockchain with an interactive graph." },
   { href: '/mempool', icon: Layers, label: 'Mempool', description: "See real-time data from the Bitcoin mempool, including fees and pending blocks." },
