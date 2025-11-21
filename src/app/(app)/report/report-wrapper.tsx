@@ -22,6 +22,16 @@ export default function ReportWrapper() {
         </AlertDescription>
       </Alert>
 
+      <Alert variant="default" className="border-blue-500/20 bg-blue-500/5">
+        <AlertTitle className="text-sm font-semibold">Tax Professional Disclaimer</AlertTitle>
+        <AlertDescription className="text-xs">
+          This tool provides informational tax calculations only. It is NOT tax, legal, or financial advice.
+          Tax laws are complex and vary by jurisdiction. Always consult a qualified tax professional or CPA
+          before making tax-related decisions or filing returns. BitSleuth is not responsible for any errors,
+          omissions, or tax consequences resulting from use of this tool.
+        </AlertDescription>
+      </Alert>
+
       <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'enhanced' | 'basic')} className="w-full">
         <TabsList>
           <TabsTrigger value="enhanced">

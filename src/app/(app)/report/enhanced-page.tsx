@@ -392,6 +392,59 @@ export default function EnhancedReportPage() {
         </CardContent>
       </Card>
 
+      {/* Calculation Methodology */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            Calculation Methodology
+          </CardTitle>
+          <CardDescription>Understanding how your tax numbers are calculated</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div>
+            <p className="font-semibold mb-1">Cost Basis Calculation:</p>
+            <p className="text-muted-foreground">
+              Acquisition fees are added to cost basis. For {(() => {
+                const methodInfo: Record<AccountingMethod, { name: string; description: string }> = {
+                  'FIFO': { name: 'FIFO (First In, First Out)', description: ' oldest lots are sold first.' },
+                  'LIFO': { name: 'LIFO (Last In, First Out)', description: ' newest lots are sold first.' },
+                  'HIFO': { name: 'HIFO (Highest In, First Out)', description: ' highest cost lots are sold first to minimize gains.' },
+                  'AVG_COST': { name: 'Average Cost', description: ' weighted average cost is used across all lots.' },
+                  'SHARED_POOL': { name: 'Shared Pool (UK Section 104)', description: ' weighted average cost is used across all lots.' },
+                  'SPEC_ID': { name: 'Specific ID', description: ' you specify which lots to sell.' },
+                };
+                const info = methodInfo[accountingMethod];
+                return `${info.name},${info.description}`;
+              })()}
+            </p>
+          </div>
+          <div>
+            <p className="font-semibold mb-1">Capital Gains Formula:</p>
+            <p className="text-muted-foreground">
+              Proceeds (sale price minus disposal fees) − Cost Basis = Capital Gain/Loss
+            </p>
+          </div>
+          <div>
+            <p className="font-semibold mb-1">Holding Period Classification:</p>
+            <p className="text-muted-foreground">
+              {jurisdiction === 'US' && 'Assets held >365 days qualify for long-term capital gains treatment with preferential tax rates.'}
+              {jurisdiction === 'UK' && 'UK uses Section 104 pooling with same-day and 30-day matching rules. No distinction between short/long-term.'}
+              {jurisdiction === 'CANADA' && 'Canada applies 50% inclusion rate to all capital gains. Superficial loss rule applies within 30 days.'}
+              {jurisdiction === 'AUSTRALIA' && 'Assets held >365 days qualify for 50% CGT discount.'}
+              {jurisdiction === 'GERMANY' && 'Assets held >365 days are tax-free if gains are below the exemption threshold.'}
+              {jurisdiction === 'OTHER' && 'Generic rules applied. Consult local tax professional for jurisdiction-specific guidance.'}
+            </p>
+          </div>
+          <div>
+            <p className="font-semibold mb-1">Fee Treatment:</p>
+            <p className="text-muted-foreground">
+              Purchase fees increase your cost basis (reducing future gains). Sale fees reduce your proceeds (increasing losses or reducing gains).
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Disclaimer */}
       <Alert>
         <AlertTriangle className="h-4 w-4" />

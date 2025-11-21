@@ -21,6 +21,11 @@ export interface TaxLot {
   address?: string;
 }
 
+/** Augmented tax lot with average cost override for AVG_COST and SHARED_POOL methods */
+export interface AugmentedTaxLot extends TaxLot {
+  _avgCostOverride?: number;
+}
+
 export interface DisposalEvent {
   txid: string;
   date: Date;
@@ -169,7 +174,7 @@ export class TaxCalculator {
     const lotsUsed: DisposalEvent['lots'] = [];
 
     for (const match of matchedLots) {
-      const lot = match.lot as TaxLot & { _avgCostOverride?: number };
+      const lot = match.lot as AugmentedTaxLot;
       const amountFromLot = match.amount;
       // Use average cost override if present (for AVG_COST/SHARED_POOL methods)
       const effectiveCostPerUnit = lot._avgCostOverride || lot.costPerUnit;
@@ -279,10 +284,10 @@ export class TaxCalculator {
             if (remaining <= 0) break;
             const amount = Math.min(remaining, lot.remaining);
             // Store average cost as metadata that addDisposal will use
-            const lotWithAvgCost = { 
+            const lotWithAvgCost: AugmentedTaxLot = { 
               ...lot, 
               _avgCostOverride: avgCost 
-            } as TaxLot & { _avgCostOverride?: number };
+            };
             matches.push({ lot: lotWithAvgCost, amount });
             remaining -= amount;
           }
