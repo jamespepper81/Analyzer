@@ -103,6 +103,24 @@ const StatCard = ({ title, value, subtitle, tooltip, variant = 'default' }: {
   </TooltipProvider>
 );
 
+const CustomPortfolioTooltip = ({ active, payload, label, formatCurrencyFull }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    if (!data) return null;
+    const unrealizedGains = data.totalValue - data.costBasis;
+    const unrealizedPercent = data.costBasis > 0 ? (unrealizedGains / data.costBasis) * 100 : 0;
+    return (
+      <div className="rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur-sm text-sm">
+        <p className="font-medium mb-1">{format(new Date(data.date), 'dd MMM yyyy')}</p>
+        <p>Worth: <span className="font-bold">{formatCurrencyFull(data.totalValue)}</span></p>
+        <p>Cost basis: <span className="font-bold">{formatCurrencyFull(data.costBasis)}</span></p>
+        <p>Unrealized: <span className={cn("font-bold", unrealizedGains >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatCurrencyFull(unrealizedGains)} ({unrealizedPercent.toFixed(1)}%)</span></p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function EnhancedReportPage() {
   const { data: walletData, isLoading: isWalletLoading, error: walletError, activeXpub: xpub, currency, currencySymbol } = useWallet();
   const [reportData, setReportData] = useState<EnhancedTaxReportOutput | null>(null);
@@ -589,7 +607,10 @@ export default function EnhancedReportPage() {
                     fontSize={12}
                     tickFormatter={(value) => formatCurrency(value as number)}
                   />
-                  <RechartsTooltip />
+                  <RechartsTooltip
+                    cursor={false}
+                    content={<CustomPortfolioTooltip formatCurrencyFull={formatCurrencyFull} />}
+                  />
                   <Area
                     dataKey="totalValue"
                     type="monotone"
