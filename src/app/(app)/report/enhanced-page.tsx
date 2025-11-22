@@ -174,6 +174,8 @@ export default function EnhancedReportPage() {
   }, [walletData, date, currency, accountingMethod, jurisdiction]);
 
   // Generate report only on initial load when wallet data becomes available
+  // Note: generateReport is intentionally NOT in dependencies to prevent auto-refresh
+  // Users must click "Generate Report" button to regenerate with new settings
   useEffect(() => {
     if (walletData && !reportData && !isReportLoading && !reportError) {
       generateReport();

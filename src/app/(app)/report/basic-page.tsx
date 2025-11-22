@@ -220,6 +220,8 @@ export default function BasicReportPage() {
     }, [walletData, date, currency]);
 
     // Generate report only on initial load when wallet data becomes available
+    // Note: generateReport is intentionally NOT in dependencies to prevent auto-refresh
+    // Users must click "Generate Report" button to regenerate with new date/currency values
     useEffect(() => {
         if (walletData && !reportData && !isReportLoading && !reportError) {
             generateReport();
