@@ -1090,7 +1090,7 @@ export default function EnhancedReportPage() {
                   toast({
                     variant: "destructive",
                     title: "Export Failed",
-                    description: error instanceof Error ? error.message : "Failed to generate tax package. Please try again.",
+                    description: error instanceof Error ? error.message : "An unexpected error occurred during export. Please try again.",
                   });
                 }
               }}

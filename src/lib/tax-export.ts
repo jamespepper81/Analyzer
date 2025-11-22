@@ -432,6 +432,7 @@ export async function exportFullTaxPackage(
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Failed to generate tax package ZIP:', error);
-    throw new Error('Failed to generate tax package. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    throw new Error(`Failed to generate tax package: ${errorMessage}`);
   }
 }
