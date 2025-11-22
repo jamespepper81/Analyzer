@@ -219,11 +219,15 @@ export default function BasicReportPage() {
         }
     }, [walletData, date, currency]);
 
+    // Generate report only on initial load when wallet data becomes available
+    // Note: generateReport is intentionally NOT in dependencies to prevent auto-refresh
+    // Users must click "Generate Report" button to regenerate with new date/currency values
     useEffect(() => {
-        if (walletData) {
+        if (walletData && !reportData && !isReportLoading && !reportError) {
             generateReport();
         }
-    }, [walletData, date, generateReport]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [walletData]);
     
     const afterSummary = useMemo(() => {
         if (!reportData) return null;
@@ -468,13 +472,21 @@ export default function BasicReportPage() {
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="tax">Tax Optimization</TabsTrigger>
                     </TabsList>
-                    <div className="w-full sm:w-auto">
+                    <div className="w-full sm:w-auto flex gap-2">
+                        <Button 
+                            onClick={generateReport}
+                            disabled={isReportLoading}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                        >
+                            {isReportLoading ? 'Generating...' : 'Generate Report'}
+                        </Button>
                         <Popover open={isDateRangePopoverOpen} onOpenChange={setIsDateRangePopoverOpen}>
                             <PopoverTrigger asChild>
                             <Button
                                 variant={"outline"}
                                 className={cn(
-                                    "w-full sm:w-[300px] justify-start text-left font-normal",
+                                    "w-full sm:w-auto justify-start text-left font-normal",
                                     !date && "text-muted-foreground"
                                 )}
                             >

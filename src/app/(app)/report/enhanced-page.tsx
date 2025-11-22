@@ -173,11 +173,15 @@ export default function EnhancedReportPage() {
     }
   }, [walletData, date, currency, accountingMethod, jurisdiction]);
 
+  // Generate report only on initial load when wallet data becomes available
+  // Note: generateReport is intentionally NOT in dependencies to prevent auto-refresh
+  // Users must click "Generate Report" button to regenerate with new settings
   useEffect(() => {
-    if (walletData) {
+    if (walletData && !reportData && !isReportLoading && !reportError) {
       generateReport();
     }
-  }, [walletData, date, accountingMethod, jurisdiction, generateReport]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletData]);
 
   const handleEditTransactionCategory = (txid: string, type: 'disposal' | 'income', currentCategory?: any) => {
     if (!reportData) return;
@@ -297,7 +301,15 @@ export default function EnhancedReportPage() {
               <CardTitle>Tax Report Configuration</CardTitle>
               <CardDescription>Select your accounting method and tax jurisdiction</CardDescription>
             </div>
-            <TaxHelpDialog />
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={generateReport}
+                disabled={isReportLoading}
+              >
+                {isReportLoading ? 'Generating...' : 'Generate Report'}
+              </Button>
+              <TaxHelpDialog />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
