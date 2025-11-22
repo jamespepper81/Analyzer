@@ -103,12 +103,28 @@ const StatCard = ({ title, value, subtitle, tooltip, variant = 'default' }: {
   </TooltipProvider>
 );
 
-const CustomPortfolioTooltip = ({ active, payload, label, formatCurrencyFull }: any) => {
+type PortfolioHistoryPoint = {
+  date: number;
+  totalValue: number;
+  costBasis: number;
+};
+
+const CustomPortfolioTooltip = ({ 
+  active, 
+  payload, 
+  formatCurrencyFull 
+}: { 
+  active?: boolean; 
+  payload?: any[]; 
+  formatCurrencyFull: (value: number) => string;
+}) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    if (!data) return null;
+    const data = payload[0].payload as PortfolioHistoryPoint;
+    if (!data || typeof data.totalValue !== 'number' || typeof data.costBasis !== 'number' || !data.date) return null;
+    
     const unrealizedGains = data.totalValue - data.costBasis;
     const unrealizedPercent = data.costBasis > 0 ? (unrealizedGains / data.costBasis) * 100 : 0;
+    
     return (
       <div className="rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur-sm text-sm">
         <p className="font-medium mb-1">{format(new Date(data.date), 'dd MMM yyyy')}</p>
