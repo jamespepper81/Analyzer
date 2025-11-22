@@ -103,6 +103,53 @@ const StatCard = ({ title, value, subtitle, tooltip, variant = 'default' }: {
   </TooltipProvider>
 );
 
+type PortfolioHistoryPoint = {
+  date: number;
+  totalValue: number;
+  costBasis: number;
+};
+
+type TooltipPayload = {
+  payload: PortfolioHistoryPoint;
+};
+
+const isValidPortfolioData = (data: unknown): data is PortfolioHistoryPoint => {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.totalValue === 'number' &&
+    typeof d.costBasis === 'number' &&
+    typeof d.date === 'number'
+  );
+};
+
+const CustomPortfolioTooltip = ({ 
+  active, 
+  payload, 
+  formatCurrencyFull 
+}: { 
+  active?: boolean; 
+  payload?: TooltipPayload[]; 
+  formatCurrencyFull: (value: number) => string;
+}) => {
+  if (!active || !payload || !payload.length) return null;
+  
+  const data = payload[0].payload;
+  if (!isValidPortfolioData(data)) return null;
+  
+  const unrealizedGains = data.totalValue - data.costBasis;
+  const unrealizedPercent = data.costBasis > 0 ? (unrealizedGains / data.costBasis) * 100 : 0;
+  
+  return (
+    <div className="rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur-sm text-sm">
+      <p className="font-medium mb-1">{format(new Date(data.date), 'dd MMM yyyy')}</p>
+      <p>Worth: <span className="font-bold">{formatCurrencyFull(data.totalValue)}</span></p>
+      <p>Cost basis: <span className="font-bold">{formatCurrencyFull(data.costBasis)}</span></p>
+      <p>Unrealized: <span className={cn("font-bold", unrealizedGains >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatCurrencyFull(unrealizedGains)} ({unrealizedPercent.toFixed(1)}%)</span></p>
+    </div>
+  );
+};
+
 export default function EnhancedReportPage() {
   const { data: walletData, isLoading: isWalletLoading, error: walletError, activeXpub: xpub, currency, currencySymbol } = useWallet();
   const [reportData, setReportData] = useState<EnhancedTaxReportOutput | null>(null);
@@ -589,7 +636,10 @@ export default function EnhancedReportPage() {
                     fontSize={12}
                     tickFormatter={(value) => formatCurrency(value as number)}
                   />
-                  <RechartsTooltip />
+                  <RechartsTooltip
+                    cursor={false}
+                    content={<CustomPortfolioTooltip formatCurrencyFull={formatCurrencyFull} />}
+                  />
                   <Area
                     dataKey="totalValue"
                     type="monotone"
