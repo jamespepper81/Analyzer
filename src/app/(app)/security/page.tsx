@@ -9,6 +9,7 @@ import {
   CardTitle,
   CardDescription
 } from '@/components/ui/card';
+import { IconContainer } from '@/components/ui/icon-container';
 import {
   Table,
   TableBody,
@@ -88,10 +89,15 @@ function AddressScreener() {
     }
     
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base sm:text-lg">Address Screener</CardTitle>
-                <CardDescription className="font-normal text-sm">
+        <Card className="border-2 shadow-md">
+            <CardHeader className="bg-gradient-to-br from-amber-500/5 via-transparent to-transparent border-b">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <IconContainer variant="amber">
+                        <Search className="h-5 w-5" />
+                    </IconContainer>
+                    Address Screener
+                </CardTitle>
+                <CardDescription className="font-normal text-sm mt-2">
                     Check any Bitcoin address against the TRM Labs scam database.
                 </CardDescription>
             </CardHeader>
@@ -111,7 +117,7 @@ function AddressScreener() {
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" disabled={isLoading} size="default" className="w-full sm:w-auto">
+                        <Button type="submit" disabled={isLoading} size="default" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                             Check
                         </Button>
@@ -154,8 +160,8 @@ function SecurityMetric({ icon, title, value, description, level, levelText, too
   };
 
   const card = (
-    <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <Card className="h-full border-2 shadow-sm hover:shadow-md transition-all duration-200">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {icon}
       </CardHeader>
@@ -325,10 +331,12 @@ export default function SecurityPage() {
           level={dustLevel}
           tooltipText='"Dust" refers to tiny, unspent amounts of Bitcoin in your wallet. While not a direct security risk, a large number of dust UTXOs can impact privacy and may lead to higher transaction fees in the future.'
         />
-        <Card className="h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="h-full border-2 shadow-sm hover:shadow-md transition-all duration-200">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
                 <CardTitle className="text-sm font-medium">Spread the Word</CardTitle>
-                <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                <IconContainer variant="blue">
+                  <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                </IconContainer>
             </CardHeader>
             <CardContent className="flex flex-col h-full">
                 <div className="text-xl sm:text-2xl font-bold mb-2">Share</div>
@@ -401,10 +409,15 @@ export default function SecurityPage() {
 
        <AddressScreener />
       
-       <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">AI-Powered Recommendations</CardTitle>
-          <CardDescription className="font-normal text-sm">Personalized tips to improve your wallet security and privacy.</CardDescription>
+       <Card className="border-2 shadow-md">
+        <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <IconContainer variant="primary">
+              <Lightbulb className="h-5 w-5" />
+            </IconContainer>
+            AI-Powered Recommendations
+          </CardTitle>
+          <CardDescription className="font-normal text-sm mt-2">Personalized tips to improve your wallet security and privacy.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             {recommendations.length > 0 ? (
@@ -417,10 +430,15 @@ export default function SecurityPage() {
         </CardContent>
       </Card>
       
-       <Card>
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Active Addresses</CardTitle>
-            <CardDescription className="font-normal text-sm">
+       <Card className="border-2 shadow-md">
+          <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <IconContainer variant="emerald">
+                <ShieldCheck className="h-5 w-5" />
+              </IconContainer>
+              Active Addresses
+            </CardTitle>
+            <CardDescription className="font-normal text-sm mt-2">
               A list of addresses from this xpub with transaction activity. Addresses with more than 1 transaction are being reused.
             </CardDescription>
           </CardHeader>
@@ -428,7 +446,7 @@ export default function SecurityPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b-2 hover:bg-transparent">
                     <TableHead className="pl-4 sm:pl-0">Address</TableHead>
                     <TableHead className="text-right pr-4 sm:pr-0">Transaction Count</TableHead>
                   </TableRow>
@@ -436,7 +454,7 @@ export default function SecurityPage() {
                 <TableBody>
                   {data.addresses && data.addresses.length > 0 ? (
                     data.addresses.map((addr) => (
-                      <TableRow key={addr.address}>
+                      <TableRow key={addr.address} className="hover:bg-muted/50 transition-colors">
                         <TableCell className="font-mono text-xs pl-4 sm:pl-0 max-w-[200px] sm:max-w-none">
                           <Link
                             href={`/address/${addr.address}`}

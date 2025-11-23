@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { IconContainer } from '@/components/ui/icon-container';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { getMarketPageData } from '@/lib/market';
 import type { MarketPageData, Currency, FearAndGreedIndex } from '@/lib/types';
@@ -223,11 +224,13 @@ export default function MarketPage() {
     return (
         <TooltipProvider>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
-                <Card className="lg:col-span-4">
-                    <CardHeader>
+                <Card className="lg:col-span-4 border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                             <div className="flex items-center gap-2 sm:gap-3">
-                                <Bitcoin className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 flex-shrink-0" />
+                                <IconContainer variant="orange">
+                                  <Bitcoin className="h-6 w-6 sm:h-8 sm:w-8" />
+                                </IconContainer>
                                 <div>
                                     <CardTitle className="text-lg sm:text-2xl font-bold">Bitcoin <span className="text-muted-foreground font-normal">BTC</span></CardTitle>
                                     <CardDescription className="text-xs">
@@ -274,9 +277,9 @@ export default function MarketPage() {
                     )}
                 </div>
 
-                <Card className="lg:col-span-4">
+                <Card className="lg:col-span-4 border-2 shadow-md">
                     <Tabs defaultValue="price">
-                        <CardHeader className="flex flex-col items-start justify-between gap-3 sm:gap-2">
+                        <CardHeader className="flex flex-col items-start justify-between gap-3 sm:gap-2 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
                             <div className='w-full'>
                                 <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:inline-grid">
                                     <TabsTrigger value="price" className="text-xs sm:text-sm">Price Chart</TabsTrigger>
