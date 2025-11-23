@@ -84,21 +84,24 @@ const StatCard = ({ title, value, subtitle, tooltip, variant = 'default' }: {
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="cursor-help">
-          <p className="text-sm text-muted-foreground flex items-center gap-1.5 font-medium">
-            {title} <Info className="h-3 w-3" />
+        <div className="group cursor-help p-4 rounded-lg border bg-card hover:bg-accent/5 transition-all duration-200 hover:shadow-md hover:border-accent/50">
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5 font-medium mb-2">
+            {title} <Info className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 transition-opacity" />
           </p>
           <div className={cn(
-            "font-bold tracking-tighter text-2xl",
+            "font-bold tracking-tighter text-2xl transition-colors",
+            variant === 'default' && "text-foreground",
             variant === 'success' && "text-emerald-500",
             variant === 'danger' && "text-rose-500"
           )}>
             {value}
           </div>
-          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-muted-foreground mt-2 font-normal">{subtitle}</p>}
         </div>
       </TooltipTrigger>
-      <TooltipContent><p className="max-w-xs font-normal">{tooltip}</p></TooltipContent>
+      <TooltipContent side="bottom" className="max-w-xs">
+        <p className="font-normal">{tooltip}</p>
+      </TooltipContent>
     </Tooltip>
   </TooltipProvider>
 );
@@ -355,17 +358,23 @@ export default function EnhancedReportPage() {
   return (
     <div className="space-y-6">
       {/* Configuration Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <Card className="border-2 shadow-sm">
+        <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Tax Report Configuration</CardTitle>
-              <CardDescription>Select your accounting method and tax jurisdiction</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                Tax Report Configuration
+              </CardTitle>
+              <CardDescription className="mt-2">Select your accounting method and tax jurisdiction</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button 
                 onClick={generateReport}
                 disabled={isReportLoading}
+                className="shadow-sm hover:shadow-md transition-shadow"
               >
                 {isReportLoading ? 'Generating...' : 'Generate Report'}
               </Button>
@@ -373,8 +382,8 @@ export default function EnhancedReportPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Date Range */}
             <div className="space-y-2">
               <Label>Reporting Period</Label>
@@ -466,18 +475,20 @@ export default function EnhancedReportPage() {
       </Card>
 
       {/* Calculation Methodology */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+      <Card className="shadow-sm border">
+        <CardHeader className="bg-emerald-500/5 border-b">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="p-2 rounded-lg bg-emerald-500/10">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
             Calculation Methodology
           </CardTitle>
           <CardDescription>Understanding how your tax numbers are calculated</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div>
-            <p className="font-semibold mb-1">Cost Basis Calculation:</p>
-            <p className="text-muted-foreground">
+        <CardContent className="space-y-4 text-sm pt-6">
+          <div className="p-3 rounded-lg bg-muted/30 border">
+            <p className="font-semibold mb-2 text-base">Cost Basis Calculation:</p>
+            <p className="text-muted-foreground leading-relaxed">
               Acquisition fees are added to cost basis. For {(() => {
                 const methodInfo: Record<AccountingMethod, { name: string; description: string }> = {
                   'FIFO': { name: 'FIFO (First In, First Out)', description: ' oldest lots are sold first.' },
@@ -492,15 +503,15 @@ export default function EnhancedReportPage() {
               })()}
             </p>
           </div>
-          <div>
-            <p className="font-semibold mb-1">Capital Gains Formula:</p>
-            <p className="text-muted-foreground">
-              Proceeds (sale price minus disposal fees) − Cost Basis = Capital Gain/Loss
+          <div className="p-3 rounded-lg bg-muted/30 border">
+            <p className="font-semibold mb-2 text-base">Capital Gains Formula:</p>
+            <p className="text-muted-foreground leading-relaxed font-mono text-xs bg-background/50 p-2 rounded">
+              Proceeds (sale price − disposal fees) − Cost Basis = Capital Gain/Loss
             </p>
           </div>
-          <div>
-            <p className="font-semibold mb-1">Holding Period Classification:</p>
-            <p className="text-muted-foreground">
+          <div className="p-3 rounded-lg bg-muted/30 border">
+            <p className="font-semibold mb-2 text-base">Holding Period Classification:</p>
+            <p className="text-muted-foreground leading-relaxed">
               {jurisdiction === 'US' && 'Assets held >365 days qualify for long-term capital gains treatment with preferential tax rates.'}
               {jurisdiction === 'UK' && 'UK uses Section 104 pooling with same-day and 30-day matching rules. No distinction between short/long-term.'}
               {jurisdiction === 'CANADA' && 'Canada applies 50% inclusion rate to all capital gains. Superficial loss rule applies within 30 days.'}
@@ -509,9 +520,9 @@ export default function EnhancedReportPage() {
               {jurisdiction === 'OTHER' && 'Generic rules applied. Consult local tax professional for jurisdiction-specific guidance.'}
             </p>
           </div>
-          <div>
-            <p className="font-semibold mb-1">Fee Treatment:</p>
-            <p className="text-muted-foreground">
+          <div className="p-3 rounded-lg bg-muted/30 border">
+            <p className="font-semibold mb-2 text-base">Fee Treatment:</p>
+            <p className="text-muted-foreground leading-relaxed">
               Purchase fees increase your cost basis (reducing future gains). Sale fees reduce your proceeds (increasing losses or reducing gains).
             </p>
           </div>
@@ -519,10 +530,10 @@ export default function EnhancedReportPage() {
       </Card>
 
       {/* Disclaimer */}
-      <Alert>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Tax Disclaimer</AlertTitle>
-        <AlertDescription>
+      <Alert className="border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-orange-500/5 shadow-sm">
+        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <AlertTitle className="text-amber-900 dark:text-amber-100">Tax Disclaimer</AlertTitle>
+        <AlertDescription className="text-amber-800 dark:text-amber-200">
           This report is for informational purposes only and does not constitute tax, legal, or financial advice. 
           Tax laws vary by jurisdiction and individual circumstances. Always consult with a qualified tax professional 
           before making tax-related decisions.
@@ -540,16 +551,24 @@ export default function EnhancedReportPage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tax Summary</CardTitle>
-              <CardDescription>
-                Method: {ACCOUNTING_METHODS.find(m => m.value === accountingMethod)?.label} | 
-                Jurisdiction: {JURISDICTIONS.find(j => j.value === jurisdiction)?.label}
+          <Card className="border-2 shadow-md">
+            <CardHeader className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Tax Summary
+              </CardTitle>
+              <CardDescription className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="font-normal">
+                  {ACCOUNTING_METHODS.find(m => m.value === accountingMethod)?.label}
+                </Badge>
+                <span className="text-muted-foreground">•</span>
+                <Badge variant="outline" className="font-normal">
+                  {JURISDICTIONS.find(j => j.value === jurisdiction)?.label}
+                </Badge>
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard
                   title="Total Capital Gains"
                   value={formatCurrencyFull(summary.totalCapitalGains)}
@@ -581,51 +600,69 @@ export default function EnhancedReportPage() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="hover:shadow-md transition-shadow border-2">
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground font-medium">Unrealized Gains</p>
-                <p className={cn("text-2xl font-bold", summary.unrealizedGains >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Unrealized Gains
+                </p>
+                <p className={cn("text-2xl font-bold mt-2", summary.unrealizedGains >= 0 ? "text-emerald-500" : "text-rose-500")}>
                   {formatCurrencyFull(summary.unrealizedGains)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Not yet taxable</p>
+                <p className="text-xs text-muted-foreground mt-2">Not yet taxable</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover:shadow-md transition-shadow border-2">
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground font-medium">Harvestable Losses</p>
-                <p className="text-2xl font-bold text-blue-500">
+                <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4" />
+                  Harvestable Losses
+                </p>
+                <p className="text-2xl font-bold text-blue-500 mt-2">
                   {formatCurrencyFull(-(summary.harvestableShortTermLosses + summary.harvestableLongTermLosses))}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Available to offset gains</p>
+                <p className="text-xs text-muted-foreground mt-2">Available to offset gains</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover:shadow-md transition-shadow border-2">
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground font-medium">Deductible Fees</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
+                  <BitcoinIcon className="h-4 w-4 text-amber-500" />
+                  Deductible Fees
+                </p>
+                <p className="text-2xl font-bold mt-2">
                   {formatCurrencyFull(summary.deductibleFees)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Transaction costs</p>
+                <p className="text-xs text-muted-foreground mt-2">Transaction costs</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover:shadow-md transition-shadow border-2">
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground font-medium">Cost Basis</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
+                  <BitcoinIcon className="h-4 w-4 text-amber-500" />
+                  Cost Basis
+                </p>
+                <p className="text-2xl font-bold mt-2">
                   {formatCurrencyFull(summary.costBasis)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Current holdings</p>
+                <p className="text-xs text-muted-foreground mt-2">Current holdings</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Portfolio Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Performance</CardTitle>
+          <Card className="shadow-md border-2">
+            <CardHeader className="border-b bg-gradient-to-r from-chart-1/5 to-transparent">
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-chart-1/10">
+                  <TrendingUp className="h-4 w-4 text-chart-1" />
+                </div>
+                Portfolio Performance
+              </CardTitle>
+              <CardDescription>Value and cost basis over time</CardDescription>
             </CardHeader>
-            <CardContent className="h-[400px]">
+            <CardContent className="h-[400px] pt-6">
               <ChartContainer config={chartConfig} className="h-full w-full">
                 <AreaChart data={chartData}>
                   <defs>
@@ -679,9 +716,14 @@ export default function EnhancedReportPage() {
 
         {/* Capital Gains Tab */}
         <TabsContent value="capital-gains" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Disposal Events</CardTitle>
+          <Card className="shadow-md border-2">
+            <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                Disposal Events
+              </CardTitle>
               <CardDescription>
                 Detailed record of all taxable disposals during the reporting period
               </CardDescription>
@@ -699,15 +741,15 @@ export default function EnhancedReportPage() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Amount (BTC)</TableHead>
-                        <TableHead className="text-right">Proceeds</TableHead>
-                        <TableHead className="text-right">Cost Basis</TableHead>
-                        <TableHead className="text-right">Gain/Loss</TableHead>
-                        <TableHead>Term</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                      <TableRow className="hover:bg-transparent border-b-2">
+                        <TableHead className="font-semibold">Date</TableHead>
+                        <TableHead className="font-semibold">Type</TableHead>
+                        <TableHead className="text-right font-semibold">Amount (BTC)</TableHead>
+                        <TableHead className="text-right font-semibold">Proceeds</TableHead>
+                        <TableHead className="text-right font-semibold">Cost Basis</TableHead>
+                        <TableHead className="text-right font-semibold">Gain/Loss</TableHead>
+                        <TableHead className="font-semibold">Term</TableHead>
+                        <TableHead className="text-right font-semibold">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -717,21 +759,21 @@ export default function EnhancedReportPage() {
                         const currentCategory = transactionCategories[disposal.txid] || disposal.type;
                         
                         return (
-                          <TableRow key={idx}>
+                          <TableRow key={idx} className="hover:bg-muted/50 transition-colors">
                             <TableCell className="font-medium">
                               {format(new Date(disposal.date), 'MMM dd, yyyy')}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{currentCategory}</Badge>
+                              <Badge variant="outline" className="font-normal">{currentCategory}</Badge>
                             </TableCell>
-                            <TableCell className="text-right font-mono">{disposal.amount.toFixed(8)}</TableCell>
-                            <TableCell className="text-right">{formatCurrencyFull(disposal.proceeds)}</TableCell>
-                            <TableCell className="text-right">{formatCurrencyFull(disposal.costBasis)}</TableCell>
-                            <TableCell className={cn("text-right font-bold", disposal.realizedGain >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                            <TableCell className="text-right font-mono text-sm">{disposal.amount.toFixed(8)}</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrencyFull(disposal.proceeds)}</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrencyFull(disposal.costBasis)}</TableCell>
+                            <TableCell className={cn("text-right font-bold", disposal.realizedGain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
                               {formatCurrencyFull(disposal.realizedGain)}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={isLongTerm ? "default" : "secondary"}>
+                              <Badge variant={isLongTerm ? "default" : "secondary"} className="shadow-sm">
                                 {isLongTerm ? 'Long' : 'Short'}
                               </Badge>
                             </TableCell>
@@ -739,6 +781,7 @@ export default function EnhancedReportPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="hover:bg-primary/10"
                                 onClick={() => handleEditTransactionCategory(disposal.txid, 'disposal', disposal.type)}
                               >
                                 <Edit2 className="h-4 w-4" />
@@ -755,9 +798,14 @@ export default function EnhancedReportPage() {
           </Card>
 
           {reportData.income.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Income Events</CardTitle>
+            <Card className="shadow-md border-2">
+              <CardHeader className="border-b bg-gradient-to-r from-blue-500/5 to-transparent">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <BitcoinIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  Income Events
+                </CardTitle>
                 <CardDescription>
                   Mining, staking, and other income taxed at ordinary rates
                 </CardDescription>
@@ -809,9 +857,14 @@ export default function EnhancedReportPage() {
 
         {/* Tax Lots Tab */}
         <TabsContent value="lots" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tax Lot Details</CardTitle>
+          <Card className="shadow-md border-2">
+            <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Package className="h-4 w-4 text-primary" />
+                </div>
+                Tax Lot Details
+              </CardTitle>
               <CardDescription>
                 Detailed view of all remaining tax lots with cost basis and unrealized gains
               </CardDescription>
@@ -874,18 +927,23 @@ export default function EnhancedReportPage() {
 
         {/* Tax Optimization Tab */}
         <TabsContent value="optimization" className="space-y-6 mt-6">
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Tax Loss Harvesting</AlertTitle>
-            <AlertDescription>
+          <Alert className="border-blue-500/20 bg-gradient-to-r from-blue-500/10 to-cyan-500/5 shadow-sm">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-900 dark:text-blue-100">Tax Loss Harvesting</AlertTitle>
+            <AlertDescription className="text-blue-800 dark:text-blue-200">
               Review lots with unrealized losses that could be sold to offset capital gains. Be aware of wash sale rules 
               in your jurisdiction before repurchasing the same asset.
             </AlertDescription>
           </Alert>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Harvestable Losses</CardTitle>
+          <Card className="shadow-md border-2">
+            <CardHeader className="border-b bg-gradient-to-r from-rose-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-rose-500/10">
+                  <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                </div>
+                Harvestable Losses
+              </CardTitle>
               <CardDescription>
                 Lots with unrealized losses that could be used to offset gains
               </CardDescription>
@@ -950,32 +1008,37 @@ export default function EnhancedReportPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Optimization Strategies</CardTitle>
+          <Card className="shadow-md border-2">
+            <CardHeader className="border-b bg-gradient-to-r from-emerald-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-emerald-500/10">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                Optimization Strategies
+              </CardTitle>
               <CardDescription>
                 Personalized recommendations based on your portfolio
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-4">
                 {summary.harvestableShortTermLosses > 0 && (
-                  <Alert>
-                    <TrendingDown className="h-4 w-4" />
-                    <AlertTitle>Short-Term Loss Harvesting Opportunity</AlertTitle>
-                    <AlertDescription>
-                      You have {formatCurrencyFull(-summary.harvestableShortTermLosses)} in short-term losses available.
+                  <Alert className="border-rose-500/20 bg-rose-500/5 shadow-sm">
+                    <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    <AlertTitle className="text-rose-900 dark:text-rose-100">Short-Term Loss Harvesting Opportunity</AlertTitle>
+                    <AlertDescription className="text-rose-800 dark:text-rose-200">
+                      You have <span className="font-bold">{formatCurrencyFull(-summary.harvestableShortTermLosses)}</span> in short-term losses available.
                       These can offset short-term gains or up to $3,000 of ordinary income annually (US rules).
                     </AlertDescription>
                   </Alert>
                 )}
                 
                 {summary.harvestableLongTermLosses > 0 && (
-                  <Alert>
-                    <TrendingDown className="h-4 w-4" />
-                    <AlertTitle>Long-Term Loss Harvesting Opportunity</AlertTitle>
-                    <AlertDescription>
-                      You have {formatCurrencyFull(-summary.harvestableLongTermLosses)} in long-term losses available.
+                  <Alert className="border-rose-500/20 bg-rose-500/5 shadow-sm">
+                    <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    <AlertTitle className="text-rose-900 dark:text-rose-100">Long-Term Loss Harvesting Opportunity</AlertTitle>
+                    <AlertDescription className="text-rose-800 dark:text-rose-200">
+                      You have <span className="font-bold">{formatCurrencyFull(-summary.harvestableLongTermLosses)}</span> in long-term losses available.
                       Consider selling these to offset long-term gains.
                     </AlertDescription>
                   </Alert>
@@ -986,10 +1049,10 @@ export default function EnhancedReportPage() {
                   lot.holdingPeriodDays < reportData.jurisdictionRules.longTermHoldingPeriodDays &&
                   lot.unrealizedGain > 0
                 ) && (
-                  <Alert>
-                    <TrendingUp className="h-4 w-4" />
-                    <AlertTitle>Approaching Long-Term Status</AlertTitle>
-                    <AlertDescription>
+                  <Alert className="border-emerald-500/20 bg-emerald-500/5 shadow-sm">
+                    <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <AlertTitle className="text-emerald-900 dark:text-emerald-100">Approaching Long-Term Status</AlertTitle>
+                    <AlertDescription className="text-emerald-800 dark:text-emerald-200">
                       Some of your lots will qualify for long-term capital gains treatment within 30 days.
                       Consider waiting to sell these to benefit from lower tax rates.
                     </AlertDescription>
@@ -997,7 +1060,7 @@ export default function EnhancedReportPage() {
                 )}
 
                 {reportData.lots.length === 0 && (
-                  <Alert>
+                  <Alert className="border-muted bg-muted/20">
                     <Info className="h-4 w-4" />
                     <AlertTitle>No Active Positions</AlertTitle>
                     <AlertDescription>
@@ -1012,15 +1075,20 @@ export default function EnhancedReportPage() {
       </Tabs>
 
       {/* Export Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Export Tax Report</CardTitle>
+      <Card className="shadow-md border-2">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Download className="h-4 w-4 text-primary" />
+            </div>
+            Export Tax Report
+          </CardTitle>
           <CardDescription>
             Download your tax report for review by your accountant or tax software
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-3">
             {/* PDF Exports (New) */}
             <Button 
               onClick={handleGeneratePDF}

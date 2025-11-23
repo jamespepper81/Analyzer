@@ -60,20 +60,22 @@ const StatCard = ({ title, value, change, changeColor, tooltip, large = false }:
     <TooltipProvider>
         <Tooltip>
             <TooltipTrigger asChild>
-                <div className="cursor-help">
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5 font-medium">{title} <Info className="h-3 w-3" /></p>
-                    <div className={cn("font-bold tracking-tighter", large ? "text-3xl" : "text-2xl")}>{value}</div>
-                    {change && <p className={cn("text-sm font-bold", changeColor)}>{change}</p>}
+                <div className="group cursor-help transition-all duration-200 hover:scale-[1.02]">
+                    <p className="text-sm text-muted-foreground flex items-center gap-1.5 font-medium mb-2">
+                        {title} <Info className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 transition-opacity" />
+                    </p>
+                    <div className={cn("font-bold tracking-tighter transition-colors", large ? "text-3xl" : "text-2xl")}>{value}</div>
+                    {change && <p className={cn("text-sm font-bold mt-2", changeColor)}>{change}</p>}
                 </div>
             </TooltipTrigger>
-            <TooltipContent><p className="max-w-xs font-normal">{tooltip}</p></TooltipContent>
+            <TooltipContent side="bottom" className="max-w-xs"><p className="font-normal">{tooltip}</p></TooltipContent>
         </Tooltip>
     </TooltipProvider>
 );
 
 const SummaryCard = ({ title, value }: { title: string, value: string }) => (
-    <div className="p-4 rounded-lg bg-card-foreground/5 text-center">
-        <p className="text-sm text-muted-foreground font-medium">{title}</p>
+    <div className="p-4 rounded-lg bg-card-foreground/5 text-center border hover:shadow-md hover:bg-card-foreground/10 transition-all duration-200">
+        <p className="text-sm text-muted-foreground font-medium mb-2">{title}</p>
         <p className="text-lg font-bold">{value}</p>
     </div>
 );
@@ -479,17 +481,17 @@ export default function BasicReportPage() {
     return (
         <div className="space-y-6">
             <Tabs defaultValue="overview" className="w-full">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <TabsList>
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="tax">Tax Optimization</TabsTrigger>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <TabsList className="shadow-sm">
+                        <TabsTrigger value="overview" className="data-[state=active]:shadow-sm">Overview</TabsTrigger>
+                        <TabsTrigger value="tax" className="data-[state=active]:shadow-sm">Tax Optimization</TabsTrigger>
                     </TabsList>
                     <div className="w-full sm:w-auto flex gap-2">
                         <Button 
                             onClick={generateReport}
                             disabled={isReportLoading}
                             variant="outline"
-                            className="whitespace-nowrap"
+                            className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow"
                         >
                             {isReportLoading ? 'Generating...' : 'Generate Report'}
                         </Button>
@@ -546,9 +548,9 @@ export default function BasicReportPage() {
                 </div>
                 
                 <TabsContent value="overview" className="mt-6 space-y-6">
-                        <Card>
+                        <Card className="border-2 shadow-lg">
                             {isHistoricalView && (
-                                <div className="p-3 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm flex items-center justify-between">
+                                <div className="p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Info className="h-4 w-4" />
                                         You are viewing a historical snapshot of your portfolio as at {format(holdingsDate, 'dd MMM yyyy')}.
@@ -559,7 +561,7 @@ export default function BasicReportPage() {
                                     </Button>
                                 </div>
                             )}
-                            <CardContent className="p-6">
+                            <CardContent className="p-6 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                     <StatCard 
                                         large 
@@ -583,7 +585,7 @@ export default function BasicReportPage() {
                                     />
                                 </div>
                             </CardContent>
-                            <CardContent className="px-2 sm:px-6 pt-0 h-[300px] sm:h-[400px] w-full">
+                            <CardContent className="px-2 sm:px-6 pt-0 pb-6 h-[300px] sm:h-[400px] w-full">
                             <ChartContainer config={chartConfig} className="h-full w-full">
                                     <AreaChart 
                                         data={chartData}
@@ -649,15 +651,18 @@ export default function BasicReportPage() {
                             </ChartContainer>
                             </CardContent>
                         </Card>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <SummaryCard title="Inflow" value={formatCurrencyFull(summary.inflow)} />
                             <SummaryCard title="Outflow" value={formatCurrencyFull(summary.outflow)} />
                             <SummaryCard title="Trading Fees" value={formatCurrencyFull(summary.tradingFees)} />
                             <SummaryCard title="Realized Gains" value={formatCurrencyFull(summary.realizedGains)} />
                         </div>
-                        <Card>
-                        <CardHeader className="flex flex-row items-center gap-4">
-                            <CardTitle>Holdings</CardTitle>
+                        <Card className="border-2 shadow-md">
+                        <CardHeader className="flex flex-row items-center gap-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
+                            <CardTitle className="flex items-center gap-2">
+                                <BitcoinIcon className="h-5 w-5 text-amber-500" />
+                                Holdings
+                            </CardTitle>
                             <Popover open={isHoldingsPopoverOpen} onOpenChange={setIsHoldingsPopoverOpen}>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="h-8 text-sm">
@@ -716,11 +721,11 @@ export default function BasicReportPage() {
                                 </Tooltip>
                             </TooltipProvider>
                         </CardHeader>
-                        <CardContent className="px-0 sm:px-6">
+                        <CardContent className="px-0 sm:px-6 pt-6">
                             <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
-                                    <TableRow>
+                                    <TableRow className="hover:bg-transparent border-b-2">
                                         <SortableHeader<SortKey> sortKey="address" label="Address" sortConfig={sortConfig} requestSort={requestSort} />
                                         <SortableHeader<SortKey> sortKey="balance" label="Balance" sortConfig={sortConfig} requestSort={requestSort} />
                                         <SortableHeader<SortKey> sortKey="marketValue" label="Market Value" sortConfig={sortConfig} requestSort={requestSort} />
@@ -751,7 +756,7 @@ export default function BasicReportPage() {
                                 <TableBody>
                                     {sortedHoldings.map(asset => {
                                         return (
-                                        <TableRow key={asset.address}>
+                                        <TableRow key={asset.address} className="hover:bg-muted/50 transition-colors">
                                             <TableCell className="pl-4 sm:pl-0">
                                                 <div className="flex items-center gap-2 font-mono text-xs min-w-[120px] max-w-[200px]">
                                                     <BitcoinIcon className="h-4 w-4 text-amber-500 shrink-0" />
@@ -789,17 +794,17 @@ export default function BasicReportPage() {
                         </Card>
                 </TabsContent>
                 <TabsContent value="tax" className="mt-6 space-y-6">
-                    <Alert className="bg-primary/10 border-primary/20 text-foreground">
-                        <AlertTitle className="font-bold">A Guide to Realizing Profit and Losses</AlertTitle>
-                        <AlertDescription className="font-normal">
+                    <Alert className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-foreground shadow-sm">
+                        <AlertTitle className="font-bold text-lg">A Guide to Realizing Profit and Losses</AlertTitle>
+                        <AlertDescription className="font-normal leading-relaxed">
                             This tool helps you visualize the potential impact of selling the Bitcoin held at specific addresses on your capital gains for the selected period. This practice is often called "tax-loss harvesting" when used to offset gains with losses. By selecting addresses below, you can simulate selling the Bitcoin from those addresses and see how it affects the "After" calculation.
                             <br/>
                             <span className="text-xs italic">Disclaimer: This is for informational purposes only and does not constitute financial or tax advice for your jurisdiction. Consult with a qualified professional for advice specific to your situation.</span>
                         </AlertDescription>
                     </Alert>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card>
-                            <CardHeader className="flex-row items-center justify-between pb-2">
+                        <Card className="border-2 shadow-md hover:shadow-lg transition-shadow">
+                            <CardHeader className="flex-row items-center justify-between pb-2 bg-gradient-to-br from-muted/30 to-transparent border-b">
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -837,8 +842,8 @@ export default function BasicReportPage() {
                                 <p className={cn("text-4xl font-bold tracking-tighter", summary.realizedGains >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{formatCurrencyFull(summary.realizedGains)}</p>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader className="flex-row items-center justify-between pb-2">
+                        <Card className="border-2 shadow-md hover:shadow-lg transition-shadow">
+                            <CardHeader className="flex-row items-center justify-between pb-2 bg-gradient-to-br from-primary/10 to-transparent border-b">
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -879,12 +884,12 @@ export default function BasicReportPage() {
                             </CardContent>
                         </Card>
                     </div>
-                    <Card>
-                        <CardHeader>
+                    <Card className="border-2 shadow-md">
+                        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
                             <div className="flex flex-col gap-4">
                                 <Input 
                                     placeholder="Find address" 
-                                    className="w-full sm:max-w-xs" 
+                                    className="w-full sm:max-w-xs shadow-sm" 
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -922,12 +927,12 @@ export default function BasicReportPage() {
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="px-0 sm:px-6">
+                        <CardContent className="px-0 sm:px-6 pt-6">
                             <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[50px]">
+                                    <TableRow className="hover:bg-transparent border-b-2">
+                                        <TableHead className="w-[50px] font-semibold">
                                             <Checkbox
                                                 checked={selectAllCheckedState}
                                                 onCheckedChange={handleSelectAll}
@@ -1008,7 +1013,7 @@ export default function BasicReportPage() {
                                 <TableBody>
                                     {sortedTaxHoldings.map(asset => {
                                         return (
-                                            <TableRow key={asset.address}>
+                                            <TableRow key={asset.address} className="hover:bg-muted/50 transition-colors">
                                                 <TableCell className="pl-4 sm:pl-0">
                                                     <Checkbox 
                                                         checked={selectedAssets[asset.address] || false}
