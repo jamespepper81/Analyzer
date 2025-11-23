@@ -26,16 +26,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(report);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     console.error('[Tax Report API] Error:', {
-      errorMessage: error.message,
-      errorStack: error.stack,
+      errorMessage,
+      errorStack,
     });
 
     return NextResponse.json(
       { 
         error: 'Failed to generate tax report',
-        details: error.message 
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     );
