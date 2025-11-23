@@ -9,6 +9,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { IconContainer } from '@/components/ui/icon-container';
+import { PieChart, DollarSign, Activity, BarChart3 } from 'lucide-react';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -295,7 +296,7 @@ export default function AnalysisPage() {
           <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <IconContainer variant="emerald">
-                  <TrendingUp className="h-4 w-4" />
+                  <BarChart3 className="h-5 w-5" />
                 </IconContainer>
                 Monthly Volume
               </CardTitle>
@@ -333,7 +334,7 @@ export default function AnalysisPage() {
             <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <IconContainer variant="orange">
-                    <TrendingUp className="h-4 w-4" />
+                    <PieChart className="h-5 w-5" />
                   </IconContainer>
                   UTXO Distribution
                 </CardTitle>
@@ -356,7 +357,7 @@ export default function AnalysisPage() {
           <CardHeader className="bg-gradient-to-br from-rose-500/5 via-transparent to-transparent border-b">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <IconContainer variant="rose">
-                  <TrendingUp className="h-4 w-4" />
+                  <DollarSign className="h-5 w-5" />
                 </IconContainer>
                 Fee Analysis
               </CardTitle>
@@ -398,7 +399,7 @@ export default function AnalysisPage() {
             <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <IconContainer variant="purple">
-                    <TrendingUp className="h-4 w-4" />
+                    <Activity className="h-5 w-5" />
                   </IconContainer>
                   Transaction Fee Analysis
                 </CardTitle>
