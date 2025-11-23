@@ -10,6 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
+import { IconContainer } from '@/components/ui/icon-container';
 import {
   Table,
   TableBody,
@@ -46,7 +47,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
   const uniqueLabels = tx.labels ? [...new Map(tx.labels.map(item => [item.label, item])).values()] : [];
 
   return (
-    <TableRow>
+    <TableRow className="hover:bg-muted/50 transition-colors">
       <TableCell className="pl-4 sm:pl-0">
         <Link href={`/transactions/${tx.id}`} className="hover:underline cursor-pointer">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -180,16 +181,21 @@ export default function TransactionsPage() {
   const transactionsToShow = data.transactions.slice(0, visibleCount);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-2 shadow-md">
+      <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-                <CardTitle>Transaction History</CardTitle>
-                <CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <IconContainer variant="primary">
+                    <ArrowUpRight className="h-5 w-5" />
+                  </IconContainer>
+                  Transaction History
+                </CardTitle>
+                <CardDescription className="mt-2">
                 A complete list of all your wallet's transactions.
                 </CardDescription>
             </div>
-            <Button variant="outline" onClick={handleExportCSV} size="sm" className="w-full sm:w-auto">
+            <Button variant="outline" onClick={handleExportCSV} size="sm" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
                 <Download className="mr-2 h-4 w-4" />
                 Export to CSV
             </Button>
@@ -199,7 +205,7 @@ export default function TransactionsPage() {
         <div className="overflow-x-auto">
           <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="border-b-2 hover:bg-transparent">
               <TableHead className="pl-4 sm:pl-0">Details</TableHead>
               <TableHead className="text-right">Amount (BTC)</TableHead>
               <TableHead className="hidden text-right md:table-cell">Amount (Fiat)</TableHead>
@@ -223,7 +229,7 @@ export default function TransactionsPage() {
         </div>
         {visibleCount < data.transactions.length && (
             <div className="mt-4 sm:mt-6 flex justify-center px-4 sm:px-0">
-                <Button onClick={handleLoadMore} variant="outline" size="sm" className="w-full sm:w-auto">
+                <Button onClick={handleLoadMore} variant="outline" size="sm" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
                     <Download className="mr-2 h-4 w-4" />
                     Load More
                 </Button>

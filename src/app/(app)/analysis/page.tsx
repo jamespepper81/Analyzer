@@ -8,6 +8,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
+import { IconContainer } from '@/components/ui/icon-container';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -224,10 +225,15 @@ export default function AnalysisPage() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-       <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Portfolio Value Over Time</CardTitle>
-            <CardDescription className="text-sm">
+       <Card className="lg:col-span-2 border-2 shadow-md">
+          <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
+            <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+              <IconContainer variant="blue">
+                <TrendingUp className="h-5 w-5" />
+              </IconContainer>
+              Portfolio Value Over Time
+            </CardTitle>
+            <CardDescription className="text-sm mt-2">
               This chart visualizes the total value of your wallet's Bitcoin balance in your selected currency.
             </CardDescription>
           </CardHeader>
@@ -285,10 +291,15 @@ export default function AnalysisPage() {
           </CardContent>
        </Card>
 
-       <Card>
-          <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Monthly Volume</CardTitle>
-              <CardDescription className="text-sm">Sent vs. Received volume in satoshis by month.</CardDescription>
+       <Card className="border-2 shadow-md">
+          <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <IconContainer variant="emerald">
+                  <TrendingUp className="h-4 w-4" />
+                </IconContainer>
+                Monthly Volume
+              </CardTitle>
+              <CardDescription className="text-sm mt-2">Sent vs. Received volume in satoshis by month.</CardDescription>
           </CardHeader>
           <CardContent className="px-2 sm:px-6">
               <ChartContainer config={monthlyVolumeConfig} className="h-[200px] sm:h-[250px] w-full">
@@ -318,10 +329,15 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base sm:text-lg">UTXO Distribution</CardTitle>
-                <CardDescription className="text-sm">Breakdown of your Unspent Transaction Outputs.</CardDescription>
+        <Card className="border-2 shadow-md">
+            <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <IconContainer variant="orange">
+                    <TrendingUp className="h-4 w-4" />
+                  </IconContainer>
+                  UTXO Distribution
+                </CardTitle>
+                <CardDescription className="text-sm mt-2">Breakdown of your Unspent Transaction Outputs.</CardDescription>
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
                 <ChartContainer config={utxoChartConfig} className="h-[200px] sm:h-[250px] w-full">
@@ -336,10 +352,15 @@ export default function AnalysisPage() {
             </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Fee Analysis</CardTitle>
-              <CardDescription className="text-sm">Total transaction fees paid over time (in satoshis).</CardDescription>
+        <Card className="border-2 shadow-md">
+          <CardHeader className="bg-gradient-to-br from-rose-500/5 via-transparent to-transparent border-b">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <IconContainer variant="rose">
+                  <TrendingUp className="h-4 w-4" />
+                </IconContainer>
+                Fee Analysis
+              </CardTitle>
+              <CardDescription className="text-sm mt-2">Total transaction fees paid over time (in satoshis).</CardDescription>
           </CardHeader>
           <CardContent className="px-2 sm:px-6">
               <ChartContainer config={feeAnalysisConfig} className="h-[300px] sm:h-[400px] w-full">
@@ -373,10 +394,15 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base sm:text-lg">Transaction Fee Analysis</CardTitle>
-                <CardDescription className="text-sm">Fee (sats) vs. transaction size (bytes). Helps spot high-fee transactions.</CardDescription>
+        <Card className="border-2 shadow-md">
+            <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <IconContainer variant="purple">
+                    <TrendingUp className="h-4 w-4" />
+                  </IconContainer>
+                  Transaction Fee Analysis
+                </CardTitle>
+                <CardDescription className="text-sm mt-2">Fee (sats) vs. transaction size (bytes). Helps spot high-fee transactions.</CardDescription>
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
                 <ChartContainer config={feeScatterConfig} className="h-[300px] sm:h-[400px] w-full">

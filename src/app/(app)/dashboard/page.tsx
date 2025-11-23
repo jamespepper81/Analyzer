@@ -10,6 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
+import { IconContainer } from '@/components/ui/icon-container';
 import {
   Table,
   TableBody,
@@ -47,10 +48,12 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
             <CardTitle className="text-base font-medium">Current Balance</CardTitle>
-            <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+            <IconContainer variant="orange">
+              <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5" />
+            </IconContainer>
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tighter">
@@ -64,10 +67,12 @@ export default function DashboardPage() {
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Card className="cursor-help">
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Card className="cursor-help border-2 shadow-sm hover:shadow-md transition-all duration-200">
+                      <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
                         <CardTitle className="text-base font-medium">Security Score</CardTitle>
-                        <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                        <IconContainer variant="emerald">
+                          <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </IconContainer>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tighter">{data.securityScore}%</div>
@@ -80,10 +85,12 @@ export default function DashboardPage() {
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
             <CardTitle className="text-base font-medium">Performance (30d)</CardTitle>
-            {data.performance.change30d >= 0 ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-rose-500" />}
+            <IconContainer variant={data.performance.change30d >= 0 ? 'emerald' : 'rose'}>
+              {data.performance.change30d >= 0 ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />}
+            </IconContainer>
           </CardHeader>
           <CardContent>
             <div className={cn("text-2xl sm:text-3xl font-bold tracking-tighter", data.performance.change30d >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
@@ -95,8 +102,8 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent">
               <CardTitle className="text-base font-medium">Activity (30d)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 sm:space-y-3 pt-1">
@@ -118,16 +125,21 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="border-2 shadow-md">
+        <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription className="font-normal">
+              <CardTitle className="flex items-center gap-2">
+                <IconContainer variant="primary">
+                  <ArrowRight className="h-5 w-5" />
+                </IconContainer>
+                Recent Transactions
+              </CardTitle>
+              <CardDescription className="font-normal mt-2">
                 A summary of your latest wallet activity.
               </CardDescription>
             </div>
-            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
               <Link href="/transactions">
                 View All <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
