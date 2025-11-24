@@ -10,6 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
+import { IconContainer } from '@/components/ui/icon-container';
 import {
     Table,
     TableBody,
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bitcoin, AlertCircle, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ArrowLeft, Bitcoin, AlertCircle, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
@@ -39,7 +40,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
   }
 
   return (
-    <TableRow>
+    <TableRow className="hover:bg-muted/50 transition-colors">
       <TableCell>
         <Link href={`/transactions/${tx.id}`} className="hover:underline cursor-pointer">
           <div className="flex items-center gap-3">
@@ -194,21 +195,21 @@ export default function AddressDetailsPage() {
         </Button>
       </div>
 
-      <Card>
-          <CardHeader>
+      <Card className="border-2 shadow-md">
+          <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
               <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                      <Bitcoin className="h-6 w-6 text-primary" />
-                  </div>
+                  <IconContainer variant="orange">
+                      <Bitcoin className="h-5 w-5" />
+                  </IconContainer>
                   <div>
                       <CardTitle className="font-mono break-all">{address}</CardTitle>
-                      <CardDescription>Bitcoin Address ({addressInfo.n_tx} transactions)</CardDescription>
+                      <CardDescription className="mt-1">Bitcoin Address ({addressInfo.n_tx} transactions)</CardDescription>
                   </div>
               </div>
           </CardHeader>
           <CardContent>
-              <Card>
-                  <CardHeader>
+              <Card className="border-2 shadow-sm">
+                  <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
                       <CardTitle className="text-base font-medium">Address Balance</CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -223,17 +224,22 @@ export default function AddressDetailsPage() {
           </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Address Transactions ({addressTxs.length})</CardTitle>
-          <CardDescription>
+      <Card className="border-2 shadow-md">
+        <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+          <CardTitle className="flex items-center gap-2">
+            <IconContainer variant="emerald">
+              <ArrowLeftRight className="h-5 w-5" />
+            </IconContainer>
+            Address Transactions ({addressTxs.length})
+          </CardTitle>
+          <CardDescription className="mt-2">
             A list of all transactions involving this specific address.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-b-2 hover:bg-transparent">
                 <TableHead>Details</TableHead>
                 <TableHead className="text-right">Amount (BTC)</TableHead>
                 <TableHead className="hidden text-right md:table-cell">Amount (Fiat)</TableHead>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { IconContainer } from '@/components/ui/icon-container';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { getMempoolData } from '@/lib/mempool';
 import type { MempoolData, MempoolBlock } from '@/lib/types';
@@ -131,10 +132,15 @@ export default function MempoolPage() {
 
     return (
         <div className="space-y-4 sm:space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base sm:text-lg">Recommended Fees</CardTitle>
-                    <CardDescription className="text-sm">Live fee estimates for your transactions.</CardDescription>
+            <Card className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                        <IconContainer variant="primary">
+                            <Zap className="h-5 w-5" />
+                        </IconContainer>
+                        Recommended Fees
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-2">Live fee estimates for your transactions.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <FeeCard title="High Priority" fee={recommendedFees.fastestFee} description="~10 minutes" />
@@ -145,10 +151,15 @@ export default function MempoolPage() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base sm:text-lg">Mempool Summary</CardTitle>
-                        <CardDescription>A snapshot of unconfirmed transactions.</CardDescription>
+                <Card className="border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                            <IconContainer variant="blue">
+                                <Layers className="h-5 w-5" />
+                            </IconContainer>
+                            Mempool Summary
+                        </CardTitle>
+                        <CardDescription className="mt-2">A snapshot of unconfirmed transactions.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex justify-between items-center">
@@ -166,10 +177,12 @@ export default function MempoolPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <Card className="border-2 shadow-md">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
                         <CardTitle className="text-sm font-medium">Network Activity</CardTitle>
-                        <Zap className="h-4 w-4 text-muted-foreground" />
+                        <IconContainer variant="emerald">
+                            <Zap className="h-4 w-4" />
+                        </IconContainer>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{networkFeeRate.toFixed(0)} <span className="text-xl text-muted-foreground font-normal">sat/vB</span></div>
@@ -213,10 +226,15 @@ export default function MempoolPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Mempool Blocks</CardTitle>
-                        <CardDescription>Visualizing transactions waiting for confirmation.</CardDescription>
+                <Card className="border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
+                        <CardTitle className="flex items-center gap-2">
+                            <IconContainer variant="purple">
+                                <Hourglass className="h-5 w-5" />
+                            </IconContainer>
+                            Mempool Blocks
+                        </CardTitle>
+                        <CardDescription className="mt-2">Visualizing transactions waiting for confirmation.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <MempoolVisualizer blocks={mempoolBlocks} />
@@ -224,15 +242,20 @@ export default function MempoolPage() {
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Latest Blocks</CardTitle>
-                    <CardDescription>The most recently mined blocks on the Bitcoin network.</CardDescription>
+            <Card className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
+                    <CardTitle className="flex items-center gap-2">
+                        <IconContainer variant="orange">
+                            <Cpu className="h-5 w-5" />
+                        </IconContainer>
+                        Latest Blocks
+                    </CardTitle>
+                    <CardDescription className="mt-2">The most recently mined blocks on the Bitcoin network.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
-                            <TableRow>
+                            <TableRow className="border-b-2 hover:bg-transparent">
                                 <TableHead>Height</TableHead>
                                 <TableHead className="hidden md:table-cell">Timestamp</TableHead>
                                 <TableHead className="text-center">Transactions</TableHead>
@@ -241,7 +264,7 @@ export default function MempoolPage() {
                         </TableHeader>
                         <TableBody>
                             {latestBlocks.map((block) => (
-                                <TableRow key={block.id}>
+                                <TableRow key={block.id} className="hover:bg-muted/50 transition-colors">
                                     <TableCell>
                                         <Link href={`/block/${block.id}`} className="text-primary hover:underline font-bold cursor-pointer">
                                             {block.height.toLocaleString()}

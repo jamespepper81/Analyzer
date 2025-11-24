@@ -254,13 +254,13 @@ export default function ChatPage() {
           {messages.map((message, index) => (
             <div key={index} className={cn('flex items-start gap-2 sm:gap-4', message.role === 'user' && 'justify-end')}>
               {message.role === 'assistant' && (
-                <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border flex-shrink-0">
+                <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border shadow-sm flex-shrink-0">
                     <AvatarFallback><Bot className="h-4 w-4 sm:h-5 sm:w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
               )}
 
               {message.role === 'system' && (
-                 <Alert variant="destructive" className="w-full" role="alert">
+                 <Alert variant="destructive" className="w-full shadow-md" role="alert">
                   <AlertTitle>System Error</AlertTitle>
                   <AlertDescription>{message.content}</AlertDescription>
                  </Alert>
@@ -275,7 +275,7 @@ export default function ChatPage() {
                         : 'rounded-bl-none'
                     )}
                 >
-                  <div className={cn(message.role === 'assistant' && 'bg-card border rounded-xl p-2 sm:p-3 text-sm sm:text-base')}>
+                  <div className={cn(message.role === 'assistant' && 'bg-card border-2 shadow-md rounded-xl p-2 sm:p-3 text-sm sm:text-base')}>
                     <ReactMarkdown
                       components={{
                           p: ({node, ...props}) => <p className="m-0" {...props} />,
@@ -294,7 +294,7 @@ export default function ChatPage() {
               )}
               
               {message.role === 'user' && (
-                 <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border flex-shrink-0">
+                 <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border shadow-sm flex-shrink-0">
                      <AvatarFallback><User className="h-4 w-4 sm:h-5 sm:w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
               )}
@@ -302,10 +302,10 @@ export default function ChatPage() {
           ))}
           {isAiLoading && (
             <div className="flex items-start gap-2 sm:gap-4" aria-label="AI is thinking">
-                <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border flex-shrink-0">
+                <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border shadow-sm flex-shrink-0">
                     <AvatarFallback><Bot className="h-4 w-4 sm:h-5 sm:w-5 text-foreground"/></AvatarFallback>
                 </Avatar>
-              <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2 sm:px-4 sm:py-3">
+              <div className="flex items-center gap-2 rounded-xl border-2 shadow-md bg-card px-3 py-2 sm:px-4 sm:py-3">
                 <CircleDashed className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-muted-foreground" />
                 <span className="text-xs sm:text-sm text-muted-foreground">Thinking...</span>
               </div>
@@ -348,12 +348,12 @@ export default function ChatPage() {
                 size="icon"
                 onClick={handleMicClick}
                 disabled={!isSpeechSupported || isAiLoading}
-                className={cn("h-10 w-10 sm:h-10 sm:w-10", isRecording && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+                className={cn("h-10 w-10 sm:h-10 sm:w-10 shadow-md hover:shadow-lg transition-shadow", isRecording && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
                 aria-label={isRecording ? "Stop recording" : "Start voice input"}
                 >
                 <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
-                <Button type="submit" size="icon" disabled={isAiLoading} aria-label="Send message" className="h-10 w-10 sm:h-10 sm:w-10">
+                <Button type="submit" size="icon" disabled={isAiLoading} aria-label="Send message" className="h-10 w-10 sm:h-10 sm:w-10 shadow-md hover:shadow-lg transition-shadow">
                 <SendHorizonal className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
             </form>
@@ -364,7 +364,7 @@ export default function ChatPage() {
                         key={suggestion}
                         variant="outline"
                         size="sm"
-                        className="h-auto px-2 sm:px-3 py-1 text-xs text-muted-foreground"
+                        className="h-auto px-2 sm:px-3 py-1 text-xs text-muted-foreground shadow-sm hover:shadow-md transition-shadow"
                         onClick={() => {
                             form.setValue('message', suggestion);
                             form.setFocus('message');

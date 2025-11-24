@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { IconContainer } from '@/components/ui/icon-container';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { 
   Shield, 
@@ -140,10 +141,12 @@ export default function LandingPage() {
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <Card key={index} className="h-full">
-              <CardHeader>
-                <feature.icon className="h-8 w-8 text-primary mb-2" />
-                <CardTitle className="text-lg">{feature.title}</CardTitle>
+            <Card key={index} className="h-full border-2 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent">
+                <IconContainer variant="primary">
+                  <feature.icon className="h-5 w-5" />
+                </IconContainer>
+                <CardTitle className="text-lg mt-2">{feature.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -178,10 +181,12 @@ export default function LandingPage() {
               </ul>
             </div>
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
+              <Card className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
                   <CardTitle className="flex items-center gap-2">
-                    <Bitcoin className="h-5 w-5 text-orange-500" />
+                    <IconContainer variant="orange">
+                      <Bitcoin className="h-5 w-5" />
+                    </IconContainer>
                     Bitcoin Security Focus
                   </CardTitle>
                 </CardHeader>
@@ -192,10 +197,12 @@ export default function LandingPage() {
                   </p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader>
+              <Card className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
                   <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5 text-blue-500" />
+                    <IconContainer variant="blue">
+                      <Globe className="h-5 w-5" />
+                    </IconContainer>
                     Global Bitcoin Data
                   </CardTitle>
                 </CardHeader>

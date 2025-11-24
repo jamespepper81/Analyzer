@@ -10,6 +10,7 @@ import { SendHorizonal, Bot, ThumbsUp, CircleDashed, Copy, Zap } from 'lucide-re
 import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
+import { IconContainer } from '@/components/ui/icon-container';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -142,17 +143,17 @@ export default function FeedbackPage() {
   if (isSubmitted) {
     return (
         <div className="flex h-[calc(100vh-12rem)] flex-col items-center justify-center text-center px-4">
-            <div className="rounded-xl border bg-card p-6 sm:p-8 shadow-sm max-w-lg space-y-4 w-full">
+            <div className="rounded-xl border-2 bg-card p-6 sm:p-8 shadow-md max-w-lg space-y-4 w-full bg-gradient-to-br from-primary/5 via-transparent to-transparent">
                 <div className="flex justify-center">
-                    <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-primary/10">
-                        <ThumbsUp className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                    </div>
+                    <IconContainer variant="primary">
+                        <ThumbsUp className="h-6 w-6 sm:h-8 sm:w-8" />
+                    </IconContainer>
                 </div>
                 <AlertTitle className="text-xl sm:text-2xl font-bold">Thank You!</AlertTitle>
                 <AlertDescription className="text-muted-foreground text-sm sm:text-base">
                     Your feedback has been submitted successfully. We appreciate you taking the time to help us improve BitSleuth.
                 </AlertDescription>
-                <Button onClick={() => setIsSubmitted(false)} className="w-full sm:w-auto">Submit More Feedback</Button>
+                <Button onClick={() => setIsSubmitted(false)} className="w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow">Submit More Feedback</Button>
             </div>
         </div>
     )
@@ -189,15 +190,15 @@ export default function FeedbackPage() {
             )}
           />
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+          <Button type="submit" className="w-full shadow-md hover:shadow-lg transition-shadow" size="lg" disabled={isLoading}>
             {isLoading ? (
                 <>
-                    <CircleDashed className="animate-spin" />
+                    <CircleDashed className="animate-spin mr-2" />
                     Submitting...
                 </>
             ) : (
                 <>
-                    <SendHorizonal />
+                    <SendHorizonal className="mr-2" />
                     Send Feedback
                 </>
             )}
@@ -205,10 +206,15 @@ export default function FeedbackPage() {
         </form>
       </Form>
       
-      <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-base sm:text-lg md:text-xl font-bold'><Zap className='h-5 w-5 sm:h-6 sm:w-6 text-amber-500'/>Support BitSleuth</CardTitle>
-            <CardDescription className="text-sm">
+      <Card className="border-2 shadow-md">
+          <CardHeader className="bg-gradient-to-br from-amber-500/5 via-transparent to-transparent border-b">
+            <CardTitle className='flex items-center gap-2 text-base sm:text-lg md:text-xl font-bold'>
+              <IconContainer variant="amber">
+                <Zap className='h-5 w-5 sm:h-6 sm:w-6'/>
+              </IconContainer>
+              Support BitSleuth
+            </CardTitle>
+            <CardDescription className="text-sm mt-2">
               If you find this tool helpful, consider sending a few sats. Your support helps us keep the servers running and continue development.
             </CardDescription>
           </CardHeader>

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { IconContainer } from '@/components/ui/icon-container';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { 
   Brain, 
@@ -161,9 +162,13 @@ export default function AboutPage() {
             that security and privacy should be accessible to everyone, not just technical experts.
           </p>
           <div className="grid md:grid-cols-3 gap-6 mt-12">
-            <Card>
-              <CardHeader className="text-center">
-                <Globe className="h-8 w-8 text-primary mx-auto mb-2" />
+            <Card className="border-2 shadow-md">
+              <CardHeader className="text-center bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+                <div className="flex justify-center mb-2">
+                  <IconContainer variant="blue">
+                    <Globe className="h-5 w-5" />
+                  </IconContainer>
+                </div>
                 <CardTitle>Global Access</CardTitle>
               </CardHeader>
               <CardContent>
@@ -172,9 +177,13 @@ export default function AboutPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="text-center">
-                <Lock className="h-8 w-8 text-primary mx-auto mb-2" />
+            <Card className="border-2 shadow-md">
+              <CardHeader className="text-center bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
+                <div className="flex justify-center mb-2">
+                  <IconContainer variant="emerald">
+                    <Lock className="h-5 w-5" />
+                  </IconContainer>
+                </div>
                 <CardTitle>Privacy First</CardTitle>
               </CardHeader>
               <CardContent>
@@ -183,9 +192,13 @@ export default function AboutPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="text-center">
-                <Zap className="h-8 w-8 text-primary mx-auto mb-2" />
+            <Card className="border-2 shadow-md">
+              <CardHeader className="text-center bg-gradient-to-br from-amber-500/5 via-transparent to-transparent">
+                <div className="flex justify-center mb-2">
+                  <IconContainer variant="amber">
+                    <Zap className="h-5 w-5" />
+                  </IconContainer>
+                </div>
                 <CardTitle>Instant Results</CardTitle>
               </CardHeader>
               <CardContent>
@@ -210,10 +223,12 @@ export default function AboutPage() {
           </div>
           <div className="grid lg:grid-cols-2 gap-8">
             {capabilities.map((capability, index) => (
-              <Card key={index} className="h-full">
-                <CardHeader>
+              <Card key={index} className="h-full border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
                   <div className="flex items-center gap-3 mb-2">
-                    <capability.icon className="h-6 w-6 text-primary" />
+                    <IconContainer variant="primary">
+                      <capability.icon className="h-5 w-5" />
+                    </IconContainer>
                     <CardTitle className="text-xl">{capability.title}</CardTitle>
                   </div>
                   <CardDescription className="text-base">
@@ -248,10 +263,12 @@ export default function AboutPage() {
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {useCases.map((useCase, index) => (
-              <Card key={index}>
-                <CardHeader>
+              <Card key={index} className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
                   <div className="flex items-center gap-3">
-                    <useCase.icon className="h-6 w-6 text-primary" />
+                    <IconContainer variant="primary">
+                      <useCase.icon className="h-5 w-5" />
+                    </IconContainer>
                     <CardTitle className="text-lg">{useCase.title}</CardTitle>
                   </div>
                 </CardHeader>
@@ -274,9 +291,13 @@ export default function AboutPage() {
             accurate and insightful wallet analysis available.
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="text-center">
-                <Brain className="h-8 w-8 text-primary mx-auto mb-2" />
+            <Card className="border-2 shadow-md">
+              <CardHeader className="text-center bg-gradient-to-br from-primary/5 via-transparent to-transparent">
+                <div className="flex justify-center mb-2">
+                  <IconContainer variant="primary">
+                    <Brain className="h-5 w-5" />
+                  </IconContainer>
+                </div>
                 <CardTitle className="text-sm">AI & ML</CardTitle>
               </CardHeader>
               <CardContent>
@@ -285,9 +306,13 @@ export default function AboutPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="text-center">
-                <Bitcoin className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+            <Card className="border-2 shadow-md">
+              <CardHeader className="text-center bg-gradient-to-br from-orange-500/5 via-transparent to-transparent">
+                <div className="flex justify-center mb-2">
+                  <IconContainer variant="orange">
+                    <Bitcoin className="h-5 w-5" />
+                  </IconContainer>
+                </div>
                 <CardTitle className="text-sm">Bitcoin Expertise</CardTitle>
               </CardHeader>
               <CardContent>
@@ -296,9 +321,13 @@ export default function AboutPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="text-center">
-                <Globe className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+            <Card className="border-2 shadow-md">
+              <CardHeader className="text-center bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+                <div className="flex justify-center mb-2">
+                  <IconContainer variant="blue">
+                    <Globe className="h-5 w-5" />
+                  </IconContainer>
+                </div>
                 <CardTitle className="text-sm">Blockchain Data</CardTitle>
               </CardHeader>
               <CardContent>
@@ -307,9 +336,13 @@ export default function AboutPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="text-center">
-                <Shield className="h-8 w-8 text-green-500 mx-auto mb-2" />
+            <Card className="border-2 shadow-md">
+              <CardHeader className="text-center bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
+                <div className="flex justify-center mb-2">
+                  <IconContainer variant="emerald">
+                    <Shield className="h-5 w-5" />
+                  </IconContainer>
+                </div>
                 <CardTitle className="text-sm">Security Focus</CardTitle>
               </CardHeader>
               <CardContent>

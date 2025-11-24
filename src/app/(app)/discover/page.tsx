@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExplorerNode } from '@/components/ui/explorer-node';
+import { IconContainer } from '@/components/ui/icon-container';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Network, Loader2, AlertCircle, GitGraph, ListTree } from 'lucide-react';
 import { getAddressData, getTransactionData, getAddressStats } from '@/lib/blockchain-api';
@@ -319,10 +320,15 @@ export default function DiscoverPage() {
 
   return (
     <div className="space-y-6">
-       <Card>
-          <CardHeader>
-            <CardTitle>BitSeek Transaction Explorer</CardTitle>
-            <CardDescription>
+       <Card className="border-2 shadow-md">
+          <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
+            <CardTitle className="flex items-center gap-2">
+              <IconContainer variant="primary">
+                <Network className="h-5 w-5" />
+              </IconContainer>
+              BitSeek Transaction Explorer
+            </CardTitle>
+            <CardDescription className="mt-2">
                 Enter a Bitcoin address or transaction ID to begin exploring its history. You can switch between a simple list view and an interactive graph view.
             </CardDescription>
           </CardHeader>
@@ -342,7 +348,7 @@ export default function DiscoverPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit">Explore</Button>
+                <Button type="submit" className="shadow-sm hover:shadow-md transition-shadow">Explore</Button>
               </form>
             </Form>
           </CardContent>
@@ -356,10 +362,15 @@ export default function DiscoverPage() {
               </TabsList>
 
               <TabsContent value="list" className="mt-4 space-y-4">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Forensic Legend</CardTitle>
-                        <CardDescription>
+                 <Card className="border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                        <CardTitle className="flex items-center gap-2">
+                          <IconContainer variant="blue">
+                            <AlertCircle className="h-5 w-5" />
+                          </IconContainer>
+                          Forensic Legend
+                        </CardTitle>
+                        <CardDescription className="mt-2">
                             Nodes are color-coded to help you spot interesting activity at a glance.
                         </CardDescription>
                     </CardHeader>
@@ -395,9 +406,14 @@ export default function DiscoverPage() {
                         </div>
                     </CardContent>
                 </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Exploration List</CardTitle>
+                 <Card className="border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                        <CardTitle className="flex items-center gap-2">
+                          <IconContainer variant="emerald">
+                            <ListTree className="h-5 w-5" />
+                          </IconContainer>
+                          Exploration List
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="p-4 rounded-lg bg-background">

@@ -11,8 +11,9 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { IconContainer } from '@/components/ui/icon-container';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, ArrowLeft, ArrowLeftRight, CheckCircle, Clock, Copy } from 'lucide-react';
+import { AlertCircle, ArrowDownLeft, ArrowLeft, ArrowLeftRight, ArrowUpRight, CheckCircle, Clock, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
@@ -31,7 +32,7 @@ function DetailItem({ label, value, children }: { label: string; value?: React.R
   );
 }
 
-function AddressCard({ title, items, btcPrice, currency }: { title: string; items: Array<{address: string | null, value: number}>; btcPrice: number, currency: string }) {
+function AddressCard({ title, items, btcPrice, currency, type }: { title: string; items: Array<{address: string | null, value: number}>; btcPrice: number, currency: string, type: 'input' | 'output' }) {
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -39,10 +40,17 @@ function AddressCard({ title, items, btcPrice, currency }: { title: string; item
         }).format(value);
     }
     
+    const isInput = type === 'input';
+    
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base sm:text-lg">{title} ({items.length})</CardTitle>
+        <Card className="border-2 shadow-md">
+            <CardHeader className={`bg-gradient-to-br ${isInput ? 'from-rose-500/5' : 'from-emerald-500/5'} via-transparent to-transparent border-b`}>
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <IconContainer variant={isInput ? 'rose' : 'emerald'}>
+                        {isInput ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownLeft className="h-5 w-5" />}
+                    </IconContainer>
+                    {title} ({items.length})
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="space-y-3 sm:space-y-4">
@@ -166,15 +174,15 @@ export default function TransactionDetailsPage() {
             </Button>
         </div>
 
-        <Card>
-            <CardHeader>
+        <Card className="border-2 shadow-md">
+            <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
                 <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
-                        <ArrowLeftRight className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                    </div>
+                    <IconContainer variant="primary">
+                        <ArrowLeftRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </IconContainer>
                     <div className="min-w-0">
                         <CardTitle className="text-base sm:text-lg md:text-xl">Bitcoin Transaction</CardTitle>
-                        <CardDescription className="text-xs sm:text-sm">
+                        <CardDescription className="text-xs sm:text-sm mt-1">
                             Broadcasted on {new Date(tx.date).toLocaleString()}
                         </CardDescription>
                     </div>
@@ -190,9 +198,14 @@ export default function TransactionDetailsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="lg:col-span-1 space-y-4 sm:space-y-6">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base sm:text-lg">Summary</CardTitle>
+                 <Card className="border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                            <IconContainer variant="blue">
+                                <ArrowLeftRight className="h-5 w-5" />
+                            </IconContainer>
+                            Summary
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-1">
                         <DetailItem label="Net Amount">
@@ -209,8 +222,8 @@ export default function TransactionDetailsPage() {
                         </DetailItem>
                     </CardContent>
                  </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-4">
+                 <Card className="border-2 shadow-md">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
                         <CardTitle className="text-base sm:text-lg">Status</CardTitle>
                         <Badge variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'} className="text-xs">{tx.status}</Badge>
                     </CardHeader>
@@ -226,9 +239,14 @@ export default function TransactionDetailsPage() {
                 </Card>
             </div>
             <div className="lg:col-span-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base sm:text-lg">Advanced Details</CardTitle>
+                <Card className="border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
+                        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                            <IconContainer variant="purple">
+                                <AlertCircle className="h-5 w-5" />
+                            </IconContainer>
+                            Advanced Details
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1">
                         <DetailItem label="Input Value" value={`${inputValue.toFixed(8)} BTC`} />
@@ -245,8 +263,8 @@ export default function TransactionDetailsPage() {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <AddressCard title="From (Inputs)" items={tx.inputs} btcPrice={btcPrice} currency={currency} />
-            <AddressCard title="To (Outputs)" items={tx.outputs} btcPrice={btcPrice} currency={currency} />
+            <AddressCard title="From (Inputs)" items={tx.inputs} btcPrice={btcPrice} currency={currency} type="input" />
+            <AddressCard title="To (Outputs)" items={tx.outputs} btcPrice={btcPrice} currency={currency} type="output" />
         </div>
     </div>
   );

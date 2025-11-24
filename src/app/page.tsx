@@ -153,7 +153,7 @@ export default function ConnectWalletPage() {
         
         <div
           className={cn(
-            "flex w-full max-w-md flex-col items-center justify-center gap-4 sm:gap-6 rounded-2xl border bg-card p-6 sm:p-8 text-center shadow-2xl",
+            "flex w-full max-w-md flex-col items-center justify-center gap-4 sm:gap-6 rounded-2xl border-2 bg-card p-6 sm:p-8 text-center shadow-2xl",
             isFriendlyError
               ? "border-primary/20 shadow-primary/10"
               : "border-destructive/50 shadow-destructive/10"
@@ -184,12 +184,12 @@ export default function ConnectWalletPage() {
         <ThemeToggle />
       </header>
       
-      <div className="flex w-full max-w-md flex-col items-center justify-center gap-4 sm:gap-6 rounded-2xl border bg-card p-6 sm:p-8 shadow-2xl shadow-primary/10">
+      <div className="flex w-full max-w-md flex-col items-center justify-center gap-4 sm:gap-6 rounded-2xl border-2 bg-card p-6 sm:p-8 shadow-2xl shadow-primary/10 hover:shadow-primary/20 transition-shadow duration-300">
         <div className="flex flex-col items-center gap-2 text-center">
-            <div className="mb-2 h-10 w-10 sm:h-12 sm:w-12 rounded-full grid place-items-center bg-white dark:bg-transparent">
+            <div className="mb-2 h-10 w-10 sm:h-12 sm:w-12 rounded-full grid place-items-center bg-gradient-to-br from-primary/20 to-primary/5 dark:from-primary/30 dark:to-primary/10 shadow-md">
               <Logo className="h-10 w-10 sm:h-12 sm:w-12" style={{ color: 'hsl(var(--brand))' }} />
             </div>
-            <h1 className="font-headline text-2xl sm:text-3xl font-bold tracking-tighter text-black dark:text-foreground">
+            <h1 className="font-headline text-2xl sm:text-3xl font-bold tracking-tighter bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text">
                 BitSleuth - AI Bitcoin Wallet Analyzer
             </h1>
             <p className="text-muted-foreground font-normal max-w-md text-sm sm:text-base">
@@ -219,14 +219,14 @@ export default function ConnectWalletPage() {
                     </FormItem>
                 )}
                 />
-                <Button type="submit" className="w-full font-bold" size="lg" disabled={isSubmitting}>
+                <Button type="submit" className="w-full font-bold shadow-md hover:shadow-lg transition-shadow" size="lg" disabled={isSubmitting}>
                 {isSubmitting ? (
                     <Loader2 className="animate-spin" />
                 ) : (
                     <>
-                    <Lock />
+                    <Lock className="mr-2 h-4 w-4" />
                     Connect Wallet
-                    <ArrowRight />
+                    <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                 )}
                 </Button>
@@ -247,7 +247,7 @@ export default function ConnectWalletPage() {
             <div className="space-y-2">
                 <Dialog open={isNostrLoginOpen} onOpenChange={(isOpen) => { setNostrLoginOpen(isOpen); if (!isOpen) { nostrForm.reset(); } }}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" className="w-full" size="lg">
+                        <Button variant="outline" className="w-full shadow-sm hover:shadow-md transition-shadow" size="lg">
                             <OstrichIcon className="mr-2 h-5 w-5 text-primary" />
                             Login with Nostr
                         </Button>
@@ -295,24 +295,24 @@ export default function ConnectWalletPage() {
 
 
         {/* SEO-friendly features section */}
-        <div className="w-full space-y-3 sm:space-y-4 text-center">
+        <div className="w-full space-y-3 sm:space-y-4 text-center p-4 rounded-lg bg-gradient-to-br from-primary/5 via-transparent to-transparent border">
           <h2 className="text-base sm:text-lg font-semibold text-foreground">Key Features</h2>
-          <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm text-muted-foreground">
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
-              <span>AI-powered Bitcoin wallet security analysis</span>
+          <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm">
+            <div className="flex items-center justify-center gap-2 p-2 rounded-md hover:bg-accent/50 transition-colors group">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors">AI-powered Bitcoin wallet security analysis</span>
             </div>
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
-              <span>Transaction pattern and privacy analysis</span>
+            <div className="flex items-center justify-center gap-2 p-2 rounded-md hover:bg-accent/50 transition-colors group">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors">Transaction pattern and privacy analysis</span>
             </div>
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
-              <span>Real-time Bitcoin market and mempool data</span>
+            <div className="flex items-center justify-center gap-2 p-2 rounded-md hover:bg-accent/50 transition-colors group">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors">Real-time Bitcoin market and mempool data</span>
             </div>
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
-              <span>Free Bitcoin wallet scanner and checker</span>
+            <div className="flex items-center justify-center gap-2 p-2 rounded-md hover:bg-accent/50 transition-colors group">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors">Free Bitcoin wallet scanner and checker</span>
             </div>
           </div>
         </div>

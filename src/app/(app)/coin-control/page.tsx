@@ -5,6 +5,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useWallet } from '@/contexts/wallet-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { IconContainer } from '@/components/ui/icon-container';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
@@ -255,10 +256,15 @@ export default function CoinControlPage() {
 
     return (
         <div className="flex flex-col gap-4 sm:gap-6 w-full max-w-full overflow-hidden">
-            <Card className="min-w-0 w-full">
-                <CardHeader>
-                    <CardTitle className="text-lg sm:text-xl">UTXO Distribution</CardTitle>
-                    <CardDescription className="text-sm">
+            <Card className="min-w-0 w-full border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                        <IconContainer variant="primary">
+                            <Puzzle className="h-5 w-5" />
+                        </IconContainer>
+                        UTXO Distribution
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-2">
                         Visual representation of your wallet's UTXOs by size. Each block represents one UTXO, with size proportional to its value. Click to select UTXOs for consolidation.
                     </CardDescription>
                 </CardHeader>
@@ -328,10 +334,15 @@ export default function CoinControlPage() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0 w-full max-w-full">
-                <Card className="lg:col-span-2 min-w-0 w-full">
-                    <CardHeader>
-                         <CardTitle className="flex items-center gap-2 text-base sm:text-lg"><Coins className="h-4 w-4 sm:h-5 sm:w-5" /> All Wallet UTXOs ({utxos.length})</CardTitle>
-                         <CardDescription className="text-sm">
+                <Card className="lg:col-span-2 min-w-0 w-full border-2 shadow-md">
+                    <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                            <IconContainer variant="emerald">
+                                <Coins className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </IconContainer>
+                            All Wallet UTXOs ({utxos.length})
+                         </CardTitle>
+                         <CardDescription className="text-sm mt-2">
                             A list of all individual "coins" in your wallet. Select UTXOs to simulate a consolidation transaction.
                          </CardDescription>
                     </CardHeader>
@@ -339,7 +350,7 @@ export default function CoinControlPage() {
                         <div key={`utxo-table-${sidebarState}`} className="overflow-x-auto rounded-md border w-full">
                             <Table className="min-w-[540px] w-full table-auto">
                                 <TableHeader>
-                                    <TableRow>
+                                    <TableRow className="border-b-2 hover:bg-transparent">
                                         <TableHead className="w-12 px-3">
                                             <Checkbox
                                                 checked={selectAllCheckedState}
@@ -355,7 +366,7 @@ export default function CoinControlPage() {
                                 <TableBody>
                                     {utxos.length > 0 ? (
                                         utxos.map(utxo => (
-                                            <TableRow key={`${utxo.txid}:${utxo.vout}`}>
+                                            <TableRow key={`${utxo.txid}:${utxo.vout}`} className="hover:bg-muted/50 transition-colors">
                                                 <TableCell className="px-3 py-3">
                                                     <Checkbox
                                                         checked={selectedUtxos[`${utxo.txid}:${utxo.vout}`] || false}
