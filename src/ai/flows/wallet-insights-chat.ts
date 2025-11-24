@@ -20,6 +20,44 @@ const HistoryMessageSchema = z.object({
     content: z.string(),
 }).passthrough();
 
+const MAX_HISTORY_MESSAGES = 8;
+const MAX_HISTORY_CHARS = 1200;
+
+const trimMessageContent = (content: string): string => {
+  if (content.length <= MAX_HISTORY_CHARS) {
+    return content;
+  }
+
+  return `${content.slice(0, MAX_HISTORY_CHARS)}…`;
+};
+
+const minifyJsonString = (value: string): string => {
+  try {
+    return JSON.stringify(JSON.parse(value));
+  } catch {
+    return value;
+  }
+};
+
+const buildModelHistory = (
+  history: WalletInsightsChatInput['history']
+): { role: 'user' | 'model'; content: { text: string }[] }[] => {
+  const trimmedHistory = (history || [])
+    .slice(-MAX_HISTORY_MESSAGES)
+    .filter((item) => item.role !== 'system')
+    .map((item) => ({
+      role: item.role === 'assistant' ? 'model' : 'user',
+      content: [{ text: trimMessageContent(item.content) }],
+    })) as { role: 'user' | 'model'; content: { text: string }[] }[];
+
+  // Ensure the conversation starts with a user message to reduce model confusion
+  while (trimmedHistory.length > 0 && trimmedHistory[0].role === 'model') {
+    trimmedHistory.shift();
+  }
+
+  return trimmedHistory;
+};
+
 const WalletInsightsChatInputSchema = z.object({
   question: z.string().describe('The user question about their Bitcoin wallet.'),
   walletData: z.string().describe('JSON string containing wallet data including balance, transaction history, security analysis, UTXOs, etc.'),
@@ -1114,24 +1152,15 @@ const walletInsightsChatFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // Map and filter the history, removing system messages
-      let history = (input.history || []).map(item => ({
-          role: item.role === 'assistant' ? 'model' : 'user',
-          content: [{text: item.content}]
-      })).filter(item => item.role !== 'system') as ({role: 'user' | 'model', content: {text: string}[]}[]);
-      
-      // Ensure the first message is always from the user for model compatibility
-      // If history starts with a model message, remove leading model messages
-      while (history.length > 0 && history[0].role === 'model') {
-        history = history.slice(1);
-      }
+      const history = buildModelHistory(input.history);
+      const walletData = minifyJsonString(input.walletData);
 
       const userPrompt = `
 Analyze my request based on our conversation history and respond appropriately to the question type.
 
 **My Wallet Data:**
 \`\`\`json
-${input.walletData}
+${walletData}
 \`\`\`
 
 **My Preferred Currency:**

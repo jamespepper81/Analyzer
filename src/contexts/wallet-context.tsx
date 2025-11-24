@@ -652,8 +652,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setRecommendations([]);
 
     try {
-      const walletDataString = JSON.stringify(data);
-      const recommendationsResult = await getSecurityRecommendations({ walletData: walletDataString });
+      const walletSummary = JSON.stringify({
+        opsecThreat: data.opsecThreat,
+        dustUtxoCount: data.dustUtxoCount,
+      });
+
+      const recommendationsResult = await getSecurityRecommendations({ walletSummary });
 
       if (recommendationsResult.recommendations && recommendationsResult.recommendations.length > 0) {
         setRecommendations(recommendationsResult.recommendations);

@@ -8,7 +8,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { appendToSheet } from '@/services/googleSheets';
 import { z } from 'zod';
 import { headers } from 'next/headers';
 
@@ -42,29 +41,17 @@ export type FeedbackOutput = z.infer<typeof FeedbackOutputSchema>;
 export async function submitFeedback(input: FeedbackInput): Promise<FeedbackOutput> {
   try {
     const processedFeedback = await feedbackProcessingFlow(input);
-    
+
     // Get IP address from headers
     const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for') ?? 'IP Not Found';
-    
-    const feedbackWithIp: FeedbackOutput = {
+
+    // Returning the AI-processed feedback with IP address. Persistence is handled by the API route
+    // to avoid double-writing to Google Sheets and to centralize storage logic.
+    return {
         ...processedFeedback,
         ipAddress,
     };
-
-    // The Google Sheets integration is optional. We'll try to save the data,
-    // but we won't block the user's experience if it fails.
-    appendToSheet(feedbackWithIp).catch(error => {
-      // This catch block should rarely be reached since appendToSheet handles its own errors.
-      // If we're here, there's an unexpected error (e.g., syntax error, network issue).
-      console.error('[Feedback Flow] Unexpected error calling appendToSheet:', {
-        errorName: error?.name,
-        errorMessage: error?.message
-      });
-      console.error('[Feedback Flow] Note: Feedback was successfully processed by AI. Only the Google Sheets export failed.');
-    });
-    
-    return feedbackWithIp;
   } catch (error) {
     console.error('Error in submitFeedback:', error);
     

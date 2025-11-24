@@ -38,6 +38,21 @@ const fallbackSuggestions = [
   "/address <address>",
 ];
 
+const MAX_CHAT_HISTORY = 8;
+const MAX_CHAT_MESSAGE_LENGTH = 1200;
+
+const sanitizeHistory = (history: Message[]): Message[] => {
+  const trimmedHistory = history.slice(-MAX_CHAT_HISTORY);
+
+  return trimmedHistory.map((message) => ({
+    role: message.role,
+    content:
+      message.content.length > MAX_CHAT_MESSAGE_LENGTH
+        ? `${message.content.slice(0, MAX_CHAT_MESSAGE_LENGTH)}…`
+        : message.content,
+  }));
+};
+
 export default function ChatPage() {
   const form = useForm<z.infer<typeof chatSchema>>({
     resolver: zodResolver(chatSchema),
@@ -89,7 +104,7 @@ export default function ChatPage() {
   }, [messages]);
 
   async function onSubmit(data: z.infer<typeof chatSchema>) {
-    if (!walletData) return;
+    if (!walletData || isAiLoading) return;
 
     const userMessage: Message = { role: 'user', content: data.message };
     const currentHistory = messages;
@@ -100,7 +115,8 @@ export default function ChatPage() {
     try {
       let assistantMessage: Message;
       const message = data.message.trim();
-      const walletDataString = JSON.stringify(walletData, null, 2);
+      const walletDataString = JSON.stringify(walletData);
+      const historyForAi = sanitizeHistory(currentHistory);
       const isNewsQuery = message.toLowerCase().includes('news');
 
       if (isNewsQuery) {
@@ -130,10 +146,10 @@ export default function ChatPage() {
           const result = await walletInsightsChat({
               question: data.message,
               walletData: walletDataString,
-              history: currentHistory,
+              history: historyForAi,
           });
-          assistantMessage = { 
-              role: 'assistant', 
+          assistantMessage = {
+              role: 'assistant',
               content: result.answer,
               chart: result.chart,
           };

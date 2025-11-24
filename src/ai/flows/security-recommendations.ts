@@ -13,21 +13,32 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import type { WalletData } from '@/lib/types';
 
-// The public-facing input schema now accepts the full wallet data.
 const SecurityRecommendationsInputSchema = z.object({
-  walletData: z.string().describe('JSON string containing the full wallet data for context.'),
+  walletSummary: z
+    .string()
+    .describe('JSON string containing only the minimal fields required for recommendations.'),
 });
 export type SecurityRecommendationsInput = z.infer<typeof SecurityRecommendationsInputSchema>;
 
 // This internal schema is used only by the prompt.
 const PromptInputSchema = z.object({
-  walletSummary: z.string().describe('JSON string containing a summary of wallet data, including security score, opsec threat, dust analysis, and address usage.'),
+  walletSummary: z
+    .string()
+    .describe('JSON string containing a minimal summary of wallet security signals like opsec threat and dust UTXO count.'),
 });
 
 const RecommendationSchema = z.object({
-    title: z.string().describe("A short, clear title for the recommendation."),
-    description: z.string().describe("A concise (2-3 sentences) explanation of the recommendation, its importance, and what the user should do."),
-    level: z.enum(['Good', 'Warning', 'Info', 'Critical']).describe("The severity or type of recommendation. 'Critical' for severe risks. 'Warning' for medium risks. 'Good' for positive findings. 'Info' for general advice."),
+  title: z.string().describe('A short, clear title for the recommendation.'),
+  description: z
+    .string()
+    .describe(
+      'A concise (2-3 sentences) explanation of the recommendation, its importance, and what the user should do.',
+    ),
+  level: z
+    .enum(['Good', 'Warning', 'Info', 'Critical'])
+    .describe(
+      "The severity or type of recommendation. 'Critical' for severe risks. 'Warning' for medium risks. 'Good' for positive findings. 'Info' for general advice.",
+    ),
 });
 
 const SecurityRecommendationsOutputSchema = z.object({
@@ -35,7 +46,9 @@ const SecurityRecommendationsOutputSchema = z.object({
 });
 export type SecurityRecommendationsOutput = z.infer<typeof SecurityRecommendationsOutputSchema>;
 
-export async function getSecurityRecommendations(input: SecurityRecommendationsInput): Promise<SecurityRecommendationsOutput> {
+export async function getSecurityRecommendations(
+  input: SecurityRecommendationsInput,
+): Promise<SecurityRecommendationsOutput> {
   return securityRecommendationsFlow(input);
 }
 
@@ -80,39 +93,50 @@ Generate the list of recommendations.`,
 const securityRecommendationsFlow = ai.defineFlow(
   {
     name: 'securityRecommendationsFlow',
-    inputSchema: SecurityRecommendationsInputSchema, // Updated input
+    inputSchema: SecurityRecommendationsInputSchema,
     outputSchema: SecurityRecommendationsOutputSchema,
   },
   async (input) => {
     try {
-        const walletData: WalletData = JSON.parse(input.walletData);
+      const parsedSummary = JSON.parse(input.walletSummary) as Partial<WalletData>;
 
-        // Create the summary object programmatically.
-        const summary = {
-          opsecThreat: walletData.opsecThreat,
-          dustUtxoCount: walletData.dustUtxoCount,
+      const minimalSummary = {
+        opsecThreat: parsedSummary.opsecThreat ?? 'Low',
+        dustUtxoCount: Math.max(0, Number(parsedSummary.dustUtxoCount) || 0),
+      } satisfies Partial<WalletData>;
+
+      const promptInput = { walletSummary: JSON.stringify(minimalSummary) };
+
+      const { output } = await prompt(promptInput);
+
+      if (!output) {
+        return {
+          recommendations: [
+            {
+              title: 'Error',
+              description:
+                'The AI model did not return a response for security recommendations. It might be temporarily unavailable.',
+              level: 'Warning' as const,
+            },
+          ],
         };
-        const promptInput = { walletSummary: JSON.stringify(summary) };
-
-        const {output} = await prompt(promptInput);
-
-        if (!output) {
-            return { recommendations: [{
-                title: 'Error',
-                description: 'The AI model did not return a response for security recommendations. It might be temporarily unavailable.',
-                level: 'Warning' as const
-            }]};
-        }
-        return output;
-    } catch(e) {
-        console.error("Error in securityRecommendationsFlow:", e);
-        return { recommendations: [{
+      }
+      return output;
+    } catch (e) {
+      console.error('Error in securityRecommendationsFlow:', e);
+      return {
+        recommendations: [
+          {
             title: 'Analysis Error',
-            description: `An error occurred while generating security recommendations: ${e instanceof Error ? e.message : String(e)}`,
-            level: 'Warning' as const
-        }] };
+            description: `An error occurred while generating security recommendations: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+            level: 'Warning' as const,
+          },
+        ],
+      };
     }
-  }
+  },
 );
 
 
