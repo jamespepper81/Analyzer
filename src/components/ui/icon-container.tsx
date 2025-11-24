@@ -21,7 +21,6 @@ export function IconContainer({
   variant = 'primary',
   className 
 }: IconContainerProps) {
-  
   return (
     <div className={cn("p-2 rounded-lg transition-colors duration-200", VARIANT_CLASSES[variant], className)}>
       {children}
