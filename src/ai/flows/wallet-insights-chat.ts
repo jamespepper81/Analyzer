@@ -917,7 +917,7 @@ For Security Analysis: "Would you like specific steps to improve your wallet sec
 
 ### Enhanced Bitcoin Analysis Tools
 
-You have access to advanced Bitcoin analysis tools powered by Gemini 2.0 Flash Lite:
+You have access to advanced Bitcoin analysis tools powered by GPT-4o Mini:
 
 1. **Enhanced Transaction Analysis** (\`analyzeBitcoinTransaction\`):
    - Provides detailed privacy scoring (0-100)
@@ -1083,7 +1083,7 @@ const walletInsightsChatFlow = ai.defineFlow(
           content: [{text: item.content}]
       })).filter(item => item.role !== 'system') as ({role: 'user' | 'model', content: {text: string}[]}[]);
       
-      // Ensure the first message is always from the user (Gemini API requirement)
+      // Ensure the first message is always from the user for model compatibility
       // If history starts with a model message, remove leading model messages
       while (history.length > 0 && history[0].role === 'model') {
         history = history.slice(1);
@@ -1148,11 +1148,11 @@ ${input.question}
     } catch (e: any) {
       console.error("Error in walletInsightsChatFlow:", e);
       const errorMessage = e?.message || 'Unknown error';
-      const isApiKeyError = errorMessage.includes('API key') || errorMessage.includes('GOOGLE_GENAI_API_KEY') || errorMessage.includes('401') || errorMessage.includes('403');
+      const isApiKeyError = errorMessage.includes('API key') || errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('OPENAI_CHATGPT_API_KEY') || errorMessage.includes('401') || errorMessage.includes('403');
       
       return {
-          answer: isApiKeyError 
-            ? "⚠️ **AI Service Configuration Issue**\n\nThe AI chat feature requires a valid Google AI API key to be configured. Please contact the administrator to set up the GOOGLE_GENAI_API_KEY environment variable.\n\nYou can still use other features of BitSleuth, such as transaction viewing, analysis charts, and security recommendations."
+          answer: isApiKeyError
+            ? "⚠️ **AI Service Configuration Issue**\n\nThe AI chat feature requires a valid OpenAI API key to be configured. Please contact the administrator to set up the OPENAI_API_KEY environment variable (or OPENAI_CHATGPT_API_KEY for backward compatibility).\n\nYou can still use other features of BitSleuth, such as transaction viewing, analysis charts, and security recommendations."
             : `I'm sorry, I encountered an error while processing your request: ${errorMessage}\n\nPlease try again or rephrase your question.`,
           chart: null,
           followUpSuggestions: [],

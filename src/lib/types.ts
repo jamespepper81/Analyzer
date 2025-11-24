@@ -213,7 +213,7 @@ export type BlockDetails = LatestBlock & {
 
 export type Currency = 'USD' | 'EUR' | 'GBP';
 
-// Enhanced Bitcoin-specific types for Gemini 2.0 Flash Lite analysis
+// Enhanced Bitcoin-specific types for GPT-4o Mini analysis
 export type BitcoinTransactionType = 'send' | 'receive' | 'self-transfer' | 'exchange' | 'unknown';
 export type BitcoinAddressType = 'p2pkh' | 'p2sh' | 'p2wpkh' | 'p2wsh' | 'p2tr';
 export type PrivacyRiskLevel = 'low' | 'medium' | 'high' | 'critical';

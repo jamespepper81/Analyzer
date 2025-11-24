@@ -44,5 +44,5 @@ env:
   - variable: COINGECKO_API_KEY
     secret: COINGECKO_API_KEY
     
-  - variable: OPENAI_CHATGPT_API_KEY
+  - variable: OPENAI_API_KEY
     secret: OPENAI_CHATGPT_API_KEY

@@ -94,7 +94,7 @@ const feedbackProcessingFlow = ai.defineFlow(
     }),
   },
   async (input) => {
-    // Use ai.generate() instead of definePrompt to avoid role issues with Gemini API
+    // Use ai.generate() instead of definePrompt to avoid role issues observed with previous Gemini API usage
     const { output } = await ai.generate({
       prompt: `Analyze the following user feedback for a Bitcoin wallet analysis app called BitSleuth.
 

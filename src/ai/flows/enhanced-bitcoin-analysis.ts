@@ -1,10 +1,10 @@
 'use server';
 
 /**
- * @fileOverview Enhanced Bitcoin analysis using Gemini 2.0 Flash Lite capabilities
- * 
+ * @fileOverview Enhanced Bitcoin analysis using GPT-4o Mini capabilities
+ *
  * This flow provides advanced Bitcoin transaction and address analysis with structured outputs
- * that leverage Gemini 2.0 Flash Lite's enhanced capabilities for Bitcoin-specific insights.
+ * that leverage GPT-4o Mini's enhanced capabilities for Bitcoin-specific insights.
  */
 
 import {ai} from '@/ai/genkit';

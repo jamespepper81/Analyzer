@@ -30,7 +30,7 @@
 
 ### AI & Intelligence
 - **Genkit** - Google's AI framework for flow orchestration
-- **Google AI (Gemini)** - Large language model for insights and chat
+- **OpenAI (GPT-4o Mini)** - Large language model for insights and chat
 - AI flows located in `src/ai/flows/`
 
 ### Bitcoin & Blockchain
@@ -174,8 +174,8 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
 
-# Google AI / Genkit (required for AI features)
-GOOGLE_GENAI_API_KEY=your_google_ai_api_key
+# OpenAI / Genkit (required for AI features)
+OPENAI_API_KEY=your_openai_api_key
 
 # Optional APIs (enhance functionality when provided)
 COINGECKO_API_KEY=your_coingecko_api_key
@@ -190,7 +190,7 @@ GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KE
 **Important Notes:**
 - Firebase keys are public client configuration and safe to expose in the browser
 - Without Firebase keys, analytics will be disabled with a non-blocking warning
-- `GOOGLE_GENAI_API_KEY` is required for AI chat and insights features
+- `OPENAI_API_KEY` is required for AI chat and insights features
 - Optional API keys enable enhanced features but are not required for core functionality
 - Google Sheets private key should be wrapped in quotes with preserved newlines
 
@@ -469,7 +469,7 @@ docker build -t bitsleuth-analyzer .
 
 # Run container
 docker run -p 3000:3000 \
-  -e GOOGLE_GENAI_API_KEY=your_key \
+  -e OPENAI_API_KEY=your_key \
   -e NEXT_PUBLIC_FIREBASE_API_KEY=your_key \
   bitsleuth-analyzer
 ```
@@ -538,7 +538,7 @@ For detailed contribution guidelines, including documentation standards and file
 - Restart dev server after adding environment variables
 
 **AI Features Not Working**
-- Verify `GOOGLE_GENAI_API_KEY` is set
+- Verify `OPENAI_API_KEY` is set
 - Ensure `npm run genkit:dev` is running
 - Check Genkit console for errors at http://localhost:3400
 

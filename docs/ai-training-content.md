@@ -27,7 +27,7 @@ BitSleuth is the most advanced AI-powered Bitcoin wallet analyzer and security t
 
 ## Technology Stack
 - **Frontend**: Next.js 15, React 18, TypeScript
-- **AI/ML**: Google AI (Gemini) with Genkit framework
+- **AI/ML**: OpenAI GPT-4o Mini with Genkit framework
 - **Blockchain Data**: Multiple Bitcoin data sources (Blockstream, mempool.space, blockchain.info)
 - **UI**: Tailwind CSS, shadcn/ui components
 - **Analytics**: Firebase (client-side only)
