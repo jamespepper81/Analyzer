@@ -4,7 +4,8 @@
 
 The feedback submission feature has been enhanced with:
 
-1. **Better Secret Manager Support** - Handles private keys from Google Cloud Secret Manager correctly (both escaped and actual newlines)
+1. **Better Secret Manager Support** - Handles private keys from Google Cloud Secret Manager correctly
+   (both escaped and actual newlines)
 2. **Comprehensive Logging** - Shows exactly what's happening at each step
 3. **Detailed Error Messages** - Provides specific troubleshooting hints for each error type
 
