@@ -44,5 +44,5 @@ env:
   - variable: COINGECKO_API_KEY
     secret: COINGECKO_API_KEY
     
-  - variable: GOOGLE_GENAI_API_KEY
-    secret: GOOGLE_GENAI_API_KEY
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
