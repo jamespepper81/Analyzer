@@ -8,7 +8,7 @@ The Enhanced Tax Report is a professional-grade Bitcoin tax analysis tool that c
 
 ### Is this tool free to use?
 
-Yes! BitSleuth is a free, open-source Bitcoin wallet analyzer. The tax reporting feature is completely free and serves as an alternative to paid services like Koinly or CoinTracker.
+Yes! BitSleuth is a free-to-use, proprietary Bitcoin wallet analyzer (see LICENSE). The tax reporting feature is completely free and serves as an alternative to paid services like Koinly or CoinTracker.
 
 ### Can I use this report for my actual tax filing?
 
