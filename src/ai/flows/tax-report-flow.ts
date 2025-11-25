@@ -245,6 +245,16 @@ export async function getTaxReport(input: TaxReportInput): Promise<TaxReportOutp
         
         // --- Calculate final holdings by address ---
         const addressBalances: { [address: string]: { balance: number } } = {};
+
+        // Start with known address balances (in sats) to ensure holdings are populated
+        for (const addressInfo of walletData.addresses) {
+            const btcBalance = addressInfo.balance / 1e8;
+            if (btcBalance > 0) {
+                addressBalances[addressInfo.address] = { balance: btcBalance };
+            }
+        }
+
+        // Enrich with UTXO data (also in sats) to capture spendable outputs
         for (const utxo of walletData.utxos) {
             if (!addressBalances[utxo.address]) {
                 addressBalances[utxo.address] = { balance: 0 };
@@ -252,7 +262,12 @@ export async function getTaxReport(input: TaxReportInput): Promise<TaxReportOutp
             const btcValue = utxo.value / 1e8;
             addressBalances[utxo.address].balance += btcValue;
         }
-        
+
+        // Fallback: if no per-address data is available but the wallet has a balance, use an aggregate entry
+        if (Object.keys(addressBalances).length === 0 && totalBtc > 0) {
+            addressBalances['Aggregated Wallet'] = { balance: totalBtc };
+        }
+
         const holdings: Holding[] = Object.entries(addressBalances).map(([address, data]) => {
             const cost = totalBtc > 0 ? data.balance * (totalCostBasis / totalBtc) : 0;
             const marketValue = data.balance * latestPrice;
