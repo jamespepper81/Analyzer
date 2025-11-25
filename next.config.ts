@@ -101,6 +101,8 @@ const nextConfig: NextConfig = {
   // Add chunk loading optimization
   experimental: {
     optimizeCss: false, // Disabled to fix critters module issue
+    // Enable MCP server support
+    mcpServer: true,
     // Enable WASM support for edge runtime
     webpackBuildWorker: true,
     // Improve chunk loading reliability
