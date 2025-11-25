@@ -34,7 +34,7 @@ Go to **Settings > Secrets and variables > Actions > Repository secrets** and ad
 - `NEXT_PUBLIC_CHAINABUSE_API_KEY` - ChainAbuse public key
 - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` - reCAPTCHA site key
 - `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` - reCAPTCHA enterprise key
-- `GOOGLE_GENAI_API_KEY` - Google Gemini AI for chat features
+- `OPENAI_API_KEY` - OpenAI ChatGPT AI for chat features
 
 #### 2. Configure Repository Variables
 
@@ -91,7 +91,7 @@ Copilot agents can reference this workflow to:
 The workflow provides everything needed to test the Report page:
 - `COINGECKO_API_KEY` for historical price data
 - `TEST_XPUB` for wallet transaction data
-- `GOOGLE_GENAI_API_KEY` for AI-powered insights
+- `OPENAI_API_KEY` for AI-powered insights
 
 ### Troubleshooting
 
