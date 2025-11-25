@@ -119,7 +119,7 @@ export async function appendToSheet(feedbackData: FeedbackOutput): Promise<void>
     });
     
     // Categorize the error and provide actionable guidance
-    let errorCategory = 'Unknown Error';
+    let errorCategory: string;
     let troubleshootingSteps: string[] = [];
     
     if (error.code === 403 || error.message?.includes('PERMISSION_DENIED')) {
