@@ -370,6 +370,31 @@ export default function EnhancedReportPage() {
 
   const { summary } = reportData;
 
+// (We will insert/patch code above the return to show isReportLoading state and modify generateReport.)
+
+// --- BEGIN INSERT OR MODIFY ---
+
+// Find or add isReportLoading state at the top of the component (if not present):
+const [isReportLoading, setIsReportLoading] = useState(false);
+
+// Patch the generateReport function to manage loading state:
+const generateReport = useCallback(async () => {
+  setIsReportLoading(true);
+  try {
+    // Your existing report generation logic goes here.
+    // For example:
+    // await actualReportGenerationFunction();
+  } catch (e) {
+    // Optionally handle errors
+  } finally {
+    setIsReportLoading(false);
+  }
+}, [
+  // Add dependencies as appropriate, such as methods, variables used inside
+]);
+
+// --- END INSERT OR MODIFY ---
+
   return (
     <div className="space-y-6">
       {/* Configuration Section */}
