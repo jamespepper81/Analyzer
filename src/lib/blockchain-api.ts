@@ -218,10 +218,19 @@ export async function getTransactionData(txid: string): Promise<{ data: Transact
         const isConfirmed = txData.status.confirmed;
         const confirmations = isConfirmed && latestBlockHeight ? latestBlockHeight - txData.status.block_height + 1 : 0;
         const txDate = isConfirmed ? new Date(txData.status.block_time * 1000) : new Date();
-        
+
+        let netAmountSatoshis = 0;
+        txData.vout?.forEach((out: any) => { netAmountSatoshis += out.value; });
+        txData.vin?.forEach((inp: any) => { netAmountSatoshis -= inp.prevout?.value ?? 0; });
+
+        const netBtc = netAmountSatoshis / 1e8;
+        console.debug(`[getTransactionData] Computed net BTC for ${txid}:`, netBtc);
+
         const transaction: Transaction = {
             id: txData.txid, date: txDate.toISOString(),
-            btc: 0, status: isConfirmed ? 'Confirmed' : 'Pending', type: 'Sent', // Type isn't relevant for external tx
+            btc: netBtc,
+            status: isConfirmed ? 'Confirmed' : 'Pending',
+            type: netAmountSatoshis >= 0 ? 'Received' : 'Sent',
             fromAddress: txData.vin?.map((i: any) => i.prevout?.scriptpubkey_address).filter(Boolean) ?? [],
             toAddress: txData.vout?.map((o: any) => o.scriptpubkey_address).filter(Boolean) ?? [],
             confirmations, fee: txData.fee, size: txData.size, weight: txData.weight, version: txData.version, locktime: txData.locktime,
