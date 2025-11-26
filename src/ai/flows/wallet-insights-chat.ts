@@ -866,6 +866,21 @@ const isSchemaValidationError = (error: unknown): boolean => {
   return message.includes('Schema validation failed') || message.includes('INVALID_ARGUMENT');
 };
 
+const isFormattingError = (error: unknown): boolean => {
+  const message = extractErrorMessage(error).toLowerCase();
+  if (!message) {
+    return false;
+  }
+
+  return (
+    message.includes('json5') ||
+    message.includes('unexpected token') ||
+    message.includes('invalid character') ||
+    message.includes('could not parse') ||
+    message.includes('parse error')
+  );
+};
+
 const systemPrompt = `You are BitSleuth, a helpful AI assistant and expert Bitcoin analyst. Your role is to answer questions about Bitcoin, blockchain technology, market conditions, wallet analysis, and security.
 
 **IMPORTANT CURRENCY GUIDELINES:**
@@ -1230,8 +1245,11 @@ ${input.question}
           }
         } catch (error) {
           lastGenerationError = error;
-          if (isSchemaValidationError(error) && attempt < MAX_GENERATION_ATTEMPTS) {
-            console.warn('walletInsightsChatFlow: Structured output validation failed. Retrying with reminder.');
+          if ((isSchemaValidationError(error) || isFormattingError(error)) && attempt < MAX_GENERATION_ATTEMPTS) {
+            console.warn(
+              'walletInsightsChatFlow: Structured output validation failed. Retrying with reminder.',
+              extractErrorMessage(error)
+            );
             continue;
           }
           throw error;
@@ -1254,15 +1272,29 @@ ${input.question}
       const errorMessage = extractErrorMessage(e) || 'Unknown error';
       const isApiKeyError = errorMessage.includes('API key') || errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('OPENAI_CHATGPT_API_KEY') || errorMessage.includes('401') || errorMessage.includes('403');
       const schemaError = isSchemaValidationError(e);
-      
+      const formattingError = isFormattingError(e);
+
+      const formattingFollowUps = schemaError || formattingError
+        ? [
+            {
+              question: 'Can you try that analysis again without the extra formatting?',
+              context: 'A simpler text-only reply can avoid formatting issues.',
+            },
+            {
+              question: 'Give me a brief wallet health summary.',
+              context: 'A concise recap may bypass the formatting problem you encountered.',
+            },
+          ]
+        : [];
+
       return {
           answer: isApiKeyError
             ? "⚠️ **AI Service Configuration Issue**\n\nThe AI chat feature requires a valid OpenAI API key to be configured. Please contact the administrator to set up the OPENAI_API_KEY environment variable (or OPENAI_CHATGPT_API_KEY for backward compatibility).\n\nYou can still use other features of BitSleuth, such as transaction viewing, analysis charts, and security recommendations."
-            : schemaError
-              ? "I couldn't format a complete response just now, but there's nothing wrong with your request. Please try asking again and I'll take another look."
+            : schemaError || formattingError
+              ? "I had trouble formatting that last response, but nothing is wrong with your question. Please try again and I'll keep the answer concise."
               : `I'm sorry, I encountered an error while processing your request: ${errorMessage}\n\nPlease try again or rephrase your question.`,
           chart: null,
-          followUpSuggestions: [],
+          followUpSuggestions: formattingFollowUps,
       };
     }
   }
