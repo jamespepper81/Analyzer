@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { SendHorizonal, Bot, ThumbsUp, CircleDashed, Copy, Zap } from 'lucide-react';
+import { SendHorizonal, ThumbsUp, CircleDashed, Copy, Zap } from 'lucide-react';
 import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
@@ -254,13 +254,6 @@ export default function FeedbackPage() {
           </CardContent>
       </Card>
       
-      <Alert>
-        <Bot className="h-4 w-4" />
-        <AlertTitle className="text-sm sm:text-base">How it works</AlertTitle>
-        <AlertDescription className="text-sm">
-          Your feedback is processed by BitSleuth AI-powered agent to help us categorize and understand it. This helps our developers quickly identify issues and prioritize new features. Thank you for helping us improve BitSleuth!
-        </AlertDescription>
-      </Alert>
     </div>
   );
 }
