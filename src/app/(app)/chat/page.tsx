@@ -55,7 +55,13 @@ const sanitizeHistory = (history: Message[]): Message[] => {
 
 // Reduce wallet data to the essentials so AI calls stay lightweight and avoid timeouts.
 const buildWalletSnapshotForAi = (walletData: WalletData) => {
-  const recentTransactions = (walletData.transactions || [])
+  const safeTransactions = Array.isArray(walletData.transactions)
+    ? walletData.transactions
+    : [];
+  const safeUtxos = Array.isArray(walletData.utxos) ? walletData.utxos : [];
+  const safeAddresses = Array.isArray(walletData.addresses) ? walletData.addresses : [];
+
+  const recentTransactions = safeTransactions
     .slice(0, 25)
     .map((tx) => ({
       id: tx.id,
@@ -70,7 +76,7 @@ const buildWalletSnapshotForAi = (walletData: WalletData) => {
       labels: tx.labels,
     }));
 
-  const utxoSample = (walletData.utxos || [])
+  const utxoSample = safeUtxos
     .slice(0, 50)
     .map((utxo) => ({
       txid: utxo.txid,
@@ -79,10 +85,16 @@ const buildWalletSnapshotForAi = (walletData: WalletData) => {
       value: utxo.value,
     }));
 
-  const addressOverview = (walletData.addresses || [])
+  const addressOverview = safeAddresses
     .slice()
     .sort((a, b) => b.balance - a.balance)
     .slice(0, 20);
+
+  const flowSummary = {
+    totalTransactions: safeTransactions.length,
+    totalUtxos: safeUtxos.length,
+    totalAddresses: safeAddresses.length,
+  };
 
   return {
     balanceBTC: walletData.balanceBTC,
@@ -96,11 +108,12 @@ const buildWalletSnapshotForAi = (walletData: WalletData) => {
     averageFeeRate: walletData.averageFeeRate,
     performance: walletData.performance,
     inflowOutflow: walletData.inflowOutflow,
-    transactionCount: walletData.transactions?.length || 0,
-    utxoCount: walletData.utxos?.length || 0,
-    recentTransactions,
-    utxoSample,
-    addressOverview,
+    transactionCount: safeTransactions.length,
+    utxoCount: safeUtxos.length,
+    counts: flowSummary,
+    transactions: recentTransactions,
+    utxos: utxoSample,
+    addresses: addressOverview,
   };
 };
 

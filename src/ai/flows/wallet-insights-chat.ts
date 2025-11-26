@@ -24,6 +24,10 @@ const HistoryMessageSchema = z.object({
 
 const MAX_HISTORY_MESSAGES = 8;
 const MAX_HISTORY_CHARS = 1200;
+const MAX_TX_FOR_MODEL = 40;
+const MAX_UTXO_FOR_MODEL = 80;
+const MAX_ADDRESS_FOR_MODEL = 25;
+const WALLET_JSON_CHAR_BUDGET = 14000;
 
 const trimMessageContent = (content: string): string => {
   if (content.length <= MAX_HISTORY_CHARS) {
@@ -58,6 +62,129 @@ const buildModelHistory = (
   }
 
   return trimmedHistory;
+};
+
+const normalizeWalletData = (wallet: any): WalletData => {
+  const transactions = Array.isArray(wallet?.transactions) ? wallet.transactions : [];
+  const utxos = Array.isArray(wallet?.utxos) ? wallet.utxos : [];
+  const addresses = Array.isArray(wallet?.addresses) ? wallet.addresses : [];
+
+  return {
+    ...wallet,
+    balanceBTC: typeof wallet?.balanceBTC === 'number' ? wallet.balanceBTC : 0,
+    btcPrice: typeof wallet?.btcPrice === 'number' ? wallet.btcPrice : 0,
+    securityScore: typeof wallet?.securityScore === 'number' ? wallet.securityScore : 0,
+    opsecThreat: wallet?.opsecThreat ?? 'Low',
+    usedAddressCount: typeof wallet?.usedAddressCount === 'number' ? wallet.usedAddressCount : addresses.length,
+    dustAmountBTC: typeof wallet?.dustAmountBTC === 'number' ? wallet.dustAmountBTC : 0,
+    dustUtxoCount: typeof wallet?.dustUtxoCount === 'number' ? wallet.dustUtxoCount : 0,
+    btcPrices: wallet?.btcPrices ?? {},
+    performance: wallet?.performance ?? { change24h: 0, change7d: 0, change30d: 0 },
+    inflowOutflow: wallet?.inflowOutflow ?? { inflowBTC: 0, outflowBTC: 0 },
+    utxos,
+    transactions,
+    addresses,
+    averageFeeRate: typeof wallet?.averageFeeRate === 'number' ? wallet.averageFeeRate : 0,
+  } as WalletData;
+};
+
+const clampArray = <T,>(items: T[], limit: number) => items.slice(0, Math.max(0, limit));
+
+const compactWalletDataForPrompt = (walletDataString: string): string => {
+  try {
+    const normalizedWallet = normalizeWalletData(JSON.parse(walletDataString));
+
+    const transactions = clampArray(
+      [...normalizedWallet.transactions].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+      MAX_TX_FOR_MODEL
+    ).map((tx) => ({
+      id: tx.id,
+      date: tx.date,
+      btc: tx.btc,
+      fee: tx.fee,
+      type: tx.type,
+      status: tx.status,
+      confirmations: tx.confirmations,
+      historicalPrice: tx.historicalPrice,
+      fromAddress: tx.fromAddress?.slice(0, 2),
+      toAddress: tx.toAddress?.slice(0, 2),
+      labels: clampArray(tx.labels || [], 3),
+    }));
+
+    const utxos = clampArray(
+      [...normalizedWallet.utxos].sort((a, b) => b.value - a.value),
+      MAX_UTXO_FOR_MODEL
+    ).map((utxo) => ({
+      txid: utxo.txid,
+      vout: utxo.vout,
+      value: utxo.value,
+      address: utxo.address,
+    }));
+
+    const addresses = clampArray(
+      [...normalizedWallet.addresses].sort((a, b) => b.balance - a.balance),
+      MAX_ADDRESS_FOR_MODEL
+    ).map((address) => ({
+      address: address.address,
+      balance: address.balance,
+      n_tx: address.n_tx,
+      totalReceived: address.totalReceived,
+    }));
+
+    const compactPayload = {
+      balanceBTC: normalizedWallet.balanceBTC,
+      btcPrice: normalizedWallet.btcPrice,
+      btcPrices: normalizedWallet.btcPrices,
+      securityScore: normalizedWallet.securityScore,
+      opsecThreat: normalizedWallet.opsecThreat,
+      usedAddressCount: normalizedWallet.usedAddressCount,
+      dustAmountBTC: normalizedWallet.dustAmountBTC,
+      dustUtxoCount: normalizedWallet.dustUtxoCount,
+      averageFeeRate: normalizedWallet.averageFeeRate,
+      performance: normalizedWallet.performance,
+      inflowOutflow: normalizedWallet.inflowOutflow,
+      counts: {
+        transactions: normalizedWallet.transactions.length,
+        utxos: normalizedWallet.utxos.length,
+        addresses: normalizedWallet.addresses.length,
+      },
+      transactions,
+      utxos,
+      addresses,
+    };
+
+    const primaryPayloadString = JSON.stringify(compactPayload);
+    if (primaryPayloadString.length <= WALLET_JSON_CHAR_BUDGET) {
+      return primaryPayloadString;
+    }
+
+    const tighterPayloadString = JSON.stringify({
+      ...compactPayload,
+      transactions: clampArray(transactions, Math.ceil(MAX_TX_FOR_MODEL / 2)),
+      utxos: clampArray(utxos, Math.ceil(MAX_UTXO_FOR_MODEL / 2)),
+      addresses: clampArray(addresses, Math.ceil(MAX_ADDRESS_FOR_MODEL / 2)),
+    });
+
+    if (tighterPayloadString.length <= WALLET_JSON_CHAR_BUDGET) {
+      return tighterPayloadString;
+    }
+
+    return JSON.stringify({
+      ...compactPayload,
+      transactions: [],
+      utxos: [],
+      addresses: [],
+    });
+  } catch {
+    const minified = minifyJsonString(walletDataString);
+    try {
+      return JSON.stringify(JSON.parse(minified));
+    } catch {
+      return minified;
+    }
+  }
 };
 
 const WalletInsightsChatInputSchema = z.object({
@@ -166,6 +293,327 @@ export const enhancedTransactionAnalysisTool = ai.defineTool(
     return await analyzeBitcoinTransaction(input);
   }
 );
+
+const getWalletCurrency = (wallet: WalletData): { code: string; symbol: string } => {
+  const currencyEntry = Object.entries(wallet.btcPrices || {}).find(([, value]: any) => {
+    return typeof value?.last === 'number' && value.last === wallet.btcPrice;
+  });
+
+  const code = (currencyEntry?.[0] || 'USD').toUpperCase();
+  const symbol =
+    (currencyEntry?.[1] as any)?.symbol ||
+    (code === 'GBP'
+      ? '£'
+      : code === 'EUR'
+        ? '€'
+        : code === 'JPY'
+          ? '¥'
+          : '$');
+
+  return { code, symbol };
+};
+
+const computePnlAnalytics = (wallet: WalletData) => {
+  const { code, symbol } = getWalletCurrency(wallet);
+  const transactions = [...wallet.transactions].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  let runningHoldings = 0;
+  let runningCostBasisFiat = 0;
+  let realizedPnlFiat = 0;
+
+  transactions.forEach((tx) => {
+    const price = typeof tx.historicalPrice === 'number' && tx.historicalPrice > 0
+      ? tx.historicalPrice
+      : wallet.btcPrice || 0;
+    const amount = tx.btc;
+
+    if (amount > 0) {
+      const fiatCost = amount * price;
+      runningHoldings += amount;
+      runningCostBasisFiat += fiatCost;
+    } else if (amount < 0 && runningHoldings > 0) {
+      const sellAmount = Math.abs(amount);
+      const costPerBtc = runningHoldings > 0 ? runningCostBasisFiat / runningHoldings : 0;
+      const costRemoved = costPerBtc * sellAmount;
+      const proceeds = sellAmount * price;
+      realizedPnlFiat += proceeds - costRemoved;
+      runningHoldings -= sellAmount;
+      runningCostBasisFiat = Math.max(0, runningCostBasisFiat - costRemoved);
+    }
+  });
+
+  const currentValueFiat = wallet.balanceBTC * (wallet.btcPrice || 0);
+  const unrealizedPnlFiat = currentValueFiat - runningCostBasisFiat;
+  const roiPercent = runningCostBasisFiat > 0
+    ? ((currentValueFiat - runningCostBasisFiat) / runningCostBasisFiat) * 100
+    : null;
+
+  const remainingCostPerBtc = wallet.balanceBTC > 0 && runningCostBasisFiat > 0
+    ? runningCostBasisFiat / wallet.balanceBTC
+    : null;
+
+  const costBasisPerUtxo = wallet.utxos.slice(0, 50).map((utxo) => {
+    const valueBTC = utxo.value / 1e8;
+    return {
+      txid: utxo.txid,
+      vout: utxo.vout,
+      valueBTC,
+      estimatedCostBasisFiat: remainingCostPerBtc ? remainingCostPerBtc * valueBTC : null,
+      estimatedCostPerBTC: remainingCostPerBtc,
+    };
+  });
+
+  // Use available performance windows to approximate a time-weighted return signal
+  const timeWeightedReturnPercent =
+    wallet.performance?.change30d ?? wallet.performance?.change7d ?? wallet.performance?.change24h ?? null;
+
+  // Compute volatility resilience from BTC balance drawdowns
+  let peak = 0;
+  let trough = 0;
+  let maxDrawdown = 0;
+  let running = 0;
+  transactions.forEach((tx) => {
+    running += tx.btc;
+    if (running > peak) {
+      peak = running;
+      trough = running;
+    }
+    if (running < trough) {
+      trough = running;
+    }
+    if (peak > 0) {
+      const drawdown = (peak - trough) / peak;
+      if (drawdown > maxDrawdown) {
+        maxDrawdown = drawdown;
+      }
+    }
+  });
+  const volatilityResilienceScore = Math.max(0, Math.min(100, 100 - maxDrawdown * 120));
+
+  return {
+    code,
+    symbol,
+    currentValueFiat,
+    costBasisFiat: runningCostBasisFiat,
+    roiPercent,
+    realizedPnlFiat,
+    unrealizedPnlFiat,
+    timeWeightedReturnPercent,
+    volatilityResilienceScore,
+    costBasisPerUtxo,
+  };
+};
+
+const bucketHodlWaves = (wallet: WalletData) => {
+  const now = Date.now();
+  const txDateMap = new Map(wallet.transactions.map((tx) => [tx.id, new Date(tx.date).getTime()]));
+  const buckets: Record<string, number> = {
+    '0-30d': 0,
+    '1-6m': 0,
+    '6-12m': 0,
+    '1-2y': 0,
+    '2-5y': 0,
+    '5y+': 0,
+  };
+
+  wallet.utxos.forEach((utxo) => {
+    const createdAt = txDateMap.get(utxo.txid) ?? now;
+    const ageDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+    const valueBTC = utxo.value / 1e8;
+
+    if (ageDays <= 30) buckets['0-30d'] += valueBTC;
+    else if (ageDays <= 180) buckets['1-6m'] += valueBTC;
+    else if (ageDays <= 365) buckets['6-12m'] += valueBTC;
+    else if (ageDays <= 365 * 2) buckets['1-2y'] += valueBTC;
+    else if (ageDays <= 365 * 5) buckets['2-5y'] += valueBTC;
+    else buckets['5y+'] += valueBTC;
+  });
+
+  const totalBTC = Object.values(buckets).reduce((sum, v) => sum + v, 0) || 1;
+
+  return Object.entries(buckets).map(([bucket, btc]) => ({
+    bucket,
+    btc,
+    percentage: (btc / totalBTC) * 100,
+  }));
+};
+
+const computeDormancyScore = (wallet: WalletData) => {
+  const now = Date.now();
+  const txDateMap = new Map(wallet.transactions.map((tx) => [tx.id, new Date(tx.date).getTime()]));
+  const weightedAge = wallet.utxos.reduce((sum, utxo) => {
+    const createdAt = txDateMap.get(utxo.txid) ?? now;
+    const ageDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+    return sum + ageDays * (utxo.value / 1e8);
+  }, 0);
+  const totalBTC = wallet.utxos.reduce((sum, utxo) => sum + utxo.value / 1e8, 0);
+  const averageAge = totalBTC > 0 ? weightedAge / totalBTC : 0;
+  return Math.max(0, Math.min(100, Math.min(averageAge / 5, 100)));
+};
+
+const computeSpendingHabits = (wallet: WalletData) => {
+  const monthly = new Map<string, { sent: number; received: number; sendAmounts: number[]; receiveAmounts: number[] }>();
+  const monthlyFlow = new Map<string, { inflow: number; outflow: number }>();
+  wallet.transactions.forEach((tx) => {
+    const date = new Date(tx.date);
+    const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+    const entry = monthly.get(key) || { sent: 0, received: 0, sendAmounts: [], receiveAmounts: [] };
+    if (tx.type === 'Sent') {
+      entry.sent += 1;
+      entry.sendAmounts.push(Math.abs(tx.btc));
+      const flow = monthlyFlow.get(key) || { inflow: 0, outflow: 0 };
+      flow.outflow += Math.abs(tx.btc);
+      monthlyFlow.set(key, flow);
+    } else {
+      entry.received += 1;
+      entry.receiveAmounts.push(tx.btc);
+      const flow = monthlyFlow.get(key) || { inflow: 0, outflow: 0 };
+      flow.inflow += tx.btc;
+      monthlyFlow.set(key, flow);
+    }
+    monthly.set(key, entry);
+  });
+
+  const monthlyActivity = Array.from(monthly.entries())
+    .sort(([a], [b]) => (a > b ? -1 : 1))
+    .slice(0, 6)
+    .map(([month, stats]) => ({
+      month,
+      sentCount: stats.sent,
+      receivedCount: stats.received,
+      averageSendSizeBTC: stats.sendAmounts.length > 0
+        ? stats.sendAmounts.reduce((sum, v) => sum + v, 0) / stats.sendAmounts.length
+        : null,
+      averageReceiveSizeBTC: stats.receiveAmounts.length > 0
+        ? stats.receiveAmounts.reduce((sum, v) => sum + v, 0) / stats.receiveAmounts.length
+        : null,
+    }));
+
+  const recentNetFlow = wallet.transactions
+    .filter((tx) => new Date(tx.date).getTime() > Date.now() - 90 * 24 * 60 * 60 * 1000)
+    .reduce((sum, tx) => sum + tx.btc, 0);
+
+  const accumulationTrend = recentNetFlow > 0.01
+    ? 'accumulating'
+    : recentNetFlow < -0.01
+      ? 'distributing'
+      : 'neutral';
+
+  const txIntervals = wallet.transactions
+    .map((tx) => new Date(tx.date).getTime())
+    .sort((a, b) => a - b)
+    .map((timestamp, index, arr) => (index === 0 ? null : timestamp - arr[index - 1]))
+    .filter((v): v is number => typeof v === 'number');
+  const averageIntervalDays = txIntervals.length > 0
+    ? txIntervals.reduce((sum, v) => sum + v, 0) / txIntervals.length / (1000 * 60 * 60 * 24)
+    : null;
+  const dcaScore = averageIntervalDays ? Math.max(0, Math.min(100, 100 - averageIntervalDays * 2)) : 50;
+
+  const inflowOutflowHeatmap = Array.from(monthlyFlow.entries())
+    .sort(([a], [b]) => (a > b ? -1 : 1))
+    .slice(0, 6)
+    .map(([bucket, flow]) => ({ bucket, inflowBTC: flow.inflow, outflowBTC: flow.outflow }));
+
+  return { monthlyActivity, accumulationTrend, dcaScore, inflowOutflowHeatmap };
+};
+
+const computeFeeEconomics = (wallet: WalletData) => {
+  const sentTxs = wallet.transactions.filter((tx) => tx.type === 'Sent' && tx.fee > 0);
+  const totalFeesPaidBTC = sentTxs.reduce((sum, tx) => sum + tx.fee / 1e8, 0);
+  const averageFeePaidBTC = sentTxs.length > 0 ? totalFeesPaidBTC / sentTxs.length : null;
+  const feeOptimalityScore = wallet.averageFeeRate > 0
+    ? Math.max(0, Math.min(100, 80 - Math.abs(wallet.averageFeeRate - 20)))
+    : 50;
+
+  const txDateMap = new Map(wallet.transactions.map((tx) => [tx.id, new Date(tx.date).getTime()]));
+  const hotVsColdSeparation = wallet.utxos.reduce(
+    (acc, utxo) => {
+      const createdAt = txDateMap.get(utxo.txid) ?? Date.now();
+      const ageDays = (Date.now() - createdAt) / (1000 * 60 * 60 * 24);
+      const valueBTC = utxo.value / 1e8;
+
+      if (ageDays <= 90) {
+        acc.hotCount += 1;
+        acc.hotValueBTC += valueBTC;
+      } else {
+        acc.coldCount += 1;
+        acc.coldValueBTC += valueBTC;
+      }
+
+      return acc;
+    },
+    { hotCount: 0, coldCount: 0, hotValueBTC: 0, coldValueBTC: 0 }
+  );
+
+  return { totalFeesPaidBTC, averageFeePaidBTC, feeOptimalityScore, hotVsColdSeparation };
+};
+
+const computeCounterpartyProfile = (wallet: WalletData) => {
+  const labeledTxs = wallet.transactions.flatMap((tx) => tx.labels || []);
+  const exchangeTouchpoints = labeledTxs.filter((label) => label.type === 'exchange').length;
+  const taggedEntityCount = labeledTxs.length;
+  const institutionalProximityScore = Math.max(0, Math.min(100, exchangeTouchpoints * 10));
+  const categoryCounts = labeledTxs.reduce<Record<string, number>>((acc, label) => {
+    const category = label.type || 'unknown';
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+  const knownRecipientCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([category]) => category);
+
+  return { exchangeTouchpoints, taggedEntityCount, institutionalProximityScore, knownRecipientCategories };
+};
+
+const computeRiskSignals = (wallet: WalletData, currentFiatValue: number) => {
+  const unusualActivityAlert: string[] = [];
+  const largeTx = wallet.transactions.find((tx) => Math.abs(tx.btc) * (wallet.btcPrice || 0) > currentFiatValue * 0.5);
+  if (largeTx) {
+    unusualActivityAlert.push(`Large movement of ${Math.abs(largeTx.btc).toFixed(4)} BTC detected in tx ${largeTx.id}.`);
+  }
+  if (wallet.dustUtxoCount > 0) {
+    unusualActivityAlert.push('Dust UTXOs present; monitor for potential tracking attempts.');
+  }
+
+  const destinationRiskLevel = wallet.transactions.some((tx) =>
+    (tx.labels || []).some((label) => label.type === 'exchange')
+  )
+    ? 'medium'
+    : 'low';
+
+  const minerProximityScore = wallet.transactions.some((tx) => tx.labels?.some((label) => label.label.toLowerCase().includes('miner')))
+    ? 70
+    : 30;
+
+  const dustAttackSuspicion = wallet.dustUtxoCount > 3;
+
+  return { unusualActivityAlert, destinationRiskLevel, minerProximityScore, dustAttackSuspicion };
+};
+
+const computeMetaAnalytics = (wallet: WalletData) => {
+  const txCount = wallet.transactions.length;
+  const sendRatio = txCount > 0
+    ? wallet.transactions.filter((tx) => tx.type === 'Sent').length / txCount
+    : 0;
+
+  const walletPersona = sendRatio < 0.35
+    ? 'HODLer'
+    : sendRatio < 0.55
+      ? 'DCA investor'
+      : 'trader';
+
+  const labelCoverageScore = wallet.transactions.length > 0
+    ? Math.min(100, ((wallet.transactions.filter((tx) => (tx.labels || []).length > 0).length / wallet.transactions.length) * 100))
+    : 0;
+
+  return {
+    walletPersona,
+    diversificationScore: 100, // Only BTC supported currently
+    labelCoverageScore,
+  };
+};
 
 export const enhancedAddressAnalysisTool = ai.defineTool(
   {
@@ -536,6 +984,25 @@ export const investmentInsightsTool = ai.defineTool(
 const WalletIntelligenceOutputSchema = z.object({
   balanceBTC: z.number(),
   balanceFiat: z.number().optional(),
+  currency: z.string().optional(),
+  valuations: z.object({
+    totalFiatValue: z.number().nullable(),
+    costBasisFiat: z.number().nullable(),
+    roiPercent: z.number().nullable(),
+    realizedPnlFiat: z.number().nullable(),
+    unrealizedPnlFiat: z.number().nullable(),
+    timeWeightedReturnPercent: z.number().nullable(),
+    volatilityResilienceScore: z.number().nullable(),
+    costBasisPerUtxo: z.array(
+      z.object({
+        txid: z.string(),
+        vout: z.number(),
+        valueBTC: z.number(),
+        estimatedCostBasisFiat: z.number().nullable(),
+        estimatedCostPerBTC: z.number().nullable(),
+      })
+    ),
+  }),
   utxoSummary: z.object({
     total: z.number(),
     dustCount: z.number(),
@@ -550,6 +1017,24 @@ const WalletIntelligenceOutputSchema = z.object({
     rolling30dOutflow: z.number(),
     largestSendBTC: z.number().nullable(),
     largestReceiveBTC: z.number().nullable(),
+    monthlyActivity: z.array(
+      z.object({
+        month: z.string(),
+        sentCount: z.number(),
+        receivedCount: z.number(),
+        averageSendSizeBTC: z.number().nullable(),
+        averageReceiveSizeBTC: z.number().nullable(),
+      })
+    ),
+    accumulationTrend: z.enum(['accumulating', 'distributing', 'neutral']),
+    dcaScore: z.number(),
+    inflowOutflowHeatmap: z.array(
+      z.object({
+        bucket: z.string(),
+        inflowBTC: z.number(),
+        outflowBTC: z.number(),
+      })
+    ),
   }),
   whaleWatch: z.array(
     z.object({
@@ -567,10 +1052,28 @@ const WalletIntelligenceOutputSchema = z.object({
         count: z.number(),
       })
     ),
+    hodlWaves: z.array(
+      z.object({
+        bucket: z.string(),
+        percentage: z.number(),
+        btc: z.number(),
+      })
+    ),
+    dormancyScore: z.number(),
+    coinAgeDestroyed: z.number().nullable(),
   }),
   feeInsight: z.object({
     averageFeeRate: z.number(),
     guidance: z.string(),
+    totalFeesPaidBTC: z.number(),
+    averageFeePaidBTC: z.number().nullable(),
+    feeOptimalityScore: z.number(),
+    hotVsColdSeparation: z.object({
+      hotCount: z.number(),
+      coldCount: z.number(),
+      hotValueBTC: z.number(),
+      coldValueBTC: z.number(),
+    }),
   }),
   addressReuse: z.object({
     reuseRate: z.number(),
@@ -581,6 +1084,35 @@ const WalletIntelligenceOutputSchema = z.object({
         balanceSats: z.number().optional(),
       })
     ),
+    hygieneScore: z.number(),
+    linkabilityRisk: z.number(),
+    lightningExposure: z.string(),
+    coinjoinStatus: z.enum(['none detected', 'possible', 'detected']),
+    kycExposureProbability: z.number(),
+  }),
+  counterpartyProfile: z.object({
+    exchangeTouchpoints: z.number(),
+    taggedEntityCount: z.number(),
+    institutionalProximityScore: z.number(),
+    knownRecipientCategories: z.array(z.string()),
+  }),
+  riskSignals: z.object({
+    unusualActivityAlert: z.array(z.string()),
+    destinationRiskLevel: z.enum(['low', 'medium', 'high']),
+    minerProximityScore: z.number(),
+    dustAttackSuspicion: z.boolean(),
+  }),
+  metaAnalytics: z.object({
+    walletPersona: z.enum(['HODLer', 'DCA investor', 'trader', 'miner', 'exchange hot wallet', 'merchant wallet', 'unknown']),
+    diversificationScore: z.number(),
+    labelCoverageScore: z.number(),
+    networkAllocation: z.array(
+      z.object({
+        network: z.string(),
+        percentage: z.number(),
+      })
+    ),
+    ordinalRunesIndex: z.string(),
   }),
   summary: z.string(),
 });
@@ -596,7 +1128,14 @@ export const walletIntelligenceTool = ai.defineTool(
     outputSchema: WalletIntelligenceOutputSchema,
   },
   async (input) => {
-    const wallet: WalletData = JSON.parse(input.walletData);
+    const parsedWallet = JSON.parse(input.walletData);
+    const wallet: WalletData = normalizeWalletData(parsedWallet);
+    const pnlAnalytics = computePnlAnalytics(wallet);
+    const hodlWaves = bucketHodlWaves(wallet);
+    const dormancyScore = computeDormancyScore(wallet);
+    const spendingHabits = computeSpendingHabits(wallet);
+    const feeEconomics = computeFeeEconomics(wallet);
+    const counterpartyProfile = computeCounterpartyProfile(wallet);
 
     const utxoValues = wallet.utxos.map((utxo) => utxo.value);
     const totalUtxoValue = utxoValues.reduce((sum, value) => sum + value, 0);
@@ -661,11 +1200,59 @@ export const walletIntelligenceTool = ai.defineTool(
       ? (addressReuseCandidates.length / wallet.addresses.length) * 100
       : 0;
 
-    const summary = `Wallet balance is ${wallet.balanceBTC.toFixed(8)} BTC with ${wallet.utxos.length} UTXOs and ${wallet.transactions.length} transactions analyzed. Fee guidance is based on an average of ${feeRate.toFixed(2)} sat/vB.`;
+    const coinAgeDestroyed = wallet.transactions
+      .filter((tx) => tx.type === 'Sent')
+      .reduce((sum, tx) => {
+        const ageDays = (Date.now() - new Date(tx.date).getTime()) / (1000 * 60 * 60 * 24);
+        return sum + Math.abs(tx.btc) * ageDays;
+      }, 0);
+
+    const coinjoinStatus = wallet.transactions.some((tx) =>
+      tx.labels?.some((label) => label.label?.toLowerCase().includes('coinjoin') || label.type === 'coinjoin')
+    )
+      ? 'possible'
+      : 'none detected';
+
+    const lightningExposure = wallet.transactions.some((tx) =>
+      tx.labels?.some((label) => label.label?.toLowerCase().includes('lightning') || label.type === 'lightning')
+    )
+      ? 'possible'
+      : 'unknown';
+
+    const ordinalRunesIndex = wallet.transactions.some((tx) =>
+      tx.labels?.some((label) => label.label?.toLowerCase().includes('ordinal') || label.label?.toLowerCase().includes('rune'))
+    )
+      ? 'Potential ordinal/runes activity detected'
+      : 'No ordinal or runes activity detected';
+
+    const networkAllocation = [
+      { network: 'Mainnet', percentage: 100 },
+    ];
+
+    const kycExposureProbability = Math.min(
+      100,
+      Math.round((counterpartyProfile.exchangeTouchpoints / Math.max(wallet.transactions.length || 1, 1)) * 120)
+    );
+
+    const riskSignals = computeRiskSignals(wallet, pnlAnalytics.currentValueFiat);
+    const metaAnalytics = computeMetaAnalytics(wallet);
+
+    const summary = `Wallet balance is ${wallet.balanceBTC.toFixed(8)} BTC (~${pnlAnalytics.symbol}${pnlAnalytics.currentValueFiat.toFixed(2)} ${pnlAnalytics.code}) with ${wallet.utxos.length} UTXOs and ${wallet.transactions.length} transactions analyzed. ROI est: ${pnlAnalytics.roiPercent ? pnlAnalytics.roiPercent.toFixed(2) : 'n/a'}%. Fee guidance is based on an average of ${feeRate.toFixed(2)} sat/vB.`;
 
     return {
       balanceBTC: wallet.balanceBTC,
       balanceFiat: wallet.balanceBTC * (wallet.btcPrice || 0),
+      currency: pnlAnalytics.code,
+      valuations: {
+        totalFiatValue: pnlAnalytics.currentValueFiat,
+        costBasisFiat: pnlAnalytics.costBasisFiat,
+        roiPercent: pnlAnalytics.roiPercent,
+        realizedPnlFiat: pnlAnalytics.realizedPnlFiat,
+        unrealizedPnlFiat: pnlAnalytics.unrealizedPnlFiat,
+        timeWeightedReturnPercent: pnlAnalytics.timeWeightedReturnPercent,
+        volatilityResilienceScore: pnlAnalytics.volatilityResilienceScore,
+        costBasisPerUtxo: pnlAnalytics.costBasisPerUtxo,
+      },
       utxoSummary: {
         total: wallet.utxos.length,
         dustCount: wallet.dustUtxoCount,
@@ -683,19 +1270,42 @@ export const walletIntelligenceTool = ai.defineTool(
         rolling30dOutflow: wallet.inflowOutflow.outflowBTC,
         largestSendBTC: typeof largestSend === 'number' ? Math.abs(largestSend) : null,
         largestReceiveBTC: largestReceive ?? null,
+        monthlyActivity: spendingHabits.monthlyActivity,
+        accumulationTrend: spendingHabits.accumulationTrend,
+        dcaScore: spendingHabits.dcaScore,
+        inflowOutflowHeatmap: spendingHabits.inflowOutflowHeatmap,
       },
       whaleWatch,
       activity: {
         mostActiveDay,
         timeBuckets: Array.from(timeBuckets.entries()).map(([bucket, count]) => ({ bucket, count })),
+        hodlWaves,
+        dormancyScore,
+        coinAgeDestroyed,
       },
       feeInsight: {
         averageFeeRate: feeRate,
         guidance,
+        totalFeesPaidBTC: feeEconomics.totalFeesPaidBTC,
+        averageFeePaidBTC: feeEconomics.averageFeePaidBTC,
+        feeOptimalityScore: feeEconomics.feeOptimalityScore,
+        hotVsColdSeparation: feeEconomics.hotVsColdSeparation,
       },
       addressReuse: {
         reuseRate,
         mostReused: addressReuseCandidates,
+        hygieneScore: Math.max(0, Math.min(100, 100 - wallet.dustUtxoCount * 5)),
+        linkabilityRisk: Math.max(0, Math.min(100, reuseRate + (wallet.dustUtxoCount > 0 ? 10 : 0))),
+        lightningExposure,
+        coinjoinStatus,
+        kycExposureProbability,
+      },
+      counterpartyProfile,
+      riskSignals,
+      metaAnalytics: {
+        ...metaAnalytics,
+        networkAllocation,
+        ordinalRunesIndex,
       },
       summary,
     };
@@ -1253,6 +1863,20 @@ const systemPrompt = `You are BitSleuth, a helpful AI assistant and expert Bitco
    - Use wallet intelligence to answer balance checks, UTXO health, address reuse, and spending patterns
    - Provide insights about their holdings and activity
 
+**Wallet Analytics Coverage for Wallet Questions:**
+- Always surface total fiat value (USD/EUR/GBP), wallet ROI vs cost basis, realized and unrealized P&L, and cost basis estimates per UTXO when possible
+- Include time-weighted return and a volatility resilience/drawdown note so users understand durability of their holdings
+- Mention behavioral/temporal signals such as HODL waves, dormancy/inactivity, spending habits, accumulation vs distribution trend, inflow/outflow heatmaps, and coin-age destroyed
+- Note sentiment/strategy signals (wallet persona, DCA regularity, top-up patterns) and relate them to market moves when relevant
+- Call out privacy and OPSEC analytics including address reuse score, UTXO hygiene, linkability risk, KYC exposure probability, Lightning/CoinJoin clues, and reuse-driven linkage concerns
+- Summarize transaction economics (total fees paid, average fee, fee optimality, hot vs cold UTXO separation)
+- Highlight counterparty clustering/known recipient categories, risk anomalies (destination risk, miner proximity, dust attack flags), and meta analytics like label coverage/diversification, network allocation, and ordinal/runes exposure
+
+**Integrated Wallet + Market/News Responses:**
+- If a user ties their wallet balance or ROI to market conditions or specific Bitcoin news (e.g., "how did the bear market and ETF delay headlines affect my holdings?"), combine wallet intelligence with market analysis and the Bitcoin news tool in one answer.
+- Always explain the causal link: summarize wallet value/ROI changes, relate them to current market phase or sentiment, and note whether recent headlines could be contributing factors.
+- Return a visualization when they ask about impact or timing—prefer a line or area chart comparing wallet performance vs market moves, or a bar chart showing ROI before/after a news window. Keep chart data in the \`chart\` field.
+
 5. **Technical Decode Questions** (raw transactions, PSBTs, decoding requests):
    - Decode the provided data using Bitcoin decoding tooling
    - Explain inputs/outputs, signing status, and any missing information
@@ -1514,7 +2138,7 @@ const walletInsightsChatFlow = ai.defineFlow(
   async (input) => {
     try {
       const history = buildModelHistory(input.history);
-      const walletData = minifyJsonString(input.walletData);
+      const walletData = compactWalletDataForPrompt(input.walletData);
 
       const userPrompt = `
 Analyze my request based on our conversation history and respond appropriately to the question type.
@@ -1550,7 +2174,7 @@ ${input.question}
 8. For pension questions, analyze Bitcoin as retirement savings with diversification advice. Pass the appropriate currency (user's preferred unless they specified otherwise)
 9. For market questions, provide market analysis without defaulting to security reports
 10. For technical decode requests, use the Bitcoin decoding tool to summarize PSBTs or raw transactions
-11. For wallet-specific questions, use the wallet intelligence tool for balances, UTXO health, fee guidance, mempool readiness, whale alerts, and activity patterns
+11. For wallet-specific questions, use the wallet intelligence tool for balances, UTXO health, fee guidance, mempool readiness, whale alerts, and activity patterns. If the question also references market moves or specific news items, combine wallet intelligence with the market analysis and Bitcoin news tools so the answer connects their holdings to broader conditions.
 12. For general Bitcoin questions, provide educational information
 13. **ALWAYS include 1-3 helpful follow-up suggestions** in the \`followUpSuggestions\` field that would be natural next steps for the user based on your response
       `;
