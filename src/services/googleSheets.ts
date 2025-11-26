@@ -1,19 +1,22 @@
-
-
-'use server';
+"use server";
 
 import { google } from 'googleapis';
-import type { FeedbackOutput } from '@/ai/flows/feedback-flow';
+
+export type FeedbackRecord = {
+  feedback: string;
+  userContext?: string;
+  ipAddress?: string;
+};
 
 /**
- * Appends a new row of processed feedback data to the configured Google Sheet.
+ * Appends a new row of raw feedback data to the configured Google Sheet.
  * This function requires GOOGLE_SHEETS_ID_FEEDBACK (or GOOGLE_SHEETS_ID), GOOGLE_SHEETS_CLIENT_EMAIL, and
  * GOOGLE_SHEETS_PRIVATE_KEY to be set in the environment variables.
  *
- * @param feedbackData The structured feedback object to be added to the sheet.
+ * @param feedbackData The feedback object to be added to the sheet.
  */
-export async function appendToSheet(feedbackData: FeedbackOutput): Promise<void> {
-  const { category, summary, sentiment, originalFeedback, ipAddress } = feedbackData;
+export async function appendToSheet(feedbackData: FeedbackRecord): Promise<void> {
+  const { feedback, userContext, ipAddress } = feedbackData;
 
   const spreadsheetId = process.env.GOOGLE_SHEETS_ID_FEEDBACK || process.env.GOOGLE_SHEETS_ID;
   const client_email = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
@@ -28,7 +31,6 @@ export async function appendToSheet(feedbackData: FeedbackOutput): Promise<void>
 
   if (!spreadsheetId || !client_email || !private_key) {
     // Log a warning for developers but don't crash the app.
-    // The feedback is still processed by the AI, it's just not saved to the sheet.
     const missingVars: string[] = [];
     if (!spreadsheetId) missingVars.push('GOOGLE_SHEETS_ID_FEEDBACK or GOOGLE_SHEETS_ID');
     if (!client_email) missingVars.push('GOOGLE_SHEETS_CLIENT_EMAIL');
@@ -43,7 +45,6 @@ export async function appendToSheet(feedbackData: FeedbackOutput): Promise<void>
     missingVars.forEach(varName => {
       console.warn(`     - ${varName}`);
     });
-    console.warn('[Google Sheets] Feedback is still processed by AI and returned to the user.\n');
     return; // Exit gracefully
   }
   
@@ -78,15 +79,12 @@ export async function appendToSheet(feedbackData: FeedbackOutput): Promise<void>
     const sheets = google.sheets({ version: 'v4', auth });
 
     // Prepare the row data in the correct order for the sheet.
-    // New column order: Timestamp, IP Address, Category, Sentiment, Summary, Full Feedback, Full JSON
+    // Column order: Timestamp, IP Address, Feedback, User Context
     const newRow = [
       new Date().toISOString(),
-      ipAddress || 'N/A', // Add IP address
-      category,
-      sentiment,
-      summary,
-      originalFeedback,
-      JSON.stringify(feedbackData, null, 2), // Full JSON for debugging/backup
+      ipAddress || 'N/A',
+      feedback,
+      userContext || 'Not provided',
     ];
 
     const response = await sheets.spreadsheets.values.append({
@@ -104,8 +102,7 @@ export async function appendToSheet(feedbackData: FeedbackOutput): Promise<void>
     console.log('[Google Sheets] ✅ Feedback successfully written to sheet', {
       updatedRange: response.data.updates?.updatedRange,
       updatedRows: response.data.updates?.updatedRows,
-      category: category,
-      sentiment: sentiment,
+      ipAddress,
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
@@ -175,7 +172,7 @@ export async function appendToSheet(feedbackData: FeedbackOutput): Promise<void>
     troubleshootingSteps.forEach((step, index) => {
       console.error(`  ${index + 1}. ${step}`);
     });
-    console.error('[Google Sheets] Note: This is an optional feature. Feedback is still processed by AI.\n');
+    console.error('[Google Sheets] Note: This is an optional feature.');
     
     // Don't throw - this is optional functionality that shouldn't break the user experience
   }
