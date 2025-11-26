@@ -189,7 +189,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         pool.close(defaultRelays);
     }
-  }
+  };
 
   const saveXpubsToNostr = useCallback(async (xpubsToSave?: string[]): Promise<{ success: boolean; error?: string }> => {
     const currentXpubs = xpubsToSave ?? xpubs;

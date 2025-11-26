@@ -163,7 +163,7 @@ export default function TransactionDetailsPage() {
         style: 'currency',
         currency: currency,
     }).format(value);
-  }
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6 px-2 sm:px-0">

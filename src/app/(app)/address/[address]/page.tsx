@@ -37,7 +37,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
         style: 'currency',
         currency: currency,
     }).format(value);
-  }
+  };
 
   return (
     <TableRow className="hover:bg-muted/50 transition-colors">
@@ -157,7 +157,7 @@ export default function AddressDetailsPage() {
         style: 'currency',
         currency: currency,
     }).format(value);
-  }
+  };
 
   if (isWalletLoading || pageIsLoading) return <FullPageLoader />;
   if (walletError && !pageData) return <ErrorDisplay message={walletError} />;

@@ -119,7 +119,7 @@ export default function ConnectWalletPage() {
           <main className="flex min-h-screen flex-col items-center justify-center p-8">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
           </main>
-      )
+      );
   }
 
   if (error) {

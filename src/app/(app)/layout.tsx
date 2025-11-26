@@ -481,7 +481,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       disconnect();
       router.push('/');
       setOpenMobile(false);
-  }
+  };
 
   const handleSaveXpubs = async () => {
     const result = await saveXpubsToNostr();
@@ -491,7 +491,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         toast({ variant: 'destructive', title: 'Save Failed', description: result.error });
     }
     setShowSaveXpubsPrompt(false);
-  }
+  };
 
   let pageTitle = 'BitSleuth';
   const currentPage = navItems.find(item => pathname.startsWith(item.href));
