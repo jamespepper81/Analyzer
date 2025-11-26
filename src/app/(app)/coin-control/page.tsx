@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useWallet } from '@/contexts/wallet-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,13 +9,10 @@ import { IconContainer } from '@/components/ui/icon-container';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
-import { AlertTriangle, Bitcoin, Coins, Info, Link as LinkIcon, Puzzle } from 'lucide-react';
+import { AlertTriangle, Coins, Info, Link as LinkIcon, Puzzle } from 'lucide-react';
 import { Treemap, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
-import { cn } from '@/lib/utils';
-import type { UTXO } from '@/lib/types';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export function ThemeToggle() {
-  const { setTheme, resolvedTheme, theme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   // Only render after mounting to avoid hydration mismatch

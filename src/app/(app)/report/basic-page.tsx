@@ -21,7 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear, getYear, isSameDay, subDays, subMonths, startOfDay } from 'date-fns';
-import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, ChevronsUpDown, Bitcoin as BitcoinIcon, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { Calendar as CalendarIcon, Info, ChevronsUpDown, Bitcoin as BitcoinIcon, X, ArrowUp, ArrowDown } from 'lucide-react';
 
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';

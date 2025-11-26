@@ -291,7 +291,7 @@ function CurrencySwitcher() {
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeXpub, isLoading, disconnect, nostrNpub, nostrProfile, isNostrReady, connectNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr, refetch } = useWallet();
+  const { activeXpub, isLoading, disconnect, nostrNpub, nostrProfile, isNostrReady, connectNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr } = useWallet();
   const { setOpenMobile } = useSidebar();
   const { toast } = useToast();
   const [isNostrDialogOpen, setNostrDialogOpen] = React.useState(false);
