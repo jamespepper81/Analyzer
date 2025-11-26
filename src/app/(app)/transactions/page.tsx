@@ -171,7 +171,7 @@ export default function TransactionsPage() {
     toast({
         title: "Export Successful",
         description: "Your transactions have been exported to CSV."
-    })
+    });
   };
   
   const handleLoadMore = () => {

@@ -252,7 +252,7 @@ export default function CoinControlPage() {
             style: 'currency',
             currency: currency,
         }).format(value);
-    }
+    };
 
     return (
         <div className="flex flex-col gap-4 sm:gap-6 w-full max-w-full overflow-hidden">

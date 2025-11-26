@@ -280,7 +280,7 @@ export default function SecurityPage() {
             style: 'currency',
             currency: currency,
         }).format(value);
-    }
+    };
     
     const dustAmountFiat = data.dustAmountBTC * fiatPrice;
 

@@ -131,7 +131,7 @@ export default function FeedbackPage() {
                 <Button onClick={() => setIsSubmitted(false)} className="w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow">Submit More Feedback</Button>
             </div>
         </div>
-    )
+    );
   }
 
   return (

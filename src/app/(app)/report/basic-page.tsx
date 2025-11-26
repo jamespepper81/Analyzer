@@ -469,7 +469,7 @@ export default function BasicReportPage() {
                     </CardContent>
                  </Card>
             </div>
-        )
+        );
     }
 
     if (reportError) return <ErrorDisplay message={reportError} />;
