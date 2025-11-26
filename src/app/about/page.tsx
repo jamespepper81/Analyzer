@@ -10,12 +10,11 @@ import {
   Shield, 
   Eye, 
   BarChart3, 
-  Lock, 
+  Lock,
   Zap,
   Bitcoin,
   CheckCircle,
   ArrowRight,
-  Users,
   Globe,
   Target,
   Lightbulb

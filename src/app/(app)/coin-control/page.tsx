@@ -9,7 +9,7 @@ import { IconContainer } from '@/components/ui/icon-container';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { AlertTriangle, Coins, Info, Link as LinkIcon, Puzzle } from 'lucide-react';
-import { Treemap, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
+import { Treemap, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -85,7 +85,7 @@ const CustomTreemapTooltip = ({ active, payload, currency, fiatPrice }: any) => 
 };
 
 const CustomTreemapContent = (props: any, selectedUtxos: Record<string, boolean>) => {
-    const { x, y, width, height, name, value, fill, root, depth, index, id } = props;
+    const { x, y, width, height, value, fill, depth, id } = props;
     // Only render if this is a leaf node (actual UTXO, not a parent container)
     if (depth !== 1) return null;
     

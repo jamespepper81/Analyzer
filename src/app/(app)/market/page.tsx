@@ -10,7 +10,7 @@ import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { getMarketPageData } from '@/lib/market';
 import type { MarketPageData } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, ComposedChart, Cell } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, ComposedChart, Cell } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Bitcoin, ArrowUp, ArrowDown } from 'lucide-react';
 import { TooltipProvider, Tooltip as UITooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';

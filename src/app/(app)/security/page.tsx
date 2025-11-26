@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Wallet, TestTube2, ShieldCheck, AlertTriangle, Lightbulb, ShieldAlert, Share2, Loader2, Search, CircleHelp, ExternalLink } from 'lucide-react';
+import { Wallet, TestTube2, ShieldCheck, AlertTriangle, Lightbulb, ShieldAlert, Share2, Loader2, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useWallet } from '@/contexts/wallet-context';
