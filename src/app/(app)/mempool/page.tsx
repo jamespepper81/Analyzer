@@ -98,7 +98,7 @@ export default function MempoolPage() {
     const [data, setData] = useState<MempoolData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { data: walletData, activeXpub } = useWallet();
+    const { data: walletData } = useWallet();
 
     useEffect(() => {
         async function loadData() {

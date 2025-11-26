@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DashboardPage() {
-  const { data, isLoading, error, activeXpub: xpub, fiatBalance, currency, fiatPrice, refetch } = useWallet();
+  const { data, isLoading, error, activeXpub: xpub, fiatBalance, currency, fiatPrice } = useWallet();
 
   if (!xpub) return <FullPageLoader />;
   if (isLoading) return <FullPageLoader />;

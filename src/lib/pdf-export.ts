@@ -305,7 +305,6 @@ export function generateForm8949PDF(
   taxYear: number
 ): jsPDF {
   const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
   let yPosition = 20;
 
   // Classify disposals

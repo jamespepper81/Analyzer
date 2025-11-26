@@ -2,7 +2,7 @@
 
 'use server';
 
-import { bitcoin, ECPair, bip32 } from '@/lib/bitcoin-init';
+import { bitcoin, bip32 } from '@/lib/bitcoin-init';
 import type { WalletData, Transaction, AddressInfo, UTXO, Currency, TransactionLabel } from '@/lib/types';
 import { KNOWN_EXCHANGE_ADDRESSES } from '@/lib/exchange-labels';
 import { fetchJson, getHistoricalPriceRange } from './blockchain-api';
