@@ -1192,6 +1192,8 @@ const isFormattingError = (error: unknown): boolean => {
   return (
     message.includes('json5') ||
     message.includes('unexpected token') ||
+    message.includes("expected ',' or ']'") ||
+    message.includes('expected , or ]') ||
     message.includes('invalid character') ||
     message.includes('could not parse') ||
     message.includes('parse error')
