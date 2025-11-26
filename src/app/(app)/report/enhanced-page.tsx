@@ -347,7 +347,7 @@ export default function EnhancedReportPage() {
   if (!xpub || isWalletLoading) return <FullPageLoader />;
   if (walletError) return <ErrorDisplay message={walletError} />;
   
-  if (isReportLoading) {
+  if (isReportLoading && !reportData) {
     return (
       <div className="space-y-6">
         <Card>
