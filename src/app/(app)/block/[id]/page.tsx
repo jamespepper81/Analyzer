@@ -37,8 +37,6 @@ function DetailItem({ label, value, children, isMono = true }: { label: string; 
   );
 }
 
-const TXS_PER_PAGE = 25;
-
 export default function BlockDetailsPage() {
   const params = useParams();
   const blockHash = params.id as string;

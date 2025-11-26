@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
-import type { SecurityRecommendation, Currency } from '@/lib/types';
+import type { SecurityRecommendation } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';

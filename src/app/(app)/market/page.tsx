@@ -1,18 +1,18 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconContainer } from '@/components/ui/icon-container';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { getMarketPageData } from '@/lib/market';
-import type { MarketPageData, Currency } from '@/lib/types';
+import type { MarketPageData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar, ComposedChart, Cell } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { Bitcoin, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
+import { Bitcoin, ArrowUp, ArrowDown } from 'lucide-react';
 import { TooltipProvider, Tooltip as UITooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useWallet } from '@/contexts/wallet-context';
 import { useIsMobile } from '@/hooks/use-mobile';
