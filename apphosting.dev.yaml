@@ -5,7 +5,7 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
-  
+
 # Environment variables and secrets
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
@@ -28,21 +28,25 @@ env:
 
   - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
     secret: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID_DEV
-    
+
   - variable: GOOGLE_SHEETS_ID
     secret: GOOGLE_SHEETS_ID
-    
+
   - variable: GOOGLE_SHEETS_CLIENT_EMAIL
     secret: GOOGLE_SHEETS_CLIENT_EMAIL
-    
+
   - variable: GOOGLE_SHEETS_PRIVATE_KEY
     secret: GOOGLE_SHEETS_PRIVATE_KEY
-    
+
   - variable: CRYPTOCOMPARE_API_KEY
     secret: CRYPTOCOMPARE_API_KEY
-    
+
   - variable: COINGECKO_API_KEY
     secret: COINGECKO_API_KEY
-    
+
   - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+
+  # Backward compatibility for deployments using the ChatGPT-specific key name
+  - variable: OPENAI_CHATGPT_API_KEY
     secret: OPENAI_API_KEY
