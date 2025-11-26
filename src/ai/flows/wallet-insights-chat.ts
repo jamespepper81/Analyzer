@@ -14,6 +14,8 @@ import {z} from 'zod';
 import { securityRecommendationsTool } from './security-recommendations';
 import { analyzeBitcoinTransaction, analyzeBitcoinAddress } from './enhanced-bitcoin-analysis';
 import { getLatestBitcoinNews } from '@/lib/newsService';
+import { bitcoin } from '@/lib/bitcoin-init';
+import type { WalletData } from '@/lib/types';
 
 const HistoryMessageSchema = z.object({
     role: z.enum(['user', 'assistant', 'system']),
@@ -231,6 +233,152 @@ export const marketAnalysisTool = ai.defineTool(
   }
 );
 
+const BitcoinDecodeOutputSchema = z.object({
+  decodedType: z.enum(['transaction', 'psbt', 'unknown']),
+  summary: z.string(),
+  details: z.object({
+    inputs: z.array(
+      z.object({
+        address: z.string().nullable(),
+        valueSats: z.number().nullable(),
+        index: z.number(),
+        finalized: z.boolean().optional(),
+      })
+    ),
+    outputs: z.array(
+      z.object({
+        address: z.string().nullable(),
+        valueSats: z.number().nullable(),
+        index: z.number(),
+      })
+    ),
+    feeSats: z.number().nullable(),
+    locktime: z.number().nullable(),
+    version: z.number().nullable(),
+    isRbf: z.boolean().optional(),
+    warnings: z.array(z.string()).default([]),
+  }),
+});
+
+export const bitcoinDecodeTool = ai.defineTool(
+  {
+    name: 'decodeBitcoinData',
+    description:
+      'Decodes raw Bitcoin transactions (hex) or PSBTs to summarize inputs, outputs, and signing status. Use when the user pastes raw tx hex, PSBT base64, or asks to decode a transaction.',
+    inputSchema: z.object({
+      rawData: z.string(),
+    }),
+    outputSchema: BitcoinDecodeOutputSchema,
+  },
+  async (input) => {
+    const warnings: string[] = [];
+
+    try {
+      const psbt = bitcoin.Psbt.fromBase64(input.rawData);
+      const inputs = psbt.txInputs.map((txIn, index) => {
+        const data = psbt.data.inputs[index];
+        const finalized = Boolean(data.finalScriptSig || data.finalScriptWitness);
+        return {
+          address: (data as any)?.bip32Derivation?.[0]?.address || null,
+          valueSats: (data as any)?.witnessUtxo?.value ?? null,
+          index,
+          finalized,
+        };
+      });
+
+      const outputs = psbt.txOutputs.map((txOut, index) => {
+        let address: string | null = null;
+        try {
+          address = bitcoin.address.fromOutputScript(txOut.script, bitcoin.networks.bitcoin);
+        } catch {
+          warnings.push(`Could not decode address for output ${index}.`);
+        }
+
+        return {
+          address,
+          valueSats: txOut.value ?? null,
+          index,
+        };
+      });
+
+      const unsignedInputs = inputs.filter((inputItem) => inputItem.finalized === false).length;
+      const summary = `Decoded PSBT with ${inputs.length} input(s) and ${outputs.length} output(s). ${unsignedInputs} input(s) still need signatures.`;
+
+      return {
+        decodedType: 'psbt',
+        summary,
+        details: {
+          inputs,
+          outputs,
+          feeSats: null,
+          locktime: psbt.locktime ?? null,
+          version: psbt.version ?? null,
+          isRbf: psbt.txInputs.some((inputItem) => inputItem.sequence < 0xfffffffe),
+          warnings,
+        },
+      };
+    } catch {
+      warnings.push('Not a valid PSBT or PSBT decoding failed.');
+    }
+
+    try {
+      const tx = bitcoin.Transaction.fromHex(input.rawData);
+      const inputs = tx.ins.map((inputItem, index) => ({
+        address: null,
+        valueSats: null,
+        index,
+        finalized: true,
+      }));
+
+      const outputs = tx.outs.map((output, index) => {
+        let address: string | null = null;
+        try {
+          address = bitcoin.address.fromOutputScript(output.script, bitcoin.networks.bitcoin);
+        } catch {
+          warnings.push(`Could not decode address for output ${index}.`);
+        }
+
+        return {
+          address,
+          valueSats: output.value ?? null,
+          index,
+        };
+      });
+
+      const summary = `Decoded raw transaction with ${inputs.length} input(s) and ${outputs.length} output(s).`;
+
+      return {
+        decodedType: 'transaction',
+        summary,
+        details: {
+          inputs,
+          outputs,
+          feeSats: null,
+          locktime: tx.locktime ?? null,
+          version: tx.version ?? null,
+          isRbf: tx.ins.some((inputItem) => inputItem.sequence < 0xfffffffe),
+          warnings: [...warnings, 'Fee cannot be determined without previous output values.'],
+        },
+      };
+    } catch {
+      warnings.push('Not a valid raw transaction.');
+    }
+
+    return {
+      decodedType: 'unknown',
+      summary: 'Unable to decode the provided data. Please ensure it is valid Bitcoin transaction hex or PSBT base64.',
+      details: {
+        inputs: [],
+        outputs: [],
+        feeSats: null,
+        locktime: null,
+        version: null,
+        warnings,
+      },
+    };
+  }
+);
+
 export const bitcoinNewsAnalysisTool = ai.defineTool(
   {
     name: 'analyzeBitcoinNews',
@@ -381,6 +529,175 @@ export const investmentInsightsTool = ai.defineTool(
         disclaimer: 'This is not financial advice. Bitcoin is a highly volatile asset. Always do your own research and consider consulting with a financial advisor before making investment decisions.',
       },
       summary: `As of ${currentDate}, Bitcoin presents both opportunities and risks for investors. While Bitcoin continues to mature with growing institutional adoption and improving infrastructure, it remains a high-risk, high-volatility asset. For those considering Bitcoin investment, it's important to only invest what you can afford to lose, consider it as part of a diversified portfolio, and focus on long-term fundamentals rather than short-term price movements. Remember, this is not financial advice and you should always do your own research.`
+    };
+  }
+);
+
+const WalletIntelligenceOutputSchema = z.object({
+  balanceBTC: z.number(),
+  balanceFiat: z.number().optional(),
+  utxoSummary: z.object({
+    total: z.number(),
+    dustCount: z.number(),
+    largestBTC: z.number().nullable(),
+    averageBTC: z.number().nullable(),
+    consolidationHint: z.string(),
+  }),
+  spendingPatterns: z.object({
+    sentTxs: z.number(),
+    receivedTxs: z.number(),
+    rolling30dInflow: z.number(),
+    rolling30dOutflow: z.number(),
+    largestSendBTC: z.number().nullable(),
+    largestReceiveBTC: z.number().nullable(),
+  }),
+  whaleWatch: z.array(
+    z.object({
+      txid: z.string(),
+      amountBTC: z.number(),
+      direction: z.enum(['Sent', 'Received']),
+      note: z.string(),
+    })
+  ),
+  activity: z.object({
+    mostActiveDay: z.string().nullable(),
+    timeBuckets: z.array(
+      z.object({
+        bucket: z.string(),
+        count: z.number(),
+      })
+    ),
+  }),
+  feeInsight: z.object({
+    averageFeeRate: z.number(),
+    guidance: z.string(),
+  }),
+  addressReuse: z.object({
+    reuseRate: z.number(),
+    mostReused: z.array(
+      z.object({
+        address: z.string(),
+        count: z.number(),
+        balanceSats: z.number().optional(),
+      })
+    ),
+  }),
+  summary: z.string(),
+});
+
+export const walletIntelligenceTool = ai.defineTool(
+  {
+    name: 'analyzeWalletIntelligence',
+    description:
+      'Provides balance checks, UTXO health, spending patterns, fee guidance, whale alerts, and activity analytics using the provided wallet data. Use for wallet-specific analytics, whale watching, or xpub/address insights.',
+    inputSchema: z.object({
+      walletData: z.string(),
+    }),
+    outputSchema: WalletIntelligenceOutputSchema,
+  },
+  async (input) => {
+    const wallet: WalletData = JSON.parse(input.walletData);
+
+    const utxoValues = wallet.utxos.map((utxo) => utxo.value);
+    const totalUtxoValue = utxoValues.reduce((sum, value) => sum + value, 0);
+    const largestUtxo = utxoValues.length > 0 ? Math.max(...utxoValues) : null;
+    const averageUtxo = utxoValues.length > 0 ? totalUtxoValue / utxoValues.length : null;
+
+    const sentTxs = wallet.transactions.filter((tx) => tx.type === 'Sent');
+    const receivedTxs = wallet.transactions.filter((tx) => tx.type === 'Received');
+    const largestSend = sentTxs.length > 0 ? Math.min(...sentTxs.map((tx) => tx.btc)) : null;
+    const largestReceive = receivedTxs.length > 0 ? Math.max(...receivedTxs.map((tx) => tx.btc)) : null;
+
+    const whaleThreshold = Math.max(1, wallet.balanceBTC * 0.25);
+    const whaleWatch = wallet.transactions
+      .filter((tx) => Math.abs(tx.btc) >= whaleThreshold)
+      .slice(0, 5)
+      .map((tx) => ({
+        txid: tx.id,
+        amountBTC: Math.abs(tx.btc),
+        direction: tx.type,
+        note: Math.abs(tx.btc) >= 5 ? 'Potential whale-sized movement' : 'Large movement relative to your wallet balance',
+      }));
+
+    const dayBuckets = new Map<string, number>();
+    const timeBuckets = new Map<string, number>([
+      ['Night (0-6h)', 0],
+      ['Morning (6-12h)', 0],
+      ['Afternoon (12-18h)', 0],
+      ['Evening (18-24h)', 0],
+    ]);
+
+    wallet.transactions.forEach((tx) => {
+      const date = new Date(tx.date);
+      const day = date.toLocaleDateString('en-US', { weekday: 'long' });
+      dayBuckets.set(day, (dayBuckets.get(day) || 0) + 1);
+
+      const hour = date.getUTCHours();
+      if (hour < 6) timeBuckets.set('Night (0-6h)', (timeBuckets.get('Night (0-6h)') || 0) + 1);
+      else if (hour < 12) timeBuckets.set('Morning (6-12h)', (timeBuckets.get('Morning (6-12h)') || 0) + 1);
+      else if (hour < 18) timeBuckets.set('Afternoon (12-18h)', (timeBuckets.get('Afternoon (12-18h)') || 0) + 1);
+      else timeBuckets.set('Evening (18-24h)', (timeBuckets.get('Evening (18-24h)') || 0) + 1);
+    });
+
+    const mostActiveDay = Array.from(dayBuckets.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+    const feeRate = wallet.averageFeeRate || 0;
+    const guidance =
+      feeRate === 0
+        ? 'No recent send transactions to derive a fee rate. Use a current mempool estimate before broadcasting.'
+        : feeRate < 5
+          ? 'Fees look very low—confirm urgency or consider bumping to avoid delays if mempool fills up.'
+          : feeRate > 50
+            ? 'Fees are high. Consider waiting for lower mempool congestion or using batching/SegWit inputs.'
+            : 'Fees are within a typical range. You can fine-tune based on confirmation speed needs.';
+
+    const addressReuseCandidates = wallet.addresses
+      .filter((address) => address.n_tx > 1)
+      .sort((a, b) => b.n_tx - a.n_tx)
+      .slice(0, 5)
+      .map((address) => ({ address: address.address, count: address.n_tx, balanceSats: address.balance }));
+
+    const reuseRate = wallet.addresses.length > 0
+      ? (addressReuseCandidates.length / wallet.addresses.length) * 100
+      : 0;
+
+    const summary = `Wallet balance is ${wallet.balanceBTC.toFixed(8)} BTC with ${wallet.utxos.length} UTXOs and ${wallet.transactions.length} transactions analyzed. Fee guidance is based on an average of ${feeRate.toFixed(2)} sat/vB.`;
+
+    return {
+      balanceBTC: wallet.balanceBTC,
+      balanceFiat: wallet.balanceBTC * (wallet.btcPrice || 0),
+      utxoSummary: {
+        total: wallet.utxos.length,
+        dustCount: wallet.dustUtxoCount,
+        largestBTC: typeof largestUtxo === 'number' ? largestUtxo / 1e8 : null,
+        averageBTC: typeof averageUtxo === 'number' ? averageUtxo / 1e8 : null,
+        consolidationHint:
+          wallet.dustUtxoCount > 0
+            ? 'Consider consolidating small UTXOs during low-fee periods to reduce future fees and fingerprinting.'
+            : 'UTXO set looks healthy with minimal dust exposure.',
+      },
+      spendingPatterns: {
+        sentTxs: sentTxs.length,
+        receivedTxs: receivedTxs.length,
+        rolling30dInflow: wallet.inflowOutflow.inflowBTC,
+        rolling30dOutflow: wallet.inflowOutflow.outflowBTC,
+        largestSendBTC: typeof largestSend === 'number' ? Math.abs(largestSend) : null,
+        largestReceiveBTC: largestReceive ?? null,
+      },
+      whaleWatch,
+      activity: {
+        mostActiveDay,
+        timeBuckets: Array.from(timeBuckets.entries()).map(([bucket, count]) => ({ bucket, count })),
+      },
+      feeInsight: {
+        averageFeeRate: feeRate,
+        guidance,
+      },
+      addressReuse: {
+        reuseRate,
+        mostReused: addressReuseCandidates,
+      },
+      summary,
     };
   }
 );
@@ -929,10 +1246,15 @@ const systemPrompt = `You are BitSleuth, a helpful AI assistant and expert Bitco
    - Discuss trends and outlook
    - Use market analysis tool
 
-4. **Wallet-Specific Questions** (balance, transactions, performance):
+4. **Wallet-Specific Questions** (balance, transactions, performance, XPUB health):
    - Analyze the provided wallet data
-   - Answer based on the user's specific wallet information
+   - Use wallet intelligence to answer balance checks, UTXO health, address reuse, and spending patterns
    - Provide insights about their holdings and activity
+
+5. **Technical Decode Questions** (raw transactions, PSBTs, decoding requests):
+   - Decode the provided data using Bitcoin decoding tooling
+   - Explain inputs/outputs, signing status, and any missing information
+   - Offer safe handling tips (e.g., avoid broadcasting unsigned PSBTs)
 
 5. **Security Questions** (privacy, security analysis, recommendations):
    - Use security analysis tools when appropriate
@@ -1023,6 +1345,16 @@ You have access to advanced Bitcoin analysis tools powered by GPT-4o Mini:
    - Provides clustering scores
    - Identifies associated entities
 
+3. **Wallet Intelligence Analysis** (\`analyzeWalletIntelligence\`):
+   - Performs balance checks and UTXO health reviews
+   - Surfaces spending patterns, activity windows, and address reuse
+   - Highlights fee guidance, mempool-readiness, and whale-sized movements
+
+4. **Bitcoin Decode Tool** (\`decodeBitcoinData\`):
+   - Decodes raw transaction hex or PSBTs
+   - Summarizes inputs/outputs, signing status, and RBF flags
+   - Provides safety notes before broadcasting
+
 ### When to Use Analysis Tools:
 
 **Enhanced Transaction Analysis Tool** - Use ONLY when users specifically ask for:
@@ -1036,6 +1368,18 @@ You have access to advanced Bitcoin analysis tools powered by GPT-4o Mini:
 - "Privacy assessment of this address"
 - "Address insights"
 - "Analyze this specific address"
+
+**Wallet Intelligence Tool** - Use for wallet/XPUB questions including:
+- "Check my balance"
+- "Analyze my UTXOs"
+- "Find address reuse or spending patterns"
+- "Spot large or whale transactions"
+- "Give me fee or mempool guidance for my wallet"
+
+**Bitcoin Decode Tool** - Use when users ask for:
+- "Decode this PSBT"
+- "Read this raw transaction"
+- "Tell me what this unsigned transaction does"
 
 **Security Recommendations Tool** - Use ONLY when users specifically ask for:
 - "Security report"
@@ -1195,15 +1539,18 @@ ${input.question}
    - Pension/retirement questions → Bitcoin Pension Analysis Tool
    - Market questions → Market Analysis Tool
    - Security questions → Security Recommendations Tool
+   - Wallet/XPUB analytics → Wallet Intelligence Tool
    - Transaction/Address analysis → Enhanced Analysis Tools
+   - Raw transaction or PSBT decode → Bitcoin Decode Tool
 5. For news questions, fetch and analyze the latest Bitcoin news
 6. For investment questions, provide investment insights with appropriate disclaimers
 7. For CAGR calculator questions, extract investment amount and time horizon from the question, or use reasonable defaults (0.1 BTC, 10 years) if not specified, then calculate projections. Pass the appropriate currency (user's preferred unless they specified otherwise)
 8. For pension questions, analyze Bitcoin as retirement savings with diversification advice. Pass the appropriate currency (user's preferred unless they specified otherwise)
 9. For market questions, provide market analysis without defaulting to security reports
-10. For general Bitcoin questions, provide educational information
-11. For wallet-specific questions, use the provided wallet data
-12. **ALWAYS include 1-3 helpful follow-up suggestions** in the \`followUpSuggestions\` field that would be natural next steps for the user based on your response
+10. For technical decode requests, use the Bitcoin decoding tool to summarize PSBTs or raw transactions
+11. For wallet-specific questions, use the wallet intelligence tool for balances, UTXO health, fee guidance, mempool readiness, whale alerts, and activity patterns
+12. For general Bitcoin questions, provide educational information
+13. **ALWAYS include 1-3 helpful follow-up suggestions** in the \`followUpSuggestions\` field that would be natural next steps for the user based on your response
       `;
 
 
@@ -1231,6 +1578,8 @@ ${input.question}
               investmentInsightsTool,
               bitcoinCAGRCalculatorTool,
               bitcoinPensionAnalysisTool,
+              walletIntelligenceTool,
+              bitcoinDecodeTool,
             ],
           });
 
