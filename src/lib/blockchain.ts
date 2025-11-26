@@ -126,11 +126,23 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
             while (idx < usedAddresses.length) {
                 const address = usedAddresses[idx++];
                 try {
-                    const [txs, addressUtxos, addressInfo] = await Promise.all([
+                    const [txs, initialAddressUtxos, addressInfo] = await Promise.all([
                         esploraGet(`/address/${address}/txs`).catch(() => []),
                         esploraGet(`/address/${address}/utxo`).catch(() => []),
                         esploraGet(`/address/${address}`).catch(() => null)
                     ]);
+
+                    // If the address shows a positive balance but the first UTXO call failed,
+                    // try a dedicated retry to avoid silently undercounting UTXOs.
+                    const addressBalanceSats =
+                        (addressInfo?.chain_stats?.funded_txo_sum || 0) -
+                        (addressInfo?.chain_stats?.spent_txo_sum || 0);
+                    const addressUtxos =
+                        Array.isArray(initialAddressUtxos) && initialAddressUtxos.length > 0
+                            ? initialAddressUtxos
+                            : addressBalanceSats > 0
+                                ? await esploraGet(`/address/${address}/utxo`).catch(() => [])
+                                : [];
                     if (Array.isArray(txs)) {
                         txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
                     }
