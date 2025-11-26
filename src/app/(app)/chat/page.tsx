@@ -21,7 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { AiChart } from '@/components/ui/ai-chart';
-import type { Message } from '@/lib/types';
+import type { Message, WalletData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/use-analytics';
 
@@ -51,6 +51,57 @@ const sanitizeHistory = (history: Message[]): Message[] => {
         ? `${message.content.slice(0, MAX_CHAT_MESSAGE_LENGTH)}…`
         : message.content,
   }));
+};
+
+// Reduce wallet data to the essentials so AI calls stay lightweight and avoid timeouts.
+const buildWalletSnapshotForAi = (walletData: WalletData) => {
+  const recentTransactions = (walletData.transactions || [])
+    .slice(0, 25)
+    .map((tx) => ({
+      id: tx.id,
+      date: tx.date,
+      btc: tx.btc,
+      status: tx.status,
+      type: tx.type,
+      fee: tx.fee,
+      confirmations: tx.confirmations,
+      fromAddress: tx.fromAddress?.slice(0, 3).filter(Boolean),
+      toAddress: tx.toAddress?.slice(0, 3),
+      labels: tx.labels,
+    }));
+
+  const utxoSample = (walletData.utxos || [])
+    .slice(0, 50)
+    .map((utxo) => ({
+      txid: utxo.txid,
+      vout: utxo.vout,
+      address: utxo.address,
+      value: utxo.value,
+    }));
+
+  const addressOverview = (walletData.addresses || [])
+    .slice()
+    .sort((a, b) => b.balance - a.balance)
+    .slice(0, 20);
+
+  return {
+    balanceBTC: walletData.balanceBTC,
+    btcPrice: walletData.btcPrice,
+    btcPrices: walletData.btcPrices,
+    securityScore: walletData.securityScore,
+    opsecThreat: walletData.opsecThreat,
+    usedAddressCount: walletData.usedAddressCount,
+    dustAmountBTC: walletData.dustAmountBTC,
+    dustUtxoCount: walletData.dustUtxoCount,
+    averageFeeRate: walletData.averageFeeRate,
+    performance: walletData.performance,
+    inflowOutflow: walletData.inflowOutflow,
+    transactionCount: walletData.transactions?.length || 0,
+    utxoCount: walletData.utxos?.length || 0,
+    recentTransactions,
+    utxoSample,
+    addressOverview,
+  };
 };
 
 export default function ChatPage() {
@@ -115,7 +166,7 @@ export default function ChatPage() {
     try {
       let assistantMessage: Message;
       const message = data.message.trim();
-      const walletDataString = JSON.stringify(walletData);
+      const walletDataString = JSON.stringify(buildWalletSnapshotForAi(walletData));
       const historyForAi = sanitizeHistory(currentHistory);
       const isNewsQuery = message.toLowerCase().includes('news');
 
