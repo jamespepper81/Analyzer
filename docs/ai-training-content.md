@@ -49,9 +49,9 @@ BitSleuth is the most advanced AI-powered Bitcoin wallet analyzer and security t
 ## How It Works
 1. User enters their Bitcoin XPUB (Extended Public Key)
 2. System fetches public blockchain data for all addresses derived from the XPUB
-3. AI algorithms analyze transaction patterns, security postures, and privacy practices
-4. Comprehensive report is generated with insights and recommendations
-5. User can explore detailed analysis through various dashboard sections
+3. The platform reviews transaction patterns, security posture, and privacy practices
+4. A comprehensive report is generated with insights and recommendations
+5. Users can explore detailed analysis through various dashboard sections
 
 ## Available Analysis Types
 - **Security Analysis**: Address reuse, dust attacks, opsec risks
