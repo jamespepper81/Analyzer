@@ -14,9 +14,7 @@ import { IconContainer } from '@/components/ui/icon-container';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { submitFeedback } from '@/ai/flows/feedback-flow';
 import { usePathname } from 'next/navigation';
-import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Import Dialog components
 import { useWallet } from '@/contexts/wallet-context';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,67 +61,44 @@ export default function FeedbackPage() {
     setIsSubmitted(false);
 
     try {
-        const walletSummary = walletData ? {
+      const walletSummary = walletData
+        ? {
             balance: walletData.balanceBTC,
             txCount: walletData.transactions.length,
-            securityScore: walletData.securityScore
-        } : {};
+            securityScore: walletData.securityScore,
+          }
+        : {};
 
-        const context = {
-            currentPage: pathname,
-            walletSummary,
-        }
+      const context = {
+        currentPage: pathname,
+        walletSummary,
+      };
 
-      // Step 1: Process feedback with AI
-      const result = await submitFeedback({
-        feedback: data.feedback,
-        userContext: JSON.stringify(context, null, 2)
+      const apiResponse = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          feedback: data.feedback,
+          userContext: JSON.stringify(context, null, 2),
+        }),
       });
-      
-      track('submit_feedback', { category: result.category, sentiment: result.sentiment });
 
-      // Step 2: Submit to Google Sheets via API
-      try {
-        const apiResponse = await fetch('/api/feedback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ feedbackData: result }),
-        });
+      const apiResult = await apiResponse.json();
 
-        const apiResult = await apiResponse.json();
+      if (apiResponse.ok && apiResult.success) {
+        track('submit_feedback', { source: 'app', hasWalletContext: Boolean(walletData) });
 
-        if (apiResult.success) {
-          // Show success toast
-          toast({
-            title: 'Feedback submitted!',
-            description: apiResult.warning || 'Thank you for your feedback. We appreciate your input!',
-          });
-          
-          setIsSubmitted(true);
-          form.reset();
-        } else {
-          // Show error toast but still consider it submitted (AI processed it)
-          toast({
-            title: 'Feedback received',
-            description: 'Your feedback was processed but could not be saved to our records. We still appreciate your input!',
-            variant: 'destructive',
-          });
-          
-          setIsSubmitted(true);
-          form.reset();
-        }
-      } catch (apiErr: any) {
-        logger.error('API submission error:', apiErr);
-        // Even if API fails, feedback was processed by AI
         toast({
-          title: 'Feedback received',
-          description: 'Your feedback was processed successfully.',
+          title: 'Feedback submitted!',
+          description: apiResult.warning || 'Thank you for your feedback. We appreciate your input!',
         });
-        
+
         setIsSubmitted(true);
         form.reset();
+      } else {
+        throw new Error(apiResult.error || 'Unable to submit feedback at this time.');
       }
 
     } catch (err: any) {

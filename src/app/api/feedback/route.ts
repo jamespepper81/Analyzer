@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import type { FeedbackOutput } from '@/ai/flows/feedback-flow';
 
 /**
  * POST /api/feedback
  * Submits feedback to Google Sheets
  * 
- * Request body: { feedbackData: FeedbackOutput }
+ * Request body: { feedback: string; userContext?: string }
  * Response: { success: true } or { error: string }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const feedbackData: FeedbackOutput = body.feedbackData;
+    const { feedback, userContext } = body;
 
-    if (!feedbackData) {
+    if (!feedback || typeof feedback !== 'string') {
       return NextResponse.json(
-        { error: 'Missing feedback data' },
+        { error: 'Missing feedback message' },
         { status: 400 }
       );
     }
 
-    const { category, summary, sentiment, originalFeedback, ipAddress } = feedbackData;
+    const ipAddress = request.headers.get('x-forwarded-for') ?? 'IP Not Found';
 
     // Get environment variables
     const spreadsheetId = process.env.GOOGLE_SHEETS_ID_FEEDBACK || process.env.GOOGLE_SHEETS_ID;
@@ -43,18 +42,18 @@ export async function POST(request: NextRequest) {
       console.warn('[Feedback API] ⚠️  Google Sheets not configured. Missing:', missingVars.join(', '));
       
       // Return success anyway - Google Sheets is optional
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
-        warning: 'Feedback processed but not saved to Google Sheets (credentials not configured)'
+        warning: 'Feedback received but not saved to Google Sheets (credentials not configured)'
       });
     }
 
     // Validate private key format
     if (!private_key.includes('-----BEGIN PRIVATE KEY-----') || !private_key.includes('-----END PRIVATE KEY-----')) {
       console.error('[Feedback API] ❌ Invalid private key format');
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
-        warning: 'Feedback processed but not saved to Google Sheets (invalid private key format)'
+        warning: 'Feedback received but not saved to Google Sheets (invalid private key format)'
       });
     }
 
@@ -73,11 +72,8 @@ export async function POST(request: NextRequest) {
     const newRow = [
       new Date().toISOString(),
       ipAddress || 'N/A',
-      category,
-      sentiment,
-      summary,
-      originalFeedback,
-      JSON.stringify(feedbackData, null, 2),
+      feedback,
+      userContext || 'Not provided',
     ];
 
     // Append to sheet
@@ -93,8 +89,7 @@ export async function POST(request: NextRequest) {
     console.log('[Feedback API] ✅ Feedback successfully written to sheet', {
       updatedRange: response.data.updates?.updatedRange,
       updatedRows: response.data.updates?.updatedRows,
-      category,
-      sentiment,
+      ipAddress,
     });
 
     return NextResponse.json({ success: true });
