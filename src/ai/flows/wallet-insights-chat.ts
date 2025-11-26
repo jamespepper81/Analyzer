@@ -268,6 +268,11 @@ const WalletInsightsChatOutputSchema = z.object({
 });
 export type WalletInsightsChatOutput = z.infer<typeof WalletInsightsChatOutputSchema>;
 
+const SimplifiedChatOutputSchema = z.object({
+  answer: z.string(),
+  followUpSuggestions: z.array(FollowUpSuggestionSchema).optional(),
+});
+
 // Enhanced Bitcoin analysis tools
 export const enhancedTransactionAnalysisTool = ai.defineTool(
   {
@@ -1802,9 +1807,13 @@ const isFormattingError = (error: unknown): boolean => {
   return (
     message.includes('json5') ||
     message.includes('unexpected token') ||
+    message.includes("expected ',' or '}'") ||
     message.includes("expected ',' or ']'") ||
     message.includes('expected , or ]') ||
+    message.includes('expected , or }') ||
+    message.includes('unterminated string') ||
     message.includes('invalid character') ||
+    message.includes('invalid json') ||
     message.includes('could not parse') ||
     message.includes('parse error')
   );
@@ -2182,6 +2191,40 @@ ${input.question}
 
       let generatedOutput: WalletInsightsChatOutput | null = null;
       let lastGenerationError: unknown = null;
+      const runSimpleFallback = async (): Promise<WalletInsightsChatOutput | null> => {
+        try {
+          const { output } = await ai.generate({
+            system:
+              'You are BitSleuth. Provide a concise Markdown answer using the wallet data if helpful. Avoid charts and keep responses brief.',
+            prompt: `Wallet JSON (trimmed):
+\`\`\`json
+${walletData}
+\`\`\`
+
+Question: ${input.question}
+Preferred currency: ${input.preferredCurrency || 'USD'}
+
+Return only a JSON object with an "answer" string and optional "followUpSuggestions" array.`,
+            messages: history,
+            output: {
+              schema: SimplifiedChatOutputSchema,
+            },
+            tools: [],
+          });
+
+          if (output) {
+            return {
+              answer: output.answer,
+              chart: null,
+              followUpSuggestions: output.followUpSuggestions || [],
+            };
+          }
+        } catch (fallbackError) {
+          console.warn('walletInsightsChatFlow: Simplified fallback generation failed.', extractErrorMessage(fallbackError));
+        }
+
+        return null;
+      };
 
       for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
         const promptWithReminder =
@@ -2233,6 +2276,11 @@ ${input.question}
 
       if (generatedOutput) {
         return generatedOutput;
+      }
+
+      const simplified = await runSimpleFallback();
+      if (simplified) {
+        return simplified;
       }
 
       console.warn('walletInsightsChatFlow: Unable to generate structured output after retries.', lastGenerationError);
