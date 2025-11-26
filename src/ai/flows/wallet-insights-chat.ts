@@ -2263,13 +2263,26 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
           }
         } catch (error) {
           lastGenerationError = error;
-          if ((isSchemaValidationError(error) || isFormattingError(error)) && attempt < MAX_GENERATION_ATTEMPTS) {
+          const schemaOrFormattingError = isSchemaValidationError(error) || isFormattingError(error);
+
+          if (schemaOrFormattingError) {
+            const messageSuffix =
+              attempt < MAX_GENERATION_ATTEMPTS
+                ? 'Retrying with reminder.'
+                : 'Final attempt failed; falling back to simplified generation.';
+
             console.warn(
-              'walletInsightsChatFlow: Structured output validation failed. Retrying with reminder.',
+              `walletInsightsChatFlow: Structured output validation failed. ${messageSuffix}`,
               extractErrorMessage(error)
             );
-            continue;
+
+            if (attempt < MAX_GENERATION_ATTEMPTS) {
+              continue;
+            }
+
+            break;
           }
+
           throw error;
         }
       }
