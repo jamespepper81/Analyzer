@@ -76,20 +76,6 @@ function MarketStatItem({ label, value, subValue, change, tooltipText }: { label
     );
 }
 
-const Candlestick = (props: any) => {
-    const { x, y, width, height, low, high, open, close } = props;
-    const isBullish = close > open;
-    const fill = isBullish ? 'hsl(var(--chart-positive))' : 'hsl(var(--chart-negative))';
-    const stroke = isBullish ? 'hsl(var(--chart-positive))' : 'hsl(var(--chart-negative))';
-  
-    return (
-      <g stroke={stroke} fill="none" strokeWidth="1">
-        <path d={`M ${x + width / 2},${y + height} L ${x + width / 2},${y}`} />
-        <rect x={x} y={isBullish ? y + (height * (open - low) / (high-low)) : y + (height * (close-low)/(high-low))} width={width} height={Math.abs(open - close) / (high - low) * height} fill={fill}/>
-      </g>
-    );
-};
-  
 const CustomCandlestickTooltip = ({ active, payload, label, formatCurrency, formatCompact }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;

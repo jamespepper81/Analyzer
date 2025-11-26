@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { IconContainer } from '@/components/ui/icon-container';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { AlertTriangle, Coins, Info, Link as LinkIcon, Puzzle } from 'lucide-react';
 import { Treemap, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
