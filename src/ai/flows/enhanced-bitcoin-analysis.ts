@@ -62,9 +62,9 @@ export async function analyzeBitcoinTransaction(input: EnhancedTransactionAnalys
 const transactionAnalysisPrompt = ai.definePrompt({
   name: 'enhancedTransactionAnalysisPrompt',
   config: {
-    cacheControl: {
+    cache_control: {
       type: 'ephemeral',
-      ttlSeconds: PROMPT_CACHE_TTL_SECONDS,
+      ttl: PROMPT_CACHE_TTL_SECONDS,
     },
   },
   input: {
@@ -195,9 +195,9 @@ export async function analyzeBitcoinAddress(input: EnhancedAddressAnalysisInput)
 const addressAnalysisPrompt = ai.definePrompt({
   name: 'enhancedAddressAnalysisPrompt',
   config: {
-    cacheControl: {
+    cache_control: {
       type: 'ephemeral',
-      ttlSeconds: PROMPT_CACHE_TTL_SECONDS,
+      ttl: PROMPT_CACHE_TTL_SECONDS,
     },
   },
   input: {

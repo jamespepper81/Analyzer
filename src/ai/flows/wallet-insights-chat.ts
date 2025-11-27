@@ -2076,9 +2076,9 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
               schema: SimplifiedChatOutputSchema,
             },
             config: {
-              cacheControl: {
+              cache_control: {
                 type: 'ephemeral',
-                ttlSeconds: PROMPT_CACHE_TTL_SECONDS,
+                ttl: PROMPT_CACHE_TTL_SECONDS,
               },
             },
             tools: [],
@@ -2111,9 +2111,9 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
               schema: WalletInsightsChatOutputSchema,
             },
             config: {
-              cacheControl: {
+              cache_control: {
                 type: 'ephemeral',
-                ttlSeconds: PROMPT_CACHE_TTL_SECONDS,
+                ttl: PROMPT_CACHE_TTL_SECONDS,
               },
             },
             tools: [
