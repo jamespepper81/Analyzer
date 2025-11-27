@@ -29,75 +29,20 @@ jobs:
           script: |
             const repo = context.repo;
 
-            const resolveProjectItem = async () => {
-              if (context.eventName !== "projects_v2_item") return null;
-
-              const itemId = context.payload?.projects_v2_item?.id;
-              if (!itemId) return null;
-
-              const query = `
-                query($id: ID!) {
-                  node(id: $id) {
-                    ... on ProjectV2Item {
-                      content {
-                        ... on Issue {
-                          number
-                        }
-                      }
-                      fieldValues(first: 50) {
-                        nodes {
-                          __typename
-                          ... on ProjectV2ItemFieldSingleSelectValue {
-                            name
-                            field {
-                              ... on ProjectV2FieldCommon {
-                                name
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              `;
-
-              const data = await github.graphql(query, { id: itemId });
-              const node = data?.node;
-
-              if (!node?.content?.number) return null;
-
-              const statusField = node.fieldValues?.nodes?.find(
-                (field) =>
-                  field?.__typename === "ProjectV2ItemFieldSingleSelectValue" &&
-                  field?.field?.name === "Status"
-              );
-
-              return {
-                issue_number: node.content.number,
-                status: statusField?.name,
-              };
-            };
-
-            const projectData = await resolveProjectItem();
-
+            // Get issue number from context or manual input
             const issue_number =
-              projectData?.issue_number ??
               context.issue?.number ??
               Number(core.getInput("issue_number"));
 
             if (!issue_number) {
-              core.setFailed("No issue number provided. This workflow runs on issue edits, project status changes, or manual dispatch with an issue number input.");
+              core.setFailed("No issue number provided. This workflow runs on issue edits or manual dispatch with an issue number input.");
               return;
             }
 
-            const status =
-              projectData?.status ??
-              context.payload?.issue?.status?.name ??
-              context.payload?.issue?.status ??
-              context.payload?.changes?.status?.to?.name ??
-              context.payload?.changes?.status?.to ??
-              core.getInput("status");
+            // For issues event, check if the status was changed to "Wont Do"
+            // Note: GitHub doesn't provide issue status in the payload for regular issue events.
+            // This workflow relies on manual dispatch with the status parameter.
+            const status = core.getInput("status");
 
             if (status !== "Wont Do") {
               console.log(`Issue #${issue_number} is not marked as "Wont Do" (status: ${status ?? "unknown"}). Skipping.`);
