@@ -6,7 +6,7 @@ on:
 
 jobs:
   close_wont_do:
-    if: github.event.label.name == 'Won't Do'
+    if: github.event.label.name == 'Wont Do'
     runs-on: ubuntu-latest
     permissions:
       issues: write
