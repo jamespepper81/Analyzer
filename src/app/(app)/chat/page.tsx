@@ -7,11 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { SendHorizonal, Bot, User, CircleDashed, Mic, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { streamFlow } from '@genkit-ai/next/client';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { walletInsightsChat } from '@/ai/flows/wallet-insights-chat';
+import type { WalletInsightsChatOutput, WalletInsightsChatStreamChunk } from '@/ai/flows/wallet-insights-chat';
 import { getNews } from '@/ai/flows/news-flow';
 import { summarizeTransaction } from '@/ai/flows/summarize-transaction'; // Corrected import
 import { summarizeAddress } from '@/ai/flows/summarize-address';
@@ -177,7 +178,7 @@ export default function ChatPage() {
     form.reset();
 
     try {
-      let assistantMessage: Message;
+      let assistantMessage: Message | null = null;
       const message = data.message.trim();
       const walletDataString = JSON.stringify(buildWalletSnapshotForAi(walletData));
       const historyForAi = sanitizeHistory(currentHistory);
@@ -207,19 +208,61 @@ export default function ChatPage() {
           }
       } else {
           track('ask_ai_chat', { type: 'question', length: message.length });
-          const result = await walletInsightsChat({
+          const assistantMessageIndex = currentHistory.length + 1;
+
+          setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
+          const { stream, output } = streamFlow({
+            url: '/api/chat',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'text/event-stream',
+            },
+            input: {
               question: data.message,
               walletData: walletDataString,
               history: historyForAi,
+            },
           });
-          assistantMessage = {
-              role: 'assistant',
-              content: result.answer,
-              chart: result.chart,
-          };
+
+          let streamedAnswer = '';
+          for await (const chunk of stream as AsyncIterable<WalletInsightsChatStreamChunk>) {
+            if (chunk.type === 'token' && chunk.content) {
+              streamedAnswer += chunk.content;
+              setMessages((prev) => {
+                const updated = [...prev];
+                const assistant = updated[assistantMessageIndex];
+                if (assistant) {
+                  updated[assistantMessageIndex] = {
+                    ...assistant,
+                    content: streamedAnswer,
+                  };
+                }
+                return updated;
+              });
+            }
+          }
+
+          const result = (await output) as WalletInsightsChatOutput;
+          setMessages((prev) => {
+            const updated = [...prev];
+            const assistant = updated[assistantMessageIndex];
+            if (assistant) {
+              updated[assistantMessageIndex] = {
+                ...assistant,
+                content: result.answer,
+                chart: result.chart,
+              };
+            }
+            return updated;
+          });
+
+          assistantMessage = null;
       }
-      
-      setMessages((prev) => [...prev, assistantMessage]);
+
+      if (assistantMessage) {
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
 
     } catch (error) {
       console.error('AI chat error:', error);
@@ -227,7 +270,16 @@ export default function ChatPage() {
         role: 'system',
         content: 'I\'m sorry, I encountered an error. Please try again.',
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastMessage = updated[updated.length - 1];
+
+        if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content === '') {
+          updated.pop();
+        }
+
+        return [...updated, errorMessage];
+      });
     } finally {
       setAiLoading(false);
       updateSuggestions();

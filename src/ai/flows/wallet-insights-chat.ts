@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import type { FlowSideChannel } from 'genkit';
 import { securityRecommendationsTool } from './security-recommendations';
 import { analyzeBitcoinTransaction, analyzeBitcoinAddress } from './enhanced-bitcoin-analysis';
 import { getLatestBitcoinNews } from '@/lib/newsService';
@@ -292,6 +293,12 @@ const WalletInsightsChatOutputSchema = z.object({
   followUpSuggestions: z.array(FollowUpSuggestionSchema).optional().describe('Helpful follow-up questions or suggestions based on the response. Include 1-3 relevant suggestions that would be natural next steps for the user.'),
 });
 export type WalletInsightsChatOutput = z.infer<typeof WalletInsightsChatOutputSchema>;
+
+const WalletInsightsChatStreamSchema = z.object({
+  type: z.enum(['token', 'status']).describe('Streaming event type'),
+  content: z.string().optional().describe('Text content for the current streaming chunk.'),
+});
+export type WalletInsightsChatStreamChunk = z.infer<typeof WalletInsightsChatStreamSchema>;
 
 const generationCache = new Map<string, CacheEntry<WalletInsightsChatOutput>>();
 const fallbackGenerationCache = new Map<string, CacheEntry<WalletInsightsChatOutput>>();
@@ -1654,7 +1661,7 @@ export async function walletInsightsChat(input: WalletInsightsChatInput): Promis
   return walletInsightsChatFlow(input);
 }
 
-const MAX_GENERATION_ATTEMPTS = 1;
+const MAX_GENERATION_ATTEMPTS = 3;
 const GENERATION_TIMEOUT_MS = 45_000;
 const STRUCTURED_OUTPUT_REMINDER =
   'REMINDER: Your final response MUST be a valid JSON object containing an "answer" string in Markdown, an optional "chart" object (or null), and 1-3 "followUpSuggestions". Never respond with just null.';
@@ -2049,13 +2056,27 @@ Your review process:
 - Radar Chart: Use to compare multiple metrics on a single figure. Good for showing wallet health scores. Data: \`[{ subject: 'Security', value: 85, fullMark: 100 }, { subject: 'Privacy', value: 60, fullMark: 100 }]\`. Config: \`radar: { angleKey: 'subject', dataKey: 'value' }\`.
 `;
 
-const walletInsightsChatFlow = ai.defineFlow(
+export const walletInsightsChatFlow = ai.defineFlow(
   {
     name: 'walletInsightsChatFlow',
     inputSchema: WalletInsightsChatInputSchema,
     outputSchema: WalletInsightsChatOutputSchema,
+    streamSchema: WalletInsightsChatStreamSchema,
   },
-  async (input) => {
+  async (input, streamingCallback: FlowSideChannel<WalletInsightsChatStreamChunk>) => {
+    const sendStreamingChunk = (content: string, type: 'token' | 'status' = 'token') => {
+      if (!content) return;
+      try {
+        streamingCallback({ type, content });
+      } catch (chunkError) {
+        console.warn('walletInsightsChatFlow: Failed to send streaming chunk', chunkError);
+      }
+    };
+
+    const sendCachedResponse = (cached: WalletInsightsChatOutput) => {
+      sendStreamingChunk(cached.answer);
+      return cached;
+    };
     try {
       const history = buildModelHistory(input.history);
       const walletData = compactWalletDataForPrompt(input.walletData);
@@ -2118,7 +2139,7 @@ ${input.question}
           );
 
           if (cachedFallback) {
-            return cachedFallback;
+            return sendCachedResponse(cachedFallback);
           }
 
           const { output } = await withTimeout(
@@ -2153,6 +2174,8 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
 
             setCachedValue(fallbackGenerationCache, fallbackCacheKey, fallbackResponse);
 
+            sendStreamingChunk(fallbackResponse.answer);
+
             return fallbackResponse;
           }
         } catch (fallbackError) {
@@ -2171,12 +2194,15 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
         const promptWithReminder =
           attempt === 1 ? userPrompt : `${userPrompt}\n\n${STRUCTURED_OUTPUT_REMINDER}`;
 
+        const messagesForAttempt =
+          attempt === MAX_GENERATION_ATTEMPTS && history.length > 4 ? history.slice(-4) : history;
+
         try {
           const generationCacheKey = JSON.stringify({
             type: 'structured',
             promptWithReminder,
             systemPrompt,
-            history,
+            history: messagesForAttempt,
             walletData,
             preferredCurrency: input.preferredCurrency || 'USD',
           });
@@ -2184,16 +2210,16 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
           const cachedResponse = getCachedValue(generationCache, generationCacheKey);
 
           if (cachedResponse) {
-            generatedOutput = cachedResponse;
+            generatedOutput = sendCachedResponse(cachedResponse);
             break;
           }
 
-          const { output } = await withTimeout(
-            () =>
-              ai.generate({
+          const { response, stream } = await withTimeout(
+            async () =>
+              ai.generateStream({
                 system: systemPrompt,
                 prompt: promptWithReminder,
-                messages: history,
+                messages: messagesForAttempt,
                 output: {
                   schema: WalletInsightsChatOutputSchema,
                 },
@@ -2212,6 +2238,15 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
               }),
             'walletInsightsChat structured generation'
           );
+
+          for await (const chunk of stream) {
+            if (chunk.text) {
+              sendStreamingChunk(chunk.text);
+            }
+          }
+
+          const finalResponse = await response;
+          const output = finalResponse?.output;
 
           if (output) {
             setCachedValue(generationCache, generationCacheKey, output);
