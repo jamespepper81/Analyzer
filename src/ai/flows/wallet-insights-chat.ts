@@ -1654,9 +1654,27 @@ export async function walletInsightsChat(input: WalletInsightsChatInput): Promis
   return walletInsightsChatFlow(input);
 }
 
-const MAX_GENERATION_ATTEMPTS = 2;
+const MAX_GENERATION_ATTEMPTS = 1;
+const GENERATION_TIMEOUT_MS = 45_000;
 const STRUCTURED_OUTPUT_REMINDER =
   'REMINDER: Your final response MUST be a valid JSON object containing an "answer" string in Markdown, an optional "chart" object (or null), and 1-3 "followUpSuggestions". Never respond with just null.';
+
+const withTimeout = async <T>(operation: () => Promise<T>, label: string): Promise<T> => {
+  const timeoutError = new Error(`${label} timed out after ${GENERATION_TIMEOUT_MS}ms`);
+  let timer: NodeJS.Timeout | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(timeoutError), GENERATION_TIMEOUT_MS);
+  });
+
+  try {
+    return (await Promise.race([operation(), timeoutPromise])) as T;
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+};
 
 const extractErrorMessage = (error: unknown): string => {
   if (!error) {
@@ -2103,10 +2121,12 @@ ${input.question}
             return cachedFallback;
           }
 
-          const { output } = await ai.generate({
-            system:
-              'You are BitSleuth. Provide a concise Markdown answer using the wallet data if helpful. Avoid charts and keep responses brief.',
-            prompt: `Wallet JSON (trimmed):
+          const { output } = await withTimeout(
+            () =>
+              ai.generate({
+                system:
+                  'You are BitSleuth. Provide a concise Markdown answer using the wallet data if helpful. Avoid charts and keep responses brief.',
+                prompt: `Wallet JSON (trimmed):
 \`\`\`json
 ${walletData}
 \`\`\`
@@ -2115,12 +2135,14 @@ Question: ${input.question}
 Preferred currency: ${input.preferredCurrency || 'USD'}
 
 Return only a JSON object with an "answer" string and optional "followUpSuggestions" array.`,
-            messages: history,
-            output: {
-              schema: SimplifiedChatOutputSchema,
-            },
-            tools: [],
-          });
+                messages: history,
+                output: {
+                  schema: SimplifiedChatOutputSchema,
+                },
+                tools: [],
+              }),
+            'walletInsightsChat simplified generation'
+          );
 
           if (output) {
             const fallbackResponse = {
@@ -2134,7 +2156,12 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
             return fallbackResponse;
           }
         } catch (fallbackError) {
-          console.warn('walletInsightsChatFlow: Simplified fallback generation failed.', extractErrorMessage(fallbackError));
+          const fallbackErrorMessage = extractErrorMessage(fallbackError);
+          console.warn('walletInsightsChatFlow: Simplified fallback generation failed.', fallbackErrorMessage);
+
+          if (fallbackErrorMessage.includes('timed out')) {
+            console.warn('walletInsightsChatFlow: Simplified generation timed out; returning default error.');
+          }
         }
 
         return null;
@@ -2161,26 +2188,30 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
             break;
           }
 
-          const { output } = await ai.generate({
-            system: systemPrompt,
-            prompt: promptWithReminder,
-            messages: history,
-            output: {
-              schema: WalletInsightsChatOutputSchema,
-            },
-            tools: [
-              securityRecommendationsTool,
-              enhancedTransactionAnalysisTool,
-              enhancedAddressAnalysisTool,
-              marketAnalysisTool,
-              bitcoinNewsAnalysisTool,
-              investmentInsightsTool,
-              bitcoinCAGRCalculatorTool,
-              bitcoinPensionAnalysisTool,
-              walletIntelligenceTool,
-              bitcoinDecodeTool,
-            ],
-          });
+          const { output } = await withTimeout(
+            () =>
+              ai.generate({
+                system: systemPrompt,
+                prompt: promptWithReminder,
+                messages: history,
+                output: {
+                  schema: WalletInsightsChatOutputSchema,
+                },
+                tools: [
+                  securityRecommendationsTool,
+                  enhancedTransactionAnalysisTool,
+                  enhancedAddressAnalysisTool,
+                  marketAnalysisTool,
+                  bitcoinNewsAnalysisTool,
+                  investmentInsightsTool,
+                  bitcoinCAGRCalculatorTool,
+                  bitcoinPensionAnalysisTool,
+                  walletIntelligenceTool,
+                  bitcoinDecodeTool,
+                ],
+              }),
+            'walletInsightsChat structured generation'
+          );
 
           if (output) {
             setCachedValue(generationCache, generationCacheKey, output);
@@ -2194,7 +2225,16 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
           }
         } catch (error) {
           lastGenerationError = error;
+          const errorMessage = extractErrorMessage(error);
+          const timedOut = errorMessage.includes('timed out');
           const schemaOrFormattingError = isSchemaValidationError(error) || isFormattingError(error);
+
+          if (timedOut) {
+            console.warn(
+              'walletInsightsChatFlow: Structured generation timed out. Falling back to simplified generation if available.'
+            );
+            break;
+          }
 
           if (schemaOrFormattingError) {
             const messageSuffix =
