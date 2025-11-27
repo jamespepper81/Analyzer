@@ -2,22 +2,32 @@ name: Auto-close Won't Do Issues
 
 on:
   issues:
-    types: [labeled]
+    types: [edited]
 
 jobs:
   close_wont_do:
-    if: github.event.label.name == 'Wont Do'
     runs-on: ubuntu-latest
     permissions:
       issues: write
 
     steps:
-      - name: Auto-close the issue
+      - name: Auto-close the issue when status is Wont Do
         uses: actions/github-script@v7
         with:
           script: |
             const issue_number = context.issue.number;
             const repo = context.repo;
+
+            const status =
+              context.payload?.issue?.status?.name ??
+              context.payload?.issue?.status ??
+              context.payload?.changes?.status?.to?.name ??
+              context.payload?.changes?.status?.to;
+
+            if (status !== "Wont Do") {
+              console.log(`Issue #${issue_number} is not marked as "Wont Do" (status: ${status ?? "unknown"}). Skipping.`);
+              return;
+            }
 
             await github.rest.issues.update({
               owner: repo.owner,
@@ -26,4 +36,4 @@ jobs:
               state: "closed"
             });
 
-            console.log(`Issue #${issue_number} closed because it was labeled "Won't Do".`);
+            console.log(`Issue #${issue_number} closed because its status was set to "Wont Do".`);
