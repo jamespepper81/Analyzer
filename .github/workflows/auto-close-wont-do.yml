@@ -14,15 +14,13 @@ on:
         type: string
   issues:
     types: [edited]
-  projects_v2_item:
-    types: [edited]
 
 jobs:
   close_wont_do:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      projects: read
+      repository-projects: read
 
     steps:
       - name: Auto-close the issue when status is Wont Do
