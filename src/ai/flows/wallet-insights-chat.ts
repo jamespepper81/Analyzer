@@ -1661,7 +1661,7 @@ export async function walletInsightsChat(input: WalletInsightsChatInput): Promis
   return walletInsightsChatFlow(input);
 }
 
-const MAX_GENERATION_ATTEMPTS = 1;
+const MAX_GENERATION_ATTEMPTS = 3;
 const GENERATION_TIMEOUT_MS = 45_000;
 const STRUCTURED_OUTPUT_REMINDER =
   'REMINDER: Your final response MUST be a valid JSON object containing an "answer" string in Markdown, an optional "chart" object (or null), and 1-3 "followUpSuggestions". Never respond with just null.';
@@ -2194,12 +2194,15 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
         const promptWithReminder =
           attempt === 1 ? userPrompt : `${userPrompt}\n\n${STRUCTURED_OUTPUT_REMINDER}`;
 
+        const messagesForAttempt =
+          attempt === MAX_GENERATION_ATTEMPTS && history.length > 4 ? history.slice(-4) : history;
+
         try {
           const generationCacheKey = JSON.stringify({
             type: 'structured',
             promptWithReminder,
             systemPrompt,
-            history,
+            history: messagesForAttempt,
             walletData,
             preferredCurrency: input.preferredCurrency || 'USD',
           });
@@ -2216,7 +2219,7 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
               ai.generateStream({
                 system: systemPrompt,
                 prompt: promptWithReminder,
-                messages: history,
+                messages: messagesForAttempt,
                 output: {
                   schema: WalletInsightsChatOutputSchema,
                 },
