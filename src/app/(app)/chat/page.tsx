@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { SendHorizonal, Bot, User, CircleDashed, Mic } from 'lucide-react';
+import { SendHorizonal, Bot, User, CircleDashed, Mic, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
@@ -331,6 +331,14 @@ export default function ChatPage() {
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <div className="flex-1 overflow-y-auto px-2 sm:px-4" ref={scrollAreaRef} aria-live="polite">
         <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6 pt-4">
+          <Alert variant="warning" className="shadow-md">
+            <AlertTriangle className="h-5 w-5" />
+            <AlertTitle>Update - AI Chat Response Time</AlertTitle>
+            <AlertDescription>
+              Thanks for your patience. You might notice that AI Chat responses are slower than usual right now. Our team is already looking into it and working on a fix. Everything should be back to normal shortly. 😊
+            </AlertDescription>
+          </Alert>
+
           {messages.map((message, index) => (
             <div key={index} className={cn('flex items-start gap-2 sm:gap-4', message.role === 'user' && 'justify-end')}>
               {message.role === 'assistant' && (
