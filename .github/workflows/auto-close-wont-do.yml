@@ -12,92 +12,32 @@ on:
         required: false
         default: "Wont Do"
         type: string
-  projects_v2_item:
-    types: [edited]
 
 jobs:
   close_wont_do:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      repository-projects: read
 
     steps:
-      - name: Auto-close the issue when status is Wont Do
+      - name: Auto-close the issue when status is Won't Do
         uses: actions/github-script@v7
         with:
           script: |
             const repo = context.repo;
 
-            const resolveProjectItem = async () => {
-              if (context.eventName !== "projects_v2_item") return null;
-
-              const itemId = context.payload?.projects_v2_item?.id;
-              if (!itemId) return null;
-
-              const query = `
-                query($id: ID!) {
-                  node(id: $id) {
-                    ... on ProjectV2Item {
-                      content {
-                        ... on Issue {
-                          number
-                        }
-                      }
-                      fieldValues(first: 50) {
-                        nodes {
-                          __typename
-                          ... on ProjectV2ItemFieldSingleSelectValue {
-                            name
-                            field {
-                              ... on ProjectV2FieldCommon {
-                                name
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              `;
-
-              const data = await github.graphql(query, { id: itemId });
-              const node = data?.node;
-
-              if (!node?.content?.number) return null;
-
-              const statusField = node.fieldValues?.nodes?.find(
-                (field) =>
-                  field?.__typename === "ProjectV2ItemFieldSingleSelectValue" &&
-                  field?.field?.name === "Status"
-              );
-
-              return {
-                issue_number: node.content.number,
-                status: statusField?.name,
-              };
-            };
-
-            const projectData = await resolveProjectItem();
-
-            const issue_number =
-              projectData?.issue_number ??
-              context.issue?.number ??
-              Number(core.getInput("issue_number"));
+            // Get issue number from workflow_dispatch input
+            const issue_number = Number(core.getInput("issue_number"));
 
             if (!issue_number) {
-              core.setFailed("No issue number provided. This workflow runs on issue edits, project status changes, or manual dispatch with an issue number input.");
+              core.setFailed("No issue number provided. This workflow must be manually dispatched with an issue number input.");
               return;
             }
 
-            const status =
-              projectData?.status ??
-              context.payload?.issue?.status?.name ??
-              context.payload?.issue?.status ??
-              context.payload?.changes?.status?.to?.name ??
-              context.payload?.changes?.status?.to ??
-              core.getInput("status");
+            // Get the status parameter (only available via workflow_dispatch)
+            // Note: GitHub Actions does not support projects_v2_item as a trigger event,
+            // so this workflow must be manually triggered to close issues.
+            const status = core.getInput("status");
 
             if (status !== "Wont Do") {
               console.log(`Issue #${issue_number} is not marked as "Wont Do" (status: ${status ?? "unknown"}). Skipping.`);

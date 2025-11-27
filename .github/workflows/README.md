@@ -1,5 +1,31 @@
 # GitHub Workflows for BitSleuth Analyzer
 
+## Auto-close Won't Do Issues Workflow
+
+The `auto-close-wont-do.yml` workflow automatically closes issues when their status is set to "Won't Do".
+
+### Triggers
+
+- **`workflow_dispatch`** - Manual trigger with inputs:
+  - `issue_number` (required) - The issue number to process
+  - `status` (optional, default: "Won't Do") - The status to validate before closing
+
+### Important Notes
+
+⚠️ **Projects V2 Events Not Supported**: The `projects_v2_item` event is NOT supported as a workflow trigger by GitHub Actions. While this event exists as a webhook, it cannot be used in the `on:` section of workflow files.
+
+- GitHub Actions does not support `projects_v2_item` as a workflow trigger
+- This workflow must be manually triggered using `workflow_dispatch`
+- GitHub does not provide a native way to trigger workflows when GitHub Projects V2 status fields change
+
+### Usage
+
+To manually close an issue marked as "Won't Do":
+1. Go to **Actions** tab
+2. Select **Auto-close Won't Do Issues**
+3. Click **Run workflow**
+4. Enter the issue number
+
 ## Copilot Agent Testing Workflow
 
 The `copilot-test.yml` workflow provides a standardized testing environment for Copilot agents with all necessary environment variables pre-configured.
