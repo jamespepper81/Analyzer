@@ -29,10 +29,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 export default function DashboardPage() {
   const { data, isLoading, error, activeXpub: xpub, fiatBalance, currency, fiatPrice } = useWallet();
+  const hasBlockingError = !!error && !data;
 
   if (!xpub) return <FullPageLoader />;
   if (isLoading) return <FullPageLoader />;
-  if (error) return <ErrorDisplay message={error} />;
+  if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
 
   const recentTransactions = data.transactions.slice(0, 3);
