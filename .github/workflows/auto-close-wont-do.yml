@@ -3,6 +3,12 @@ name: Auto-close Won't Do Issues
 on:
   issues:
     types: [edited, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to check and close if Won't Do"
+        required: true
+        type: number
 
 jobs:
   close_wont_do:
@@ -15,8 +21,23 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const issueNumber = context.issue.number;
-            const issueNodeId = context.payload.issue.node_id;
+            // Get issue number from either the event or workflow_dispatch input
+            let issueNumber, issueNodeId;
+            
+            if (context.eventName === 'workflow_dispatch') {
+              // Manual trigger - get issue details first
+              issueNumber = Number(context.payload.inputs.issue_number);
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+              issueNodeId = issue.node_id;
+            } else {
+              // Automatic trigger from issue event
+              issueNumber = context.issue.number;
+              issueNodeId = context.payload.issue.node_id;
+            }
             
             console.log(`Processing issue #${issueNumber}...`);
             
