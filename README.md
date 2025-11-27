@@ -22,7 +22,7 @@ BitSleuth is an AI-powered Bitcoin wallet insights app. Enter a Bitcoin XPUB to 
 
 - Next.js 15 (App Router), React 18, TypeScript
 - Tailwind CSS, shadcn/ui components, Lucide icons
-- Genkit with OpenAI (GPT-4o Mini) for AI flows
+- Genkit with OpenAI (GPT-4.1 Mini) for AI flows
 - Firebase (client-side analytics only)
 - Bitcoin data sources: Blockstream, mempool.space, blockchain.info, CoinGecko, Alternative.me
 - Optional integrations: CryptoCompare News API, Google Sheets API

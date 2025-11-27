@@ -30,7 +30,7 @@
 
 ### AI & Intelligence
 - **Genkit** - Google's AI framework for flow orchestration
-- **OpenAI (GPT-4o Mini)** - Large language model for insights and chat
+- **OpenAI (GPT-4.1 Mini)** - Large language model for insights and chat
 - AI flows located in `src/ai/flows/`
 
 ### Bitcoin & Blockchain

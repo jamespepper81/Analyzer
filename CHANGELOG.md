@@ -80,7 +80,7 @@ BitSleuth is an AI-powered Bitcoin wallet insights application built with Next.j
   - Proactive insights and recommendations
   - Transaction and address explanations
   - Security advice and best practices
-  - Powered by OpenAI (GPT-4o Mini) via Genkit framework
+  - Powered by OpenAI (GPT-4.1 Mini) via Genkit framework
   
 - **AI Flows** (`src/ai/flows/`)
   - `wallet-insights-chat.ts`: Main chat interface with comprehensive tools
@@ -181,7 +181,7 @@ BitSleuth is an AI-powered Bitcoin wallet insights application built with Next.j
 
 ### AI & Backend
 - **AI Framework**: Google Genkit (v1.24.x)
-- **AI Model**: OpenAI GPT-4o Mini via @genkit-ai/compat-oai
+- **AI Model**: OpenAI GPT-4.1 Mini via @genkit-ai/compat-oai
 - **AI Tools**: Custom Bitcoin analysis tools and function calling
 - **Context Caching**: 1-hour TTL for improved performance
 - **Structured Output**: Zod schemas for type-safe AI responses
@@ -290,7 +290,7 @@ Comprehensive component library including:
 - **Required Variables**:
   - `NEXT_PUBLIC_FIREBASE_API_KEY`: Firebase analytics
   - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`: Firebase tracking
-  - `OPENAI_API_KEY`: OpenAI (GPT-4o Mini) for AI features
+  - `OPENAI_API_KEY`: OpenAI (GPT-4.1 Mini) for AI features
   
 - **Optional Variables**:
   - `COINGECKO_API_KEY`: Enhanced market data
@@ -315,7 +315,7 @@ Comprehensive component library including:
 - `README.md`: Documentation overview
 - `SEO_STRATEGY.md`: SEO and marketing strategy
 - `ai-training-content.md`: AI training and optimization content
-- `todo.md`: Development roadmap and enhancement plans (GPT-4o Mini)
+- `todo.md`: Development roadmap and enhancement plans (GPT-4.1 Mini)
 
 ### Root Documentation
 - `README.md`: Main project documentation and quick start guide
@@ -461,7 +461,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 ## Acknowledgments
 Built with ❤️ by BitSleuth using:
 - Next.js and React ecosystem
-- OpenAI GPT-4o Mini via Genkit
+- OpenAI GPT-4.1 Mini via Genkit
 - Bitcoin community libraries
 - shadcn/ui components
 - Open source dependencies

@@ -28,5 +28,5 @@ export const ai = genkit({
       apiKey,
     }),
   ],
-  model: 'openai/gpt-4o-mini', // Use GPT-4o Mini for wallet analysis
+  model: 'openai/gpt-4.1-mini', // Use GPT-4.1 Mini for wallet analysis
 });

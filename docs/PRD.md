@@ -92,7 +92,7 @@ Bitcoin users lack comprehensive tools to analyze their wallet security, underst
 **Integrations:**
 - **Blockchain Data:** Blockstream API, mempool.space, blockchain.info
 - **Market Data:** CoinGecko API, Alternative.me (Fear & Greed Index)
-- **AI Services:** OpenAI (GPT-4o Mini) via Genkit framework
+- **AI Services:** OpenAI (GPT-4.1 Mini) via Genkit framework
 - **Analytics:** Firebase Analytics
 - **Authentication:** Nostr protocol for decentralized identity
 - **Data Export:** Google Sheets API for feedback export
@@ -104,7 +104,7 @@ Bitcoin users lack comprehensive tools to analyze their wallet security, underst
 - Tailwind CSS for styling
 - shadcn/ui component library
 - Bitcoin libraries: bitcoinjs-lib, bip32, secp256k1
-- AI/ML: Google Genkit framework with OpenAI GPT-4o Mini models
+- AI/ML: Google Genkit framework with OpenAI GPT-4.1 Mini models
 - Real-time data: Various Bitcoin APIs
 
 ## 7. Risks & Assumptions

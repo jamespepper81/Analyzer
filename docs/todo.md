@@ -1,7 +1,7 @@
-# GPT-4o Mini Bitcoin Analysis Enhancement Roadmap
+# GPT-4.1 Mini Bitcoin Analysis Enhancement Roadmap
 
 ## Overview
-This document outlines the implementation plan for leveraging GPT-4o Mini's advanced Bitcoin analysis capabilities in BitSleuth. The roadmap is organized by risk level and implementation complexity.
+This document outlines the implementation plan for leveraging GPT-4.1 Mini's advanced Bitcoin analysis capabilities in BitSleuth. The roadmap is organized by risk level and implementation complexity.
 
 ## ✅ Completed Safe Enhancements
 

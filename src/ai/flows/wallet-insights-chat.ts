@@ -1829,7 +1829,7 @@ For Security Analysis: "Would you like specific steps to improve your wallet sec
 
 ### Enhanced Bitcoin Analysis Tools
 
-You have access to advanced Bitcoin analysis tools powered by GPT-4o Mini:
+You have access to advanced Bitcoin analysis tools powered by GPT-4.1 Mini:
 
 1. **Enhanced Transaction Analysis** (\`analyzeBitcoinTransaction\`):
    - Provides detailed privacy scoring (0-100)
