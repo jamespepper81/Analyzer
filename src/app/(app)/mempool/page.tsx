@@ -58,15 +58,22 @@ const MempoolVisualizer = ({ blocks }: { blocks: MempoolBlock[] }) => {
                             <TooltipTrigger asChild>
                                 <div className="w-full h-8 bg-muted rounded flex overflow-hidden border border-border/50 cursor-help">
                                     {block.feeRange.map((fee, i, arr) => {
-                                        const nextFee = arr[i + 1] || fee;
-                                        const weight = (nextFee - fee) / (arr[arr.length - 1] - arr[0] || 1);
+                                        const range = arr[arr.length - 1] - arr[0];
+                                        const nextFee = arr[i + 1] ?? fee;
+                                        const weight = range > 0 && nextFee > fee
+                                            ? (nextFee - fee) / range
+                                            : 1 / arr.length;
+                                        const minWeight = 1 / arr.length;
+
                                         return (
                                             <div
                                                 key={i}
                                                 className="h-full"
                                                 style={{
                                                     ...getFeeColorStyle(fee, minFee, maxFee),
-                                                    width: `${block.blockVSize / 10000}%`,
+                                                    flexGrow: Math.max(weight, minWeight),
+                                                    flexBasis: 0,
+                                                    minWidth: `${(minWeight * 100).toFixed(2)}%`,
                                                 }}
                                             />
                                         );

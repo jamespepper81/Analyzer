@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { getPublicKey, nip19, nip04, finalizeEvent, SimplePool } from 'nostr-tools';
 import type { Event as NostrEvent } from 'nostr-tools';
 import { getWalletData as fetchWalletData } from '@/lib/blockchain';
@@ -11,8 +11,10 @@ import { getProactiveSuggestions } from '@/ai/flows/proactive-suggestions';
 import { getSecurityRecommendations } from '@/ai/flows/security-recommendations';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { useChunkRetry } from '@/hooks/use-chunk-retry';
+import { useToast } from '@/hooks/use-toast';
 import { resetChunkRetry } from '@/lib/chunk-retry-service';
 import { logger } from '@/lib/logger';
+import { ToastAction } from '@/components/ui/toast';
 
 const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP'];
 const RECOMMENDATIONS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
@@ -95,6 +97,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [recommendations, setRecommendations] = useState<SecurityRecommendation[]>([]);
   const [isInitialAiContentLoaded, setIsInitialAiContentLoaded] = useState(false);
   const { track } = useAnalytics();
+  const { toast, dismiss } = useToast();
+  const errorToastId = useRef<string | null>(null);
+  const errorRetryCount = useRef(0);
+  const errorRetryTimeout = useRef<NodeJS.Timeout | null>(null);
   
   // Initialize chunk retry mechanism
   useChunkRetry();
@@ -610,6 +616,66 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     getWalletData();
   }, [activeXpub, getWalletData]);
+
+  useEffect(() => {
+    if (!error || !data) {
+      if (errorToastId.current) {
+        dismiss(errorToastId.current);
+        errorToastId.current = null;
+      }
+      if (errorRetryTimeout.current) {
+        clearTimeout(errorRetryTimeout.current);
+        errorRetryTimeout.current = null;
+      }
+      errorRetryCount.current = 0;
+      return;
+    }
+
+    const triggerRetry = () => {
+      if (errorRetryCount.current >= 3) return;
+      errorRetryCount.current += 1;
+      getWalletData();
+    };
+
+    if (errorToastId.current) {
+      dismiss(errorToastId.current);
+    }
+
+    const toastResult = toast({
+      variant: 'destructive',
+      title: 'Wallet needs a refresh',
+      description: 'We hit a hiccup reloading your data. We will retry automatically.',
+      duration: 8000,
+      action: (
+        <ToastAction altText="Reload app" onClick={() => window.location.reload()}>
+          Refresh now
+        </ToastAction>
+      ),
+    });
+
+    errorToastId.current = toastResult.id;
+
+    if (errorRetryTimeout.current) {
+      clearTimeout(errorRetryTimeout.current);
+    }
+    errorRetryTimeout.current = setTimeout(triggerRetry, 3000);
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        triggerRetry();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (errorRetryTimeout.current) {
+        clearTimeout(errorRetryTimeout.current);
+        errorRetryTimeout.current = null;
+      }
+    };
+  }, [data, dismiss, error, getWalletData, toast]);
 
   // Effect for periodically refreshing the fiat price
   useEffect(() => {
