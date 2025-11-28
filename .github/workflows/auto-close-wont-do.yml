@@ -1,50 +1,72 @@
 name: Auto-close Wont Do Issues
 
 on:
-  issues:
-    types: [edited, labeled, unlabeled]
+  # Schedule to automatically check all open issues every 30 minutes
+  schedule:
+    - cron: '*/30 * * * *'
+  # Manual trigger for specific issues
   workflow_dispatch:
     inputs:
       issue_number:
         description: "Issue number to check and close if Wont Do"
         required: true
         type: number
+  # Fallback triggers (though changing project status doesn't fire these events)
+  issues:
+    types: [edited, labeled, unlabeled]
 
 jobs:
   close_wont_do:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      repository-projects: read
 
     steps:
       - name: Check project status and close if Wont Do
         uses: actions/github-script@v7
         with:
           script: |
-            // Get issue number from either the event or workflow_dispatch input
-            let issueNumber, issueNodeId;
+            // Determine which issues to check based on trigger type
+            let issuesToCheck = [];
             
             if (context.eventName === 'workflow_dispatch') {
-              // Manual trigger - get issue details first
-              issueNumber = Number(context.payload.inputs.issue_number);
-              const { data: issue } = await github.rest.issues.get({
+              // Manual trigger - check specific issue
+              const issueNumber = Number(context.payload.inputs.issue_number);
+              issuesToCheck.push(issueNumber);
+              console.log(`Manual trigger: checking issue #${issueNumber}`);
+            } else if (context.eventName === 'schedule') {
+              // Scheduled trigger - check all open issues
+              console.log('Scheduled trigger: checking all open issues');
+              const { data: openIssues } = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: issueNumber
+                state: 'open',
+                per_page: 100
               });
-              issueNodeId = issue.node_id;
+              issuesToCheck = openIssues.map(issue => issue.number);
+              console.log(`Found ${issuesToCheck.length} open issues to check`);
+            } else if (context.issue && context.issue.number) {
+              // Issue event trigger - check specific issue
+              issuesToCheck.push(context.issue.number);
+              console.log(`Issue event trigger: checking issue #${context.issue.number}`);
             } else {
-              // Automatic trigger from issue event
-              issueNumber = context.issue.number;
-              issueNodeId = context.payload.issue.node_id;
+              console.log('No issues to check');
+              return;
             }
             
-            console.log(`Processing issue #${issueNumber}...`);
+            // Process each issue
+            for (const issueNumber of issuesToCheck) {
+              await processIssue(issueNumber);
+            }
             
-            try {
-              // Query the issue's project status using GraphQL
-              // Note: Must query through repository.issue() not node() for projectItems to work
-              const query = `
+            async function processIssue(issueNumber) {
+              console.log(`\nProcessing issue #${issueNumber}...`);
+              
+              try {
+                // Query the issue's project status using GraphQL
+                // Note: Must query through repository.issue() not node() for projectItems to work
+                const query = `
                 query($owner: String!, $repo: String!, $issueNumber: Int!) {
                   repository(owner: $owner, name: $repo) {
                     issue(number: $issueNumber) {
@@ -73,72 +95,76 @@ jobs:
                     }
                   }
                 }
-              `;
-              
-              const result = await github.graphql(query, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issueNumber: issueNumber
-              });
-              
-              console.log('GraphQL result:', JSON.stringify(result, null, 2));
-              
-              // Check if issue has project items
-              const projectItems = result.repository?.issue?.projectItems?.edges || [];
-              
-              if (projectItems.length === 0) {
-                console.log(`Issue #${issueNumber} is not in any project. Skipping.`);
-                return;
-              }
-              
-              // Look for "Status" field with "Wont Do" value
-              let foundWontDoStatus = false;
-              
-              for (const edge of projectItems) {
-                const projectItem = edge.node;
-                const projectTitle = projectItem.project?.title || 'Unknown';
-                const fieldValues = projectItem.fieldValues?.nodes || [];
+                `;
                 
-                for (const fieldValue of fieldValues) {
-                  const fieldName = fieldValue.field?.name;
-                  const valueName = fieldValue.name;
-                  
-                  console.log(`Project: ${projectTitle}, Field: ${fieldName}, Value: ${valueName}`);
-                  
-                  if (fieldName === 'Status' && valueName === 'Wont Do') {
-                    foundWontDoStatus = true;
-                    console.log(`✓ Found "Wont Do" status in project "${projectTitle}"`);
-                    break;
-                  }
+                const result = await github.graphql(query, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issueNumber: issueNumber
+                });
+                
+                console.log('GraphQL result:', JSON.stringify(result, null, 2));
+                
+                // Check if issue has project items
+                const projectItems = result.repository?.issue?.projectItems?.edges || [];
+                
+                if (projectItems.length === 0) {
+                  console.log(`Issue #${issueNumber} is not in any project. Skipping.`);
+                  return;
                 }
                 
-                if (foundWontDoStatus) break;
-              }
-              
-              if (foundWontDoStatus) {
-                // Close the issue
-                await github.rest.issues.update({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  state: 'closed',
-                  state_reason: 'not_planned'
-                });
+                // Look for "Status" field with "Wont Do" value
+                let foundWontDoStatus = false;
                 
-                // Add a comment explaining the closure
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  body: '🤖 This issue was automatically closed because its status was set to "Wont Do" in the project board.'
-                });
+                for (const edge of projectItems) {
+                  const projectItem = edge.node;
+                  const projectTitle = projectItem.project?.title || 'Unknown';
+                  const fieldValues = projectItem.fieldValues?.nodes || [];
+                  
+                  for (const fieldValue of fieldValues) {
+                    const fieldName = fieldValue.field?.name;
+                    const valueName = fieldValue.name;
+                    
+                    console.log(`Project: ${projectTitle}, Field: ${fieldName}, Value: ${valueName}`);
+                    
+                    if (fieldName === 'Status' && valueName === 'Wont Do') {
+                      foundWontDoStatus = true;
+                      console.log(`✓ Found "Wont Do" status in project "${projectTitle}"`);
+                      break;
+                    }
+                  }
+                  
+                  if (foundWontDoStatus) break;
+                }
                 
-                console.log(`✓ Issue #${issueNumber} closed successfully.`);
-              } else {
-                console.log(`Issue #${issueNumber} does not have "Wont Do" status. Skipping.`);
-              }
+                if (foundWontDoStatus) {
+                  // Close the issue
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    state: 'closed',
+                    state_reason: 'not_planned'
+                  });
+                  
+                  // Add a comment explaining the closure
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    body: '🤖 This issue was automatically closed because its status was set to "Wont Do" in the project board.'
+                  });
+                  
+                  console.log(`✓ Issue #${issueNumber} closed successfully.`);
+                } else {
+                  console.log(`Issue #${issueNumber} does not have "Wont Do" status. Skipping.`);
+                }
               
-            } catch (error) {
-              console.error('Error processing issue:', error);
-              core.setFailed(`Failed to process issue: ${error.message}`);
+              } catch (error) {
+                console.error(`Error processing issue #${issueNumber}:`, error.message);
+                // Don't fail the entire workflow for one issue
+                if (context.eventName !== 'schedule') {
+                  core.setFailed(`Failed to process issue: ${error.message}`);
+                }
+              }
             }
