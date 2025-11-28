@@ -48,6 +48,25 @@ The `auto-close-wont-do.yml` workflow automatically closes issues when their sta
 **Permissions:**
 - `issues: write` - Required to close issues and add comments
 - `repository-projects: read` - Required to read GitHub Projects v2 data via GraphQL API
+- `contents: read` - Standard permission for workflow operations
+
+⚠️ **Organization-level Projects V2 Access:**
+
+The default `GITHUB_TOKEN` **cannot** read organization-level Projects V2 items. If your issues are in an organization project (not a repository project), the workflow will report "Issue #X is not in any project" even though it is.
+
+**Two Solutions:**
+
+1. **Use Repository-level Projects (Recommended for public repos):**
+   - Create projects at the repository level instead of organization level
+   - The default `GITHUB_TOKEN` can access repository projects
+   - No additional configuration required
+
+2. **Use a Personal Access Token (PAT) for Organization Projects:**
+   - Go to **Settings > Developer settings > Personal access tokens > Fine-grained tokens**
+   - Create a token with `read:org` and `read:project` scopes
+   - Add it as a repository secret named `PROJECT_TOKEN`
+   - When manually triggering the workflow, set `use_custom_token` to `true`
+   - Note: This only works for manual triggers, not scheduled runs
 
 ### Usage
 
@@ -80,10 +99,34 @@ To test the workflow:
 - Ensure the workflow has proper permissions (issues: write, repository-projects: read)
 - Review workflow logs in the Actions tab for errors
 
+**"Issue #X is not in any project. Skipping." error:**
+
+This error appears when the workflow cannot access the project data. Common causes:
+
+1. **Organization-level project (Most Common):**
+   - Your issues are in an **organization project**, not a repository project
+   - The default `GITHUB_TOKEN` lacks permissions to read organization projects
+   - **Solution:** Either:
+     - Move issues to a repository-level project, OR
+     - Set up a PAT with `read:org` and `read:project` scopes (see instructions above)
+
+2. **Issue not actually in a project:**
+   - Check that the issue is actually added to a Projects V2 board
+   - Classic Projects (V1) are not supported
+
+3. **Permission issue:**
+   - Verify `repository-projects: read` permission is in the workflow
+   - Check workflow run logs for GraphQL errors
+
+**How to tell if you have org-level vs repo-level projects:**
+- Repository projects: URL like `https://github.com/owner/repo/projects/1`
+- Organization projects: URL like `https://github.com/orgs/org-name/projects/1`
+
 **GraphQL returns empty projectItems:**
-- This usually indicates a permissions issue
-- The workflow now includes `repository-projects: read` permission
-- If still empty, the issue may not be in any project board
+- This usually indicates an organization-level project
+- The workflow now logs detailed debug information
+- Check the workflow logs for the `totalCount` value
+- If `totalCount > 0` but no items returned, it's an org project permission issue
 
 ## Copilot Agent Testing Workflow
 
