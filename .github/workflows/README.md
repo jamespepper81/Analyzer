@@ -2,29 +2,59 @@
 
 ## Auto-close Won't Do Issues Workflow
 
-The `auto-close-wont-do.yml` workflow automatically closes issues when their status is set to "Won't Do".
+The `auto-close-wont-do.yml` workflow automatically closes issues when their status is set to "Won't Do" in GitHub Projects v2.
 
 ### Triggers
 
+- **`issues`** - Automatic trigger on issue events:
+  - `edited` - When issue title, body, or other fields are edited
+  - `labeled` - When a label is added to an issue
+  - `unlabeled` - When a label is removed from an issue
 - **`workflow_dispatch`** - Manual trigger with inputs:
-  - `issue_number` (required) - The issue number to process
-  - `status` (optional, default: "Won't Do") - The status to validate before closing
+  - `issue_number` (required) - The issue number to check and close if Won't Do
+
+### How It Works
+
+1. When an issue is edited or labeled, the workflow triggers automatically
+2. The workflow queries the GitHub Projects v2 GraphQL API to check the issue's status
+3. If the issue has a "Status" field set to "Won't Do" in any project board, the workflow:
+   - Closes the issue with `state_reason: 'not_planned'`
+   - Adds a comment explaining the automatic closure
 
 ### Important Notes
 
 ⚠️ **Projects V2 Events Not Supported**: The `projects_v2_item` event is NOT supported as a workflow trigger by GitHub Actions. While this event exists as a webhook, it cannot be used in the `on:` section of workflow files.
 
-- GitHub Actions does not support `projects_v2_item` as a workflow trigger
-- This workflow must be manually triggered using `workflow_dispatch`
-- GitHub does not provide a native way to trigger workflows when GitHub Projects V2 status fields change
+**Limitations:**
+- The workflow triggers on issue edits, not directly on project status changes
+- To ensure the workflow runs after changing status to "Won't Do", you can:
+  - Edit the issue (e.g., add/remove a label)
+  - Use the manual `workflow_dispatch` trigger
+- The workflow requires the issue to be in a GitHub Projects v2 board with a "Status" field
 
 ### Usage
 
-To manually close an issue marked as "Won't Do":
+#### Automatic Closure
+After setting an issue status to "Won't Do" in a project board:
+1. Edit the issue (add a label, update description, etc.)
+2. The workflow will automatically check the project status and close if needed
+
+#### Manual Trigger
+To manually check and close an issue:
 1. Go to **Actions** tab
 2. Select **Auto-close Won't Do Issues**
 3. Click **Run workflow**
 4. Enter the issue number
+5. The workflow will check the project status and close if "Won't Do"
+
+### Testing
+
+To test with issue #276:
+1. Set issue #276 status to "Won't Do" in the project board
+2. Either:
+   - Add/remove a label on the issue to trigger the workflow
+   - Manually run the workflow with issue number 276
+3. The workflow will detect the "Won't Do" status and close the issue
 
 ## Copilot Agent Testing Workflow
 
