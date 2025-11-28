@@ -6,18 +6,33 @@ The `auto-close-wont-do.yml` workflow automatically closes issues when their sta
 
 ### Triggers
 
-- **`issues`** - Automatic trigger on issue events:
+- **`schedule`** - Automatic trigger every 30 minutes:
+  - Checks all open issues in the repository
+  - Closes any issues with "Won't Do" status
+  - Runs continuously without manual intervention
+- **`workflow_dispatch`** - Manual trigger with inputs:
+  - `issue_number` (required) - The issue number to check and close if Won't Do
+- **`issues`** - Fallback trigger on issue events (rarely fires for project status changes):
   - `edited` - When issue title, body, or other fields are edited
   - `labeled` - When a label is added to an issue
   - `unlabeled` - When a label is removed from an issue
-- **`workflow_dispatch`** - Manual trigger with inputs:
-  - `issue_number` (required) - The issue number to check and close if Won't Do
 
 ### How It Works
 
-1. When an issue is edited or labeled, the workflow triggers automatically
-2. The workflow queries the GitHub Projects v2 GraphQL API to check the issue's status
-3. If the issue has a "Status" field set to "Won't Do" in any project board, the workflow:
+1. **Scheduled Run (Every 30 minutes):**
+   - Automatically checks all open issues in the repository
+   - Queries each issue's status in GitHub Projects v2
+   - Closes any issues with "Won't Do" status
+   
+2. **Manual Trigger:**
+   - Checks a specific issue number provided by the user
+   - Useful for immediate closure without waiting for scheduled run
+   
+3. **Issue Event Trigger (Fallback):**
+   - Triggers when an issue is edited or labeled
+   - Provides immediate response when other issue changes are made
+
+4. **For each issue with "Won't Do" status:**
    - Closes the issue with `state_reason: 'not_planned'`
    - Adds a comment explaining the automatic closure
 
@@ -25,36 +40,50 @@ The `auto-close-wont-do.yml` workflow automatically closes issues when their sta
 
 ⚠️ **Projects V2 Events Not Supported**: The `projects_v2_item` event is NOT supported as a workflow trigger by GitHub Actions. While this event exists as a webhook, it cannot be used in the `on:` section of workflow files.
 
-**Limitations:**
-- The workflow triggers on issue edits, not directly on project status changes
-- To ensure the workflow runs after changing status to "Won't Do", you can:
-  - Edit the issue (e.g., add/remove a label)
-  - Use the manual `workflow_dispatch` trigger
-- The workflow requires the issue to be in a GitHub Projects v2 board with a "Status" field
+**Solution Implemented:**
+- Uses a **scheduled trigger (every 30 minutes)** to automatically check all open issues
+- This ensures issues are closed within 30 minutes of status change to "Won't Do"
+- No manual intervention required after setting status to "Won't Do"
+
+**Permissions:**
+- `issues: write` - Required to close issues and add comments
+- `repository-projects: read` - Required to read GitHub Projects v2 data via GraphQL API
 
 ### Usage
 
-#### Automatic Closure
-After setting an issue status to "Won't Do" in a project board:
-1. Edit the issue (add a label, update description, etc.)
-2. The workflow will automatically check the project status and close if needed
+#### Automatic Closure (Recommended)
+1. Set an issue's status to "Won't Do" in your GitHub Projects v2 board
+2. Wait up to 30 minutes for the scheduled workflow to run
+3. The workflow will automatically detect and close the issue
 
-#### Manual Trigger
-To manually check and close an issue:
-1. Go to **Actions** tab
-2. Select **Auto-close Won't Do Issues**
-3. Click **Run workflow**
-4. Enter the issue number
-5. The workflow will check the project status and close if "Won't Do"
+#### Manual Trigger (Immediate Closure)
+For immediate closure without waiting for the scheduled run:
+1. Set the issue status to "Won't Do" in the project board
+2. Go to **Actions** tab
+3. Select **Auto-close Won't Do Issues**
+4. Click **Run workflow**
+5. Enter the issue number
+6. The workflow will immediately check and close the issue if "Won't Do"
 
 ### Testing
 
-To test with issue #276:
-1. Set issue #276 status to "Won't Do" in the project board
-2. Either:
-   - Add/remove a label on the issue to trigger the workflow
-   - Manually run the workflow with issue number 276
-3. The workflow will detect the "Won't Do" status and close the issue
+To test the workflow:
+1. Set an issue's status to "Won't Do" in the project board
+2. Option A: Wait up to 30 minutes for automatic closure
+3. Option B: Manually trigger the workflow with the issue number for immediate testing
+
+### Troubleshooting
+
+**Issue not closing automatically:**
+- Verify the issue is in a GitHub Projects v2 board
+- Check that the Status field is set exactly to "Won't Do" (case-sensitive)
+- Ensure the workflow has proper permissions (issues: write, repository-projects: read)
+- Review workflow logs in the Actions tab for errors
+
+**GraphQL returns empty projectItems:**
+- This usually indicates a permissions issue
+- The workflow now includes `repository-projects: read` permission
+- If still empty, the issue may not be in any project board
 
 ## Copilot Agent Testing Workflow
 
