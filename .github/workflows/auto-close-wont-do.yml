@@ -1,5 +1,19 @@
 name: Auto-close Wont Do Issues
 
+# IMPORTANT: GitHub Projects V2 Access
+# ======================================
+# This workflow automatically uses PROJECT_TOKEN secret if available.
+# 
+# For Repository-level Projects:
+#   - Default GITHUB_TOKEN works fine
+#   - No additional setup needed
+# 
+# For Organization-level Projects (or if you see "not in any project" errors):
+#   - Create a fine-grained PAT with 'read:org' and 'read:project' scopes
+#   - Go to Settings > Developer settings > Personal access tokens > Fine-grained tokens
+#   - Add as repository secret named 'PROJECT_TOKEN'
+#   - Workflow will automatically use it when available
+
 on:
   # Schedule to automatically check all open issues every 30 minutes
   schedule:
@@ -21,12 +35,26 @@ jobs:
     permissions:
       issues: write
       repository-projects: read
+      # Note: Organization projects require org-level permissions
+      # which may not be available to GITHUB_TOKEN by default
+      contents: read
 
     steps:
       - name: Check project status and close if Wont Do
         uses: actions/github-script@v7
         with:
+          # Use PROJECT_TOKEN if available, otherwise fall back to GITHUB_TOKEN
+          # Manual trigger can override with use_custom_token=true to force PROJECT_TOKEN
+          github-token: ${{ secrets.PROJECT_TOKEN || github.token }}
           script: |
+            console.log('='.repeat(60));
+            console.log('Auto-close Wont Do Issues Workflow');
+            console.log('='.repeat(60));
+            console.log(`Event: ${context.eventName}`);
+            console.log(`Repository: ${context.repo.owner}/${context.repo.repo}`);
+            console.log(`Token: Using PROJECT_TOKEN if available, otherwise GITHUB_TOKEN`);
+            console.log('');
+            
             // Determine which issues to check based on trigger type
             let issuesToCheck = [];
             
@@ -66,16 +94,23 @@ jobs:
               try {
                 // Query the issue's project status using GraphQL
                 // Note: Must query through repository.issue() not node() for projectItems to work
+                // Projects V2 can be at repository or organization level
                 const query = `
                 query($owner: String!, $repo: String!, $issueNumber: Int!) {
                   repository(owner: $owner, name: $repo) {
                     issue(number: $issueNumber) {
-                      projectItems(first: 10) {
+                      id
+                      number
+                      title
+                      projectItems(first: 20, includeArchived: false) {
+                        totalCount
                         edges {
                           node {
                             id
                             project {
+                              id
                               title
+                              number
                             }
                             fieldValues(first: 20) {
                               nodes {
@@ -103,13 +138,27 @@ jobs:
                   issueNumber: issueNumber
                 });
                 
-                console.log('GraphQL result:', JSON.stringify(result, null, 2));
+                console.log(`Issue #${issueNumber}: "${result.repository?.issue?.title}"`);
+                console.log(`Total project items: ${result.repository?.issue?.projectItems?.totalCount || 0}`);
+                console.log('Full GraphQL result:', JSON.stringify(result, null, 2));
                 
                 // Check if issue has project items
                 const projectItems = result.repository?.issue?.projectItems?.edges || [];
+                const totalCount = result.repository?.issue?.projectItems?.totalCount || 0;
                 
                 if (projectItems.length === 0) {
-                  console.log(`Issue #${issueNumber} is not in any project. Skipping.`);
+                  console.log(`⚠️ Issue #${issueNumber} appears to have ${totalCount} project items but none were returned.`);
+                  console.log(`This usually means:`);
+                  console.log(`  1. The issue is in an organization-level project (not repository-level)`);
+                  console.log(`  2. The GITHUB_TOKEN lacks permissions to read organization projects`);
+                  console.log(`  3. The issue is not actually in any project`);
+                  console.log(``);
+                  console.log(`To fix this:`);
+                  console.log(`  - Ensure issues are added to repository-level projects, OR`);
+                  console.log(`  - Use a PAT (Personal Access Token) with 'read:org' and 'read:project' scopes`);
+                  console.log(`  - Pass the token via 'github-token' parameter to github-script action`);
+                  console.log(``);
+                  console.log(`Skipping issue #${issueNumber}.`);
                   return;
                 }
                 
