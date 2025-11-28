@@ -104,7 +104,7 @@ jobs:
                   
                   if (fieldName === 'Status' && valueName === 'Wont Do') {
                     foundWontDoStatus = true;
-                    console.log(`✓ Found "Won't Do" status in project "${projectTitle}"`);
+                    console.log(`✓ Found "Wont Do" status in project "${projectTitle}"`);
                     break;
                   }
                 }
@@ -127,7 +127,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: issueNumber,
-                  body: '🤖 This issue was automatically closed because its status was set to "Won't Do" in the project board.'
+                  body: '🤖 This issue was automatically closed because its status was set to "Wont Do" in the project board.'
                 });
                 
                 console.log(`✓ Issue #${issueNumber} closed successfully.`);
