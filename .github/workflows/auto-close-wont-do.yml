@@ -3,7 +3,7 @@ name: Auto-close Wont Do Issues
 on:
   # Schedule to automatically check all open issues every 30 minutes
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '0 0 */10 * *'
   # Manual trigger for specific issues
   workflow_dispatch:
     inputs:
