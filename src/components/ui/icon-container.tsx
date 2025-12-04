@@ -16,13 +16,13 @@ const VARIANT_CLASSES = {
   amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 } as const;
 
-export function IconContainer({ 
-  children, 
+export function IconContainer({
+  children,
   variant = 'primary',
-  className 
+  className
 }: IconContainerProps) {
   return (
-    <div className={cn("p-2 rounded-lg transition-colors duration-200", VARIANT_CLASSES[variant], className)}>
+    <div className={cn("p-2 rounded-lg transition-colors duration-200 w-fit", VARIANT_CLASSES[variant], className)}>
       {children}
     </div>
   );
