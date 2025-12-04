@@ -258,6 +258,8 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
             const dateKey = format(startOfDay(txDate), 'yyyy-MM-dd');
             const historicalPrice = historicalPrices.get(dateKey) || 0;
 
+            const totalValue = tx.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8;
+
             return {
                 id: tx.txid, date: txDate.toISOString(), btc: netBtc, status: isConfirmed ? 'Confirmed' : 'Pending', type: netBtc >= 0 ? 'Received' : 'Sent',
                 fromAddress, toAddress, confirmations, fee: tx.fee, size: tx.size, weight: tx.weight, version: tx.version, locktime: tx.locktime,
@@ -266,6 +268,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
                 outputs: tx.vout?.map((o: any) => ({ address: o.scriptpubkey_address, value: o.value, spent: false })) || [],
                 labels: labels.length > 0 ? labels : undefined,
                 historicalPrice,
+                totalValue,
             };
         });
 
