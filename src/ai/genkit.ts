@@ -13,10 +13,11 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Check for API key and fail fast if missing to avoid placeholder configuration
+// Check for API key and warn if missing (don't throw to avoid build/import failures)
 const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_CHATGPT_API_KEY;
 if (!apiKey) {
-  throw new Error(
-    'OPENAI_API_KEY (or OPENAI_CHATGPT_API_KEY) is required before starting the server. '
+  console.warn(
+    'OPENAI_API_KEY (or OPENAI_CHATGPT_API_KEY) is missing. AI features will not work.'
   );
 }
 

@@ -15,18 +15,18 @@ function sleep(ms: number): Promise<void> {
 
 export async function fetchJson(url: string, options?: RequestInit, revalidate?: number): Promise<any> {
     const headers: Record<string, string> = {
-      'Accept': 'application/json',
-      'User-Agent': 'BitSleuth/1.0',
-      ...(options?.headers as Record<string, string> || {}),
+        'Accept': 'application/json',
+        'User-Agent': 'BitSleuth/1.0',
+        ...(options?.headers as Record<string, string> || {}),
     };
-  
+
     if (url.includes('api.coingecko.com')) {
-      const apiKey = process.env.COINGECKO_API_KEY;
-      if (apiKey) {
-        headers['x-cg-demo-api-key'] = apiKey;
-      }
+        const apiKey = process.env.COINGECKO_API_KEY;
+        if (apiKey) {
+            headers['x-cg-demo-api-key'] = apiKey;
+        }
     }
-  
+
     try {
         const response = await fetch(url, {
             ...options,
@@ -38,12 +38,12 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
 
         // Check for Blockstream's non-JSON notice page FIRST.
         if (textBody.includes("Blockstream Explorer API NOTICE")) {
-             // Signal to callers that this provider is temporarily unusable so they can fallback
-             const err: any = new Error('ESPLORA_PROVIDER_NOTICE');
-             err.code = 'ESPLORA_PROVIDER_NOTICE';
-             throw err;
+            // Signal to callers that this provider is temporarily unusable so they can fallback
+            const err: any = new Error('ESPLORA_PROVIDER_NOTICE');
+            err.code = 'ESPLORA_PROVIDER_NOTICE';
+            throw err;
         }
-        
+
         if (!response.ok) {
             console.error(`API request to ${url} failed with status ${response.status}:`, textBody);
             // Handle specific text errors from Blockstream
@@ -55,7 +55,7 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
             }
             throw new Error(`The data provider returned an error (status: ${response.status}).`);
         }
-        
+
         try {
             // If the response was OK and not a notice, it should be JSON.
             return JSON.parse(textBody);
@@ -131,11 +131,11 @@ export async function getHistoricalPriceRange(days: number, currency: Currency):
     const currencyCode = currency.toLowerCase();
     const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${currencyCode}&days=${days}&interval=daily`;
     try {
-      const data = await fetchJson(url, {}, 3600); // Cache for 1 hour
-      return data.prices || [];
+        const data = await fetchJson(url, {}, 3600); // Cache for 1 hour
+        return data.prices || [];
     } catch (error) {
-      console.error(`Failed to fetch historical price range for ${days} days:`, error);
-      return [];
+        console.error(`Failed to fetch historical price range for ${days} days:`, error);
+        return [];
     }
 }
 
@@ -148,7 +148,7 @@ export async function getAddressData(address: string): Promise<{ data: { address
 
         const [addressStats, txsData, btcTicker] = await Promise.all([
             esploraGet(addressUrl, 300), // Cache address stats for 5 mins
-            esploraGet(addressTxsUrl, 300).catch(() => []), 
+            esploraGet(addressTxsUrl, 300).catch(() => []),
             fetchJson(tickerUrl, {}, 60), // Cache price for 1 min
         ]);
 
@@ -174,14 +174,14 @@ export async function getAddressData(address: string): Promise<{ data: { address
                 }
             });
         }
-        
+
         const latestBlockHeight = (await esploraGet(`/blocks/tip/height`, 60));
-        
+
         const transactions: Transaction[] = (Array.isArray(txsData) ? txsData : []).map((tx: any): Transaction => {
             let netAmountSatoshis = 0;
             tx.vout.forEach((out: any) => { if (out.scriptpubkey_address === address) netAmountSatoshis += out.value; });
             tx.vin.forEach((inp: any) => { if (inp.prevout?.scriptpubkey_address === address) netAmountSatoshis -= inp.prevout.value; });
-            
+
             const netBtc = netAmountSatoshis / 1e8;
             const isConfirmed = tx.status.confirmed;
             const confirmations = isConfirmed && latestBlockHeight ? latestBlockHeight - tx.status.block_height + 1 : 0;
@@ -197,9 +197,10 @@ export async function getAddressData(address: string): Promise<{ data: { address
                 confirmations, fee: tx.fee, size: tx.size, weight: tx.weight, version: tx.version, locktime: tx.locktime, rbf: tx.vin.some((i: any) => i.sequence < 0xfffffffe), blockHeight: tx.status.block_height ?? null,
                 inputs: tx.vin?.map((i: any) => ({ address: i.prevout?.scriptpubkey_address, value: i.prevout?.value })) || [],
                 outputs: tx.vout?.map((o: any, index: number) => ({ address: o.scriptpubkey_address, value: o.value, spent: spentOutputs.has(`${tx.txid}:${index}`) })) || [],
+                totalValue: tx.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8,
             };
         }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
+
         return { data: { addressInfo, transactions, btcPrice }, error: null };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred while fetching address data.';
@@ -237,8 +238,9 @@ export async function getTransactionData(txid: string): Promise<{ data: Transact
             rbf: txData.vin.some((i: any) => i.sequence < 0xfffffffe), blockHeight: txData.status.block_height ?? null,
             inputs: txData.vin?.map((i: any) => ({ address: i.prevout?.scriptpubkey_address, value: i.prevout?.value })) || [],
             outputs: txData.vout?.map((o: any) => ({ address: o.scriptpubkey_address, value: o.value, spent: false })) || [],
+            totalValue: txData.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8,
         };
-        
+
         return { data: transaction, error: null };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred while fetching transaction data.';

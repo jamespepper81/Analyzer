@@ -8,18 +8,35 @@ import { esploraGet, fetchJson, getHistoricalPriceRange } from './blockchain-api
 import { format, startOfDay } from 'date-fns';
 
 const GAP_LIMIT = 20; // Standard gap limit for address discovery
+const INITIAL_CHECK_LIMIT = 5; // How many addresses to check initially to determine wallet type
 
 function getP2wpkhAddress(pubKey: Buffer): string {
     return bitcoin.payments.p2wpkh({ pubkey: pubKey }).address!;
 }
 
-// Derives a batch of addresses for a given chain (external/internal)
-function deriveAddressBatch(node: any, chain: number, from: number, to: number): string[] {
+function getP2pkhAddress(pubKey: Buffer): string {
+    return bitcoin.payments.p2pkh({ pubkey: pubKey }).address!;
+}
+
+function getP2shP2wpkhAddress(pubKey: Buffer): string {
+    const p2wpkh = bitcoin.payments.p2wpkh({ pubkey: pubKey });
+    return bitcoin.payments.p2sh({ redeem: p2wpkh }).address!;
+}
+
+// Derives a batch of addresses for a given chain (external/internal) and type
+function deriveAddressBatch(node: any, chain: number, from: number, to: number, type: 'native' | 'legacy' | 'nested'): string[] {
     const addresses: string[] = [];
     const chainNode = node.derive(chain);
     for (let i = from; i < to; i++) {
         const childNode = chainNode.derive(i);
-        const address = getP2wpkhAddress(childNode.publicKey);
+        let address: string;
+        if (type === 'legacy') {
+            address = getP2pkhAddress(childNode.publicKey);
+        } else if (type === 'nested') {
+            address = getP2shP2wpkhAddress(childNode.publicKey);
+        } else {
+            address = getP2wpkhAddress(childNode.publicKey);
+        }
         addresses.push(address);
     }
     return addresses;
@@ -37,38 +54,71 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
         throw new Error('Upstream data provider is temporarily unavailable. Please try again in a moment.');
     }
 
-    for (const chain of [0, 1]) { // 0 for external, 1 for internal
-        let gap = 0;
-        let index = 0;
-        
-        while (gap < GAP_LIMIT) {
-            const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT);
-            // Query the batch; tolerate per-address failures
-            const addressTxs = await Promise.all(
-                batch.map(addr =>
-                    esploraGet(`/address/${addr}/txs/chain`, 300).catch(() => [])
-                )
-            );
-            
-            let foundInBatch = false;
-            for(let i=0; i < addressTxs.length; i++) {
-                if (addressTxs[i] && addressTxs[i].length > 0) {
-                    allUsedAddresses.push(batch[i]);
-                    gap = 0;
-                    foundInBatch = true;
-                } else {
-                    gap++;
-                }
-            }
-            
-            if (!foundInBatch) {
-                // If a whole batch of 20 is unused, we can likely stop for this chain.
-                break;
-            }
+    // 1. Determine which address types are active by checking the first few addresses of each type.
+    // We check External chain (0) indices 0-4.
+    const typesToCheck: ('native' | 'legacy' | 'nested')[] = ['native', 'nested', 'legacy'];
+    const activeTypes: ('native' | 'legacy' | 'nested')[] = [];
 
-            index += GAP_LIMIT;
+    await Promise.all(typesToCheck.map(async (type) => {
+        const batch = deriveAddressBatch(node, 0, 0, INITIAL_CHECK_LIMIT, type);
+        try {
+            const results = await Promise.all(
+                batch.map(addr => esploraGet(`/address/${addr}/txs`, 300).catch(() => []))
+            );
+            // If any address in the batch has transactions, mark this type as active.
+            if (results.some(txs => Array.isArray(txs) && txs.length > 0)) {
+                activeTypes.push(type);
+            }
+        } catch (e) {
+            // Ignore errors during detection phase
+        }
+    }));
+
+    // If no activity detected, default to Native Segwit (most common modern standard)
+    // or scan all if we want to be super thorough, but defaulting to Native is a safe bet for "new" empty wallets.
+    // However, if it's truly empty, it doesn't matter which we pick, but Native is best practice.
+    if (activeTypes.length === 0) {
+        activeTypes.push('native');
+    }
+
+    console.log(`[Discovery] Detected active wallet types: ${activeTypes.join(', ')}`);
+
+    // 2. Perform full discovery for active types
+    for (const type of activeTypes) {
+        for (const chain of [0, 1]) { // 0 for external, 1 for internal
+            let gap = 0;
+            let index = 0;
+
+            while (gap < GAP_LIMIT) {
+                const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT, type);
+                // Query the batch; tolerate per-address failures
+                const addressTxs = await Promise.all(
+                    batch.map(addr =>
+                        esploraGet(`/address/${addr}/txs/chain`, 300).catch(() => [])
+                    )
+                );
+
+                let foundInBatch = false;
+                for (let i = 0; i < addressTxs.length; i++) {
+                    if (addressTxs[i] && addressTxs[i].length > 0) {
+                        allUsedAddresses.push(batch[i]);
+                        gap = 0;
+                        foundInBatch = true;
+                    } else {
+                        gap++;
+                    }
+                }
+
+                if (!foundInBatch) {
+                    // If a whole batch of 20 is unused, we can likely stop for this chain.
+                    break;
+                }
+
+                index += GAP_LIMIT;
+            }
         }
     }
+
     return [...new Set(allUsedAddresses)];
 }
 
@@ -89,14 +139,14 @@ async function getBatchedHistoricalPrices(dates: Date[], currency: Currency): Pr
             priceMap.set(dateStr, price);
         }
     });
-    
+
     return priceMap;
 }
 
 export async function getWalletData(xpub: string, currency: Currency = 'USD'): Promise<{ data: WalletData | null; error: string | null; }> {
     try {
         const usedAddresses = await discoverUsedAddresses(xpub);
-        
+
         if (usedAddresses.length === 0) {
             return { data: null, error: 'This xpub key has no transaction history and cannot be analyzed. Address discovery failed.' };
         }
@@ -167,7 +217,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
 
         const transactionDates = Array.from(allTxs.values())
             .map(tx => new Date(tx.status.confirmed ? tx.status.block_time * 1000 : Date.now()));
-            
+
         const historicalPrices = await getBatchedHistoricalPrices(transactionDates, currency);
 
         const transactions: Transaction[] = Array.from(allTxs.values()).map((tx: any): Transaction => {
@@ -192,7 +242,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
 
             const fromAddress = tx.vin?.map((i: any) => i.prevout?.scriptpubkey_address).filter(Boolean) ?? [];
             const toAddress = tx.vout?.map((o: any) => o.scriptpubkey_address).filter(Boolean) ?? [];
-            
+
             const labels: TransactionLabel[] = [];
             fromAddress.forEach((addr: string) => {
                 if (KNOWN_EXCHANGE_ADDRESSES[addr]) {
@@ -208,6 +258,8 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
             const dateKey = format(startOfDay(txDate), 'yyyy-MM-dd');
             const historicalPrice = historicalPrices.get(dateKey) || 0;
 
+            const totalValue = tx.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8;
+
             return {
                 id: tx.txid, date: txDate.toISOString(), btc: netBtc, status: isConfirmed ? 'Confirmed' : 'Pending', type: netBtc >= 0 ? 'Received' : 'Sent',
                 fromAddress, toAddress, confirmations, fee: tx.fee, size: tx.size, weight: tx.weight, version: tx.version, locktime: tx.locktime,
@@ -216,9 +268,10 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
                 outputs: tx.vout?.map((o: any) => ({ address: o.scriptpubkey_address, value: o.value, spent: false })) || [],
                 labels: labels.length > 0 ? labels : undefined,
                 historicalPrice,
+                totalValue,
             };
         });
-        
+
         transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 
@@ -229,7 +282,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
 
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        
+
         let inflowBTC = 0, outflowBTC = 0;
         transactions.forEach(tx => {
             if (new Date(tx.date).getTime() > thirtyDaysAgo.getTime()) {
@@ -239,7 +292,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
 
         const reusedAddressCount = addressInfos.filter(addr => addr.n_tx > 1).length;
         const reusePercentage = addressInfos.length > 0 ? (reusedAddressCount / addressInfos.length) * 100 : 0;
-        
+
         let totalFee = 0, totalVSize = 0;
         transactions.forEach(tx => {
             if (tx.type === 'Sent' && tx.size > 0 && tx.fee > 0) {
@@ -247,26 +300,26 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
                 totalVSize += tx.weight ? tx.weight / 4 : tx.size;
             }
         });
-          
+
         const price24h = priceHistory24h.length > 0 ? priceHistory24h[0][1] : 0;
         const price7d = priceHistory7d.length > 0 ? priceHistory7d[0][1] : 0;
         const price30d = priceHistory30d.length > 0 ? priceHistory30d[0][1] : 0;
-        
+
         const currentPrice = btcPrices[currency]?.last || 0;
-        
+
         const walletData: WalletData = {
-          btcPrices, balanceBTC: finalBalanceBTC, transactions,
-          securityScore: Math.max(10, 100 - Math.floor(reusePercentage)),
-          opsecThreat: reusePercentage > 50 ? 'High' : reusePercentage > 0 ? 'Medium' : 'Low',
-          usedAddressCount: addressInfos.length, dustAmountBTC, dustUtxoCount: dustUtxos.length, addresses: addressInfos, utxos,
-          performance: {
-            change24h: price24h > 0 ? ((currentPrice - price24h) / price24h) * 100 : 0,
-            change7d: price7d > 0 ? ((currentPrice - price7d) / price7d) * 100 : 0,
-            change30d: price30d > 0 ? ((currentPrice - price30d) / price30d) * 100 : 0,
-          },
-          inflowOutflow: { inflowBTC, outflowBTC },
-          averageFeeRate: totalVSize > 0 ? totalFee / totalVSize : 0,
-          btcPrice: currentPrice,
+            btcPrices, balanceBTC: finalBalanceBTC, transactions,
+            securityScore: Math.max(10, 100 - Math.floor(reusePercentage)),
+            opsecThreat: reusePercentage > 50 ? 'High' : reusePercentage > 0 ? 'Medium' : 'Low',
+            usedAddressCount: addressInfos.length, dustAmountBTC, dustUtxoCount: dustUtxos.length, addresses: addressInfos, utxos,
+            performance: {
+                change24h: price24h > 0 ? ((currentPrice - price24h) / price24h) * 100 : 0,
+                change7d: price7d > 0 ? ((currentPrice - price7d) / price7d) * 100 : 0,
+                change30d: price30d > 0 ? ((currentPrice - price30d) / price30d) * 100 : 0,
+            },
+            inflowOutflow: { inflowBTC, outflowBTC },
+            averageFeeRate: totalVSize > 0 ? totalFee / totalVSize : 0,
+            btcPrice: currentPrice,
         };
 
         return { data: walletData, error: null };

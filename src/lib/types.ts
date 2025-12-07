@@ -18,9 +18,9 @@ export type TransactionOutput = {
 };
 
 export type TransactionLabel = {
-    address: string;
-    label: string;
-    type: 'entity' | 'exchange';
+  address: string;
+  label: string;
+  type: 'entity' | 'exchange';
 };
 
 export type Transaction = {
@@ -42,6 +42,7 @@ export type Transaction = {
   blockHeight: number | null;
   inputs: TransactionInput[];
   outputs: TransactionOutput[];
+  totalValue: number; // Sum of all output values in BTC
   historicalPrice?: number; // Optional field for cost basis calculation
   labels?: TransactionLabel[]; // Added for exchange/entity labels
 };
@@ -133,19 +134,19 @@ export type MempoolInfo = {
 };
 
 export type LatestBlock = {
-    id: string;
-    height: number;
-    version: number;
-    timestamp: number;
-    tx_count: number;
-    size: number;
-    weight: number;
-    merkle_root: string;
-    previousblockhash: string;
-    mediantime: number;
-    nonce: number;
-    bits: number;
-    difficulty: number;
+  id: string;
+  height: number;
+  version: number;
+  timestamp: number;
+  tx_count: number;
+  size: number;
+  weight: number;
+  merkle_root: string;
+  previousblockhash: string;
+  mediantime: number;
+  nonce: number;
+  bits: number;
+  difficulty: number;
 };
 
 export type MempoolData = {
@@ -158,47 +159,47 @@ export type MempoolData = {
 };
 
 export type MarketData = {
-    price: number;
-    price_change_24h: number;
-    price_change_percentage_24h: number;
-    market_cap: number;
-    market_cap_rank: number;
-    high_24h: number;
-    low_24h: number;
-    total_volume: number;
-    circulating_supply: number;
-    total_supply: number | null;
-    ath: number;
-    atl: number;
-    last_updated: string;
+  price: number;
+  price_change_24h: number;
+  price_change_percentage_24h: number;
+  market_cap: number;
+  market_cap_rank: number;
+  high_24h: number;
+  low_24h: number;
+  total_volume: number;
+  circulating_supply: number;
+  total_supply: number | null;
+  ath: number;
+  atl: number;
+  last_updated: string;
 };
 
 export type MarketChartPoint = {
-    timestamp: number;
-    price: number;
+  timestamp: number;
+  price: number;
 };
 
 export type CandlestickDataPoint = {
-    time: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
 
 export type FearAndGreedIndex = {
-    value: number;
-    value_classification: string;
-    timestamp: string;
+  value: number;
+  value_classification: string;
+  timestamp: string;
 };
 
 export type MarketPageData = {
-    marketData: MarketData;
-    chartData: MarketChartPoint[];
-    candlestickData: CandlestickDataPoint[];
-    fearAndGreed: FearAndGreedIndex;
+  marketData: MarketData;
+  chartData: MarketChartPoint[];
+  candlestickData: CandlestickDataPoint[];
+  fearAndGreed: FearAndGreedIndex;
 };
-    
+
 export type BlockTransaction = {
   txid: string;
   fee: number;
@@ -237,37 +238,37 @@ export type BitcoinAddressAnalysis = {
 };
 
 export type Holding = {
-    address: string;
-    balance: number;
-    cost: number;
-    marketValue: number;
-    roi: number;
-    potentialGain: number;
+  address: string;
+  balance: number;
+  cost: number;
+  marketValue: number;
+  roi: number;
+  potentialGain: number;
 };
 
 // Types for the new Tax Report Page
 export type TaxReportOutput = {
-    summary: {
-      startDate: string;
-      endDate: string;
-      startValue: number;
-      endValue: number;
-      totalValueChange: number;
-      totalValueChangePercentage: number;
-      costBasis: number;
-      unrealizedGains: number;
-      inflow: number;
-      outflow: number;
-      tradingFees: number;
-      realizedGains: number;
-    };
-    portfolioHistory: Array<{
-      date: string;
-      totalValue: number;
-      costBasis: number;
-    }>;
-    holdings: Array<Holding>;
+  summary: {
+    startDate: string;
+    endDate: string;
+    startValue: number;
+    endValue: number;
+    totalValueChange: number;
+    totalValueChangePercentage: number;
+    costBasis: number;
+    unrealizedGains: number;
+    inflow: number;
+    outflow: number;
+    tradingFees: number;
+    realizedGains: number;
   };
+  portfolioHistory: Array<{
+    date: string;
+    totalValue: number;
+    costBasis: number;
+  }>;
+  holdings: Array<Holding>;
+};
 
 export type TaxCategory = 'SHORT_TERM' | 'LONG_TERM' | 'INCOME' | 'NON_TAXABLE';
 export type AccountingMethod = 'FIFO' | 'LIFO' | 'HIFO' | 'SPEC_ID' | 'AVG_COST' | 'SHARED_POOL';

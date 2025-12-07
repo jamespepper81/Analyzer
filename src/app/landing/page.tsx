@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { IconContainer } from '@/components/ui/icon-container';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { 
-  Shield, 
-  Brain, 
+import {
+  Shield,
+  Brain,
   Eye,
   TrendingUp,
   Lock,
@@ -93,7 +93,7 @@ export default function LandingPage() {
       <header className="absolute top-0 right-0 p-4 z-10">
         <ThemeToggle />
       </header>
-      
+
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 text-center">
         <div className="max-w-4xl mx-auto">
@@ -106,7 +106,7 @@ export default function LandingPage() {
             <span className="text-primary">Bitcoin Wallet Analyzer</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Get comprehensive AI-powered insights into your Bitcoin wallet's security, privacy, and transaction patterns. 
+            Get comprehensive AI-powered insights into your Bitcoin wallet's security, privacy, and transaction patterns.
             The only tool you need to analyze any Bitcoin wallet instantly and securely.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -134,14 +134,14 @@ export default function LandingPage() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Powerful Bitcoin Analysis Features</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            BitSleuth combines cutting-edge AI technology with comprehensive Bitcoin blockchain analysis 
+            BitSleuth combines cutting-edge AI technology with comprehensive Bitcoin blockchain analysis
             to provide insights you won't find anywhere else.
           </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <Card key={index} className="h-full border-2 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent">
+              <CardHeader>
                 <IconContainer variant="primary">
                   <feature.icon className="h-5 w-5" />
                 </IconContainer>
@@ -163,7 +163,7 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Why Choose BitSleuth?</h2>
             <p className="text-muted-foreground">
-              BitSleuth is the most comprehensive Bitcoin wallet analysis tool available, 
+              BitSleuth is the most comprehensive Bitcoin wallet analysis tool available,
               trusted by Bitcoin users worldwide for security and privacy insights.
             </p>
           </div>
@@ -191,7 +191,7 @@ export default function LandingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Built specifically for Bitcoin users, with deep understanding of Bitcoin's 
+                    Built specifically for Bitcoin users, with deep understanding of Bitcoin's
                     security model, privacy considerations, and best practices.
                   </p>
                 </CardContent>
@@ -207,7 +207,7 @@ export default function LandingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Access to comprehensive Bitcoin blockchain data from multiple sources 
+                    Access to comprehensive Bitcoin blockchain data from multiple sources
                     for the most accurate and up-to-date analysis.
                   </p>
                 </CardContent>
@@ -222,7 +222,7 @@ export default function LandingPage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold mb-4">Ready to Analyze Your Bitcoin Wallet?</h2>
           <p className="text-muted-foreground mb-8">
-            Join thousands of Bitcoin users who trust BitSleuth for their wallet security analysis. 
+            Join thousands of Bitcoin users who trust BitSleuth for their wallet security analysis.
             Get started in seconds with just your Bitcoin XPUB key.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -266,7 +266,7 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Yes, BitSleuth is completely safe. We only analyze public blockchain data using your Bitcoin XPUB key. 
+                  Yes, BitSleuth is completely safe. We only analyze public blockchain data using your Bitcoin XPUB key.
                   Your private keys never leave your device and are never transmitted to our servers.
                 </p>
               </CardContent>
@@ -277,7 +277,7 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  An XPUB (Extended Public Key) is a public key that allows viewing wallet addresses and transaction history 
+                  An XPUB (Extended Public Key) is a public key that allows viewing wallet addresses and transaction history
                   without exposing your private keys. It's safe to share and is commonly used for wallet analysis.
                 </p>
               </CardContent>
@@ -288,7 +288,7 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  No account required! BitSleuth works entirely in your browser. Simply enter your Bitcoin XPUB key 
+                  No account required! BitSleuth works entirely in your browser. Simply enter your Bitcoin XPUB key
                   and start analyzing your wallet immediately.
                 </p>
               </CardContent>
@@ -299,8 +299,8 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  BitSleuth provides comprehensive analysis including security assessment, privacy analysis, 
-                  transaction pattern recognition, address reuse detection, dust attack identification, 
+                  BitSleuth provides comprehensive analysis including security assessment, privacy analysis,
+                  transaction pattern recognition, address reuse detection, dust attack identification,
                   and AI-powered recommendations for better Bitcoin security.
                 </p>
               </CardContent>
