@@ -9,6 +9,8 @@ import { format, startOfDay } from 'date-fns';
 
 const GAP_LIMIT = 20; // Standard gap limit for address discovery
 const INITIAL_CHECK_LIMIT = 5; // How many addresses to check initially to determine wallet type
+const PARALLEL_BATCH_SIZE = 10; // How many addresses to check in parallel
+const TYPE_DETECTION_CONCURRENCY = 3; // Check all types concurrently
 
 function getP2wpkhAddress(pubKey: Buffer): string {
     return bitcoin.payments.p2wpkh({ pubkey: pubKey }).address!;
@@ -44,6 +46,7 @@ function deriveAddressBatch(node: any, chain: number, from: number, to: number, 
 
 // This is the new, more robust implementation with provider readiness check and fallback.
 async function discoverUsedAddresses(xpub: string): Promise<string[]> {
+    const discoveryStartTime = Date.now();
     const node = bip32.fromBase58(xpub, bitcoin.networks.bitcoin);
     let allUsedAddresses: string[] = [];
 
@@ -56,23 +59,34 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
 
     // 1. Determine which address types are active by checking the first few addresses of each type.
     // We check External chain (0) indices 0-4.
+    // ALL types are checked in PARALLEL for faster detection
     const typesToCheck: ('native' | 'legacy' | 'nested')[] = ['native', 'nested', 'legacy'];
     const activeTypes: ('native' | 'legacy' | 'nested')[] = [];
 
-    await Promise.all(typesToCheck.map(async (type) => {
-        const batch = deriveAddressBatch(node, 0, 0, INITIAL_CHECK_LIMIT, type);
-        try {
-            const results = await Promise.all(
-                batch.map(addr => esploraGet(`/address/${addr}/txs`, 300).catch(() => []))
+    // Check all address types concurrently
+    const typeDetectionResults = await Promise.allSettled(
+        typesToCheck.map(async (type) => {
+            const batch = deriveAddressBatch(node, 0, 0, INITIAL_CHECK_LIMIT, type);
+            // Check all addresses in this batch in parallel
+            const results = await Promise.allSettled(
+                batch.map(addr => esploraGet(`/address/${addr}/txs`, 300))
             );
-            // If any address in the batch has transactions, mark this type as active.
-            if (results.some(txs => Array.isArray(txs) && txs.length > 0)) {
-                activeTypes.push(type);
-            }
-        } catch (e) {
-            // Ignore errors during detection phase
+            // If any address in the batch has transactions, mark this type as active
+            const hasActivity = results.some(result => 
+                result.status === 'fulfilled' && 
+                Array.isArray(result.value) && 
+                result.value.length > 0
+            );
+            return { type, hasActivity };
+        })
+    );
+
+    // Collect active types from successful checks
+    typeDetectionResults.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value.hasActivity) {
+            activeTypes.push(result.value.type);
         }
-    }));
+    });
 
     // If no activity detected, default to Native Segwit (most common modern standard)
     // or scan all if we want to be super thorough, but defaulting to Native is a safe bet for "new" empty wallets.
@@ -81,9 +95,11 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
         activeTypes.push('native');
     }
 
-    console.log(`[Discovery] Detected active wallet types: ${activeTypes.join(', ')}`);
+    const typeDetectionTime = Date.now() - discoveryStartTime;
+    console.log(`[Discovery] Detected active wallet types: ${activeTypes.join(', ')} in ${typeDetectionTime}ms`);
 
     // 2. Perform full discovery for active types
+    // Use parallel processing within each batch for much faster discovery
     for (const type of activeTypes) {
         for (const chain of [0, 1]) { // 0 for external, 1 for internal
             let gap = 0;
@@ -91,12 +107,31 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
 
             while (gap < GAP_LIMIT) {
                 const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT, type);
-                // Query the batch; tolerate per-address failures
-                const addressTxs = await Promise.all(
-                    batch.map(addr =>
-                        esploraGet(`/address/${addr}/txs/chain`, 300).catch(() => [])
-                    )
-                );
+                
+                // Process addresses in parallel chunks to avoid overwhelming the API
+                // but still get significant speedup
+                const chunkSize = PARALLEL_BATCH_SIZE;
+                const addressTxs: any[] = new Array(batch.length);
+                
+                for (let chunkStart = 0; chunkStart < batch.length; chunkStart += chunkSize) {
+                    const chunkEnd = Math.min(chunkStart + chunkSize, batch.length);
+                    const chunkAddresses = batch.slice(chunkStart, chunkEnd);
+                    
+                    // Check this chunk of addresses in parallel
+                    const chunkResults = await Promise.allSettled(
+                        chunkAddresses.map(addr => esploraGet(`/address/${addr}/txs/chain`, 300))
+                    );
+                    
+                    // Store results
+                    chunkResults.forEach((result, i) => {
+                        const absoluteIndex = chunkStart + i;
+                        if (result.status === 'fulfilled') {
+                            addressTxs[absoluteIndex] = result.value;
+                        } else {
+                            addressTxs[absoluteIndex] = [];
+                        }
+                    });
+                }
 
                 let foundInBatch = false;
                 for (let i = 0; i < addressTxs.length; i++) {
@@ -119,7 +154,11 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
         }
     }
 
-    return [...new Set(allUsedAddresses)];
+    const totalDiscoveryTime = Date.now() - discoveryStartTime;
+    const uniqueAddresses = [...new Set(allUsedAddresses)];
+    console.log(`[Discovery] Found ${uniqueAddresses.length} used addresses in ${totalDiscoveryTime}ms (${(totalDiscoveryTime/1000).toFixed(2)}s)`);
+    
+    return uniqueAddresses;
 }
 
 async function getBatchedHistoricalPrices(dates: Date[], currency: Currency): Promise<Map<string, number>> {
