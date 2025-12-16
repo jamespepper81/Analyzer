@@ -61,4 +61,34 @@ describe('Address Discovery Optimization', () => {
         // Should use Promise.allSettled for resilience
         expect(content).toContain('Promise.allSettled');
     });
+
+    it('Uses lightweight address stats endpoint for discovery', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Should use /address stats endpoint instead of /txs
+        expect(content).toContain('/address/${addr}');
+        
+        // Should combine chain + mempool transaction counts
+        expect(content).toContain('chain_stats');
+        expect(content).toContain('mempool_stats');
+        expect(content).toContain('tx_count');
+    });
+
+    it('Wallet snapshot cache is integrated', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Should import snapshot cache utilities
+        expect(content).toContain('getCachedSnapshot');
+        expect(content).toContain('setCachedSnapshot');
+        expect(content).toContain('withInFlightDeduplication');
+        
+        // Should have fetchWalletSnapshot function
+        expect(content).toContain('fetchWalletSnapshot');
+        
+        // Should check cache before fetching
+        expect(content).toContain('No cached snapshot');
+        expect(content).toContain('Using cached snapshot');
+    });
 });
