@@ -3,7 +3,7 @@
  * Tests in-flight deduplication, cache TTL, and snapshot management
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
     getCachedSnapshot,
     setCachedSnapshot,
@@ -17,7 +17,7 @@ import {
 } from '../src/lib/wallet-snapshot-cache';
 
 describe('Wallet Snapshot Cache', () => {
-    const mockXpub = 'xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz';
+    const mockXpub = 'test-xpub-1';
     
     const createMockSnapshot = (xpub: string = mockXpub): WalletSnapshot => ({
         xpub,
@@ -80,6 +80,13 @@ describe('Wallet Snapshot Cache', () => {
     });
 
     describe('Cache TTL (Time-To-Live)', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
         it('should respect custom TTL', () => {
             const snapshot = createMockSnapshot();
             const customTTL = 1000; // 1 second
@@ -90,7 +97,7 @@ describe('Wallet Snapshot Cache', () => {
             expect(getCachedSnapshot(mockXpub)).toBeDefined();
         });
 
-        it('should expire snapshot after TTL', async () => {
+        it('should expire snapshot after TTL', () => {
             const snapshot = createMockSnapshot();
             const shortTTL = 50; // 50ms
             
@@ -99,8 +106,8 @@ describe('Wallet Snapshot Cache', () => {
             // Should be available immediately
             expect(getCachedSnapshot(mockXpub)).toBeDefined();
             
-            // Wait for expiration
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Advance fake timers past TTL expiration
+            vi.advanceTimersByTime(100);
             
             // Should be expired now
             expect(getCachedSnapshot(mockXpub)).toBeNull();
@@ -108,6 +115,13 @@ describe('Wallet Snapshot Cache', () => {
     });
 
     describe('Cache Statistics', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
         it('should track cache statistics', () => {
             const snapshot1 = createMockSnapshot('xpub1');
             const snapshot2 = createMockSnapshot('xpub2');
@@ -121,14 +135,14 @@ describe('Wallet Snapshot Cache', () => {
             expect(stats.expiredCached).toBe(0);
         });
 
-        it('should track expired entries in stats', async () => {
+        it('should track expired entries in stats', () => {
             const snapshot = createMockSnapshot();
             const shortTTL = 50; // 50ms
             
             setCachedSnapshot(snapshot, shortTTL);
             
-            // Wait for expiration
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Advance timers to simulate expiration
+            vi.advanceTimersByTime(100);
             
             const stats = getSnapshotCacheStats();
             expect(stats.totalCached).toBe(1);
@@ -139,6 +153,7 @@ describe('Wallet Snapshot Cache', () => {
 
     describe('In-Flight Request Deduplication', () => {
         it('should deduplicate concurrent requests', async () => {
+            vi.useFakeTimers();
             let fetchCount = 0;
             const mockFetch = async () => {
                 fetchCount++;
@@ -153,6 +168,8 @@ describe('Wallet Snapshot Cache', () => {
                 withInFlightDeduplication(mockXpub, mockFetch),
             ];
 
+            // Fast-forward timers so all fetches resolve
+            vi.advanceTimersByTime(100);
             const results = await Promise.all(promises);
 
             // Only one fetch should have been executed
@@ -162,9 +179,11 @@ describe('Wallet Snapshot Cache', () => {
             results.forEach(result => {
                 expect(result?.xpub).toBe(mockXpub);
             });
+            vi.useRealTimers();
         });
 
         it('should track in-flight requests', async () => {
+            vi.useFakeTimers();
             const mockFetch = async () => {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 return createMockSnapshot();
@@ -179,21 +198,26 @@ describe('Wallet Snapshot Cache', () => {
             expect(hasInFlightRequest(mockXpub)).toBe(true);
             expect(getInFlightRequestCount()).toBe(1);
 
+            vi.advanceTimersByTime(100);
             await promise;
 
             // Should be cleared after completion
             expect(hasInFlightRequest(mockXpub)).toBe(false);
             expect(getInFlightRequestCount()).toBe(0);
+            vi.useRealTimers();
         });
 
         it('should clean up in-flight tracking on error', async () => {
+            vi.useFakeTimers();
             const mockFetch = async () => {
                 await new Promise(resolve => setTimeout(resolve, 50));
                 throw new Error('Test error');
             };
 
             try {
-                await withInFlightDeduplication(mockXpub, mockFetch);
+                const p = withInFlightDeduplication(mockXpub, mockFetch);
+                vi.advanceTimersByTime(50);
+                await p;
             } catch (e) {
                 // Expected error
             }
@@ -201,9 +225,11 @@ describe('Wallet Snapshot Cache', () => {
             // Should be cleaned up even on error
             expect(hasInFlightRequest(mockXpub)).toBe(false);
             expect(getInFlightRequestCount()).toBe(0);
+            vi.useRealTimers();
         });
 
         it('should handle multiple XPUBs concurrently', async () => {
+            vi.useFakeTimers();
             let fetchCount = 0;
             const mockFetch = async (xpub: string) => {
                 fetchCount++;
@@ -221,10 +247,12 @@ describe('Wallet Snapshot Cache', () => {
                 withInFlightDeduplication(xpub2, () => mockFetch(xpub2)),
             ];
 
+            vi.advanceTimersByTime(50);
             await Promise.all(promises);
 
             // Should fetch once per unique XPUB
             expect(fetchCount).toBe(2);
+            vi.useRealTimers();
         });
     });
 
