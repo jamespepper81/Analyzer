@@ -53,6 +53,11 @@ export type AddressInfo = {
   balance: number;
 };
 
+export type BtcPriceInfo = {
+  last: number;
+  symbol: string;
+};
+
 export type Wallet = {
   balanceBTC: number;
   securityScore: number;
@@ -60,7 +65,7 @@ export type Wallet = {
   usedAddressCount: number;
   dustAmountBTC: number;
   dustUtxoCount: number;
-  btcPrices: any; // { USD: { last: 70000, symbol: '$' }, ... }
+  btcPrices: Record<string, BtcPriceInfo>; // { USD: { last: 70000, symbol: '$' }, ... }
   performance: {
     change24h: number;
     change7d: number;
@@ -86,10 +91,17 @@ export type SecurityRecommendation = {
   level: 'Good' | 'Warning' | 'Info' | 'Critical';
 };
 
+// Define an interface for chart data; adjust as needed for supported chart libraries
+export interface ChartData {
+  type: string; // e.g., 'bar', 'line', etc.
+  data: any;    // You can further type this if structure is known
+  options?: any;
+}
+
 export type Message = {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  chart?: any;
+  chart?: ChartData;
 };
 
 export type NewsArticle = {
@@ -185,7 +197,7 @@ export type CandlestickDataPoint = {
   high: number;
   low: number;
   close: number;
-}
+};
 
 export type FearAndGreedIndex = {
   value: number;

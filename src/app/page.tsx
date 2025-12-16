@@ -19,7 +19,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Logo, OstrichIcon } from "@/components/icons";
-import { ArrowRight, Lock, AlertTriangle, ArrowLeft, SearchX, Loader2, ShieldCheck, Activity, BarChart3, Search } from "lucide-react";
+import {
+  ArrowRight,
+  Lock,
+  AlertTriangle,
+  ArrowLeft,
+  SearchX,
+  Loader2,
+  ShieldCheck,
+  Activity,
+  BarChart3,
+  Search,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { useWallet } from "@/contexts/wallet-context";
 import { cn } from "@/lib/utils";
@@ -28,6 +39,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 
+// Add state to force remount of DialogContent on dialog open
 const formSchema = z.object({
   xpub: z.string().min(1, {
     message: "xpub key is required.",
@@ -44,7 +56,7 @@ export default function ConnectWalletPage() {
 
   const [isNostrLoginOpen, setNostrLoginOpen] = useState(false);
   const [isNostrSubmitting, setIsNostrSubmitting] = useState(false);
-
+  const [nostrDialogKey, setNostrDialogKey] = useState(Date.now());
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -245,7 +257,14 @@ export default function ConnectWalletPage() {
           </div>
 
           <div className="space-y-2">
-            <Dialog open={isNostrLoginOpen} onOpenChange={(isOpen) => { setNostrLoginOpen(isOpen); if (!isOpen) { nostrForm.reset(); } }}>
+            <Dialog open={isNostrLoginOpen} onOpenChange={(isOpen) => {
+              setNostrLoginOpen(isOpen);
+              if (isOpen) {
+                setNostrDialogKey(Date.now());
+              } else {
+                nostrForm.reset();
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="w-full shadow-sm hover:shadow-md transition-shadow" size="lg">
                   <OstrichIcon className="mr-2 h-5 w-5 text-primary" />
@@ -253,7 +272,7 @@ export default function ConnectWalletPage() {
                 </Button>
               </DialogTrigger>
               {isNostrLoginOpen && (
-                <DialogContent key={`nostr-dialog-${isNostrLoginOpen}`} aria-describedby="nostr-login-description">
+                <DialogContent key={`nostr-dialog-${nostrDialogKey}`} aria-describedby="nostr-login-description">
                   <DialogHeader>
                     <DialogTitle>Login with Nostr</DialogTitle>
                     <DialogDescription id="nostr-login-description" className="font-normal">
@@ -292,9 +311,6 @@ export default function ConnectWalletPage() {
             </Button>
           </div>
         </div>
-
-
-
 
         <p className="px-8 text-center text-xs text-muted-foreground font-normal italic">
           By analyzing an xpub, you agree to our{" "}

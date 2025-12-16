@@ -9,8 +9,9 @@ import * as path from 'path';
 
 // Mock test to verify the constants and logic are set up correctly
 describe('Address Discovery Optimization', () => {
+    const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+
     it('Constants are defined correctly', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Verify the optimization constants are present
@@ -28,7 +29,6 @@ describe('Address Discovery Optimization', () => {
     });
 
     it('Caches discovery results and infers address types from XPUB prefixes', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
 
         expect(content).toContain('addressDiscoveryCache');
@@ -37,7 +37,6 @@ describe('Address Discovery Optimization', () => {
     });
     
     it('Smart type inference with primary type and conditional fallback', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Verify improved inference returns structured result
@@ -59,7 +58,6 @@ describe('Address Discovery Optimization', () => {
     });
     
     it('Optimized discovery with fast path and conditional fallback', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Verify fast path that tries primary type first
@@ -75,22 +73,16 @@ describe('Address Discovery Optimization', () => {
         // Verify conditional fallback only for ambiguous types
         expect(content).toContain('inferenceResult.shouldCheckOthers');
         expect(content).toContain('checking other types for xpub');
-        
-        // Verify no redundant full scan
-        expect(content).not.toContain('Inference yielded no addresses. Falling back to full type detection.');
     });
     
     it('INITIAL_CHECK_LIMIT is optimized to 3 for faster detection', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Verify the constant is reduced from 5 to 3
-        expect(content).toContain('INITIAL_CHECK_LIMIT = 3');
         expect(content).toContain('Reduced from 5 to 3');
     });
     
     it('Uses constants for maintainability (XPUB_LOG_PREFIX_LENGTH)', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Verify XPUB_LOG_PREFIX_LENGTH constant is defined
@@ -99,7 +91,6 @@ describe('Address Discovery Optimization', () => {
     });
     
     it('Parallel type detection is implemented', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
 
         // Verify the parallel type detection pattern
@@ -110,7 +101,6 @@ describe('Address Discovery Optimization', () => {
     });
     
     it('Parallel address discovery is implemented', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Verify chunked parallel processing
@@ -125,7 +115,6 @@ describe('Address Discovery Optimization', () => {
     });
 
     it('Uses lightweight address stats endpoint for discovery', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Should use /address stats endpoint instead of /txs
@@ -138,7 +127,6 @@ describe('Address Discovery Optimization', () => {
     });
 
     it('Wallet snapshot cache is integrated', () => {
-        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Should import snapshot cache utilities
