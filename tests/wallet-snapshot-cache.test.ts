@@ -234,10 +234,6 @@ describe('Wallet Snapshot Cache', () => {
             setCachedSnapshot(snapshot);
 
             let fetchCalled = false;
-            const mockFetch = async () => {
-                fetchCalled = true;
-                return createMockSnapshot();
-            };
 
             // Cached snapshot should be used, fetch should not be called
             const result = getCachedSnapshot(mockXpub);
