@@ -3,7 +3,7 @@
  * Tests in-flight deduplication, cache TTL, and snapshot management
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
     getCachedSnapshot,
     setCachedSnapshot,
