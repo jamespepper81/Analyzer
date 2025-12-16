@@ -102,6 +102,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const errorRetryCount = useRef(0);
   const errorRetryTimeout = useRef<NodeJS.Timeout | null>(null);
   
+  // Track when we just added/validated an XPUB to prevent duplicate fetches
+  const justAddedXpub = useRef<string | null>(null);
+  
   // Initialize chunk retry mechanism
   useChunkRetry();
   
@@ -522,14 +525,27 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return { success: true, error: null };
     }
 
+    // Fetch wallet data to validate the XPUB
     const validationResult = await fetchWalletData(newXpub, currency);
     if (validationResult.error) {
       return { success: false, error: validationResult.error };
     }
 
+    // Store the XPUB in our list
     const newXpubs = [...xpubs, newXpub];
     setXpubs(newXpubs);
     localStorage.setItem('walletXpubs', JSON.stringify(newXpubs));
+    
+    // Set the data immediately to avoid re-fetch in useEffect
+    // Mark that we just added this XPUB so getWalletData can skip fetching
+    if (validationResult.data) {
+      setData(validationResult.data);
+      try {
+        localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(validationResult.data));
+      } catch {}
+      justAddedXpub.current = newXpub;
+    }
+    
     setActiveXpubAndPersist(newXpub);
 
     const savePreference = localStorage.getItem('nostr_save_preference');
@@ -586,8 +602,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
+    // If we just added this XPUB, skip the fetch since we already have the data
+    // This prevents duplicate fetching during login
+    if (justAddedXpub.current === activeXpub) {
+      console.log(`[WalletContext] Skipping fetch for ${activeXpub.substring(0, 20)}... - just added, data already loaded`);
+      justAddedXpub.current = null; // Clear the flag
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    
     // Show cached data immediately if available (stale-while-revalidate)
     try {
       const cached = localStorage.getItem(`walletCache:${activeXpub}`);

@@ -302,7 +302,11 @@ async function getBatchedHistoricalPrices(dates: Date[], currency: Currency): Pr
     const oldestDate = new Date(Math.min(...uniqueDates.map(d => new Date(d).getTime())));
     const days = Math.ceil((new Date().getTime() - oldestDate.getTime()) / (1000 * 3600 * 24));
 
-    const prices = await getHistoricalPriceRange(Math.max(1, days), currency);
+    // CoinGecko free API only allows 365 days of historical data
+    // Limit to 365 days to avoid 401 errors
+    const limitedDays = Math.min(Math.max(1, days), 365);
+    
+    const prices = await getHistoricalPriceRange(limitedDays, currency);
     const geckoPriceMap = new Map(prices.map(([timestamp, price]) => [format(startOfDay(new Date(timestamp)), 'yyyy-MM-dd'), price]));
 
     uniqueDates.forEach(dateStr => {
