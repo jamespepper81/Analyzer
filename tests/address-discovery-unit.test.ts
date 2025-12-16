@@ -36,6 +36,49 @@ describe('Address Discovery Optimization', () => {
         expect(content).toContain('inferAddressTypesFromXpub');
     });
     
+    it('Smart type inference with primary type and conditional fallback', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Verify improved inference returns structured result
+        expect(content).toContain('primaryType');
+        expect(content).toContain('shouldCheckOthers');
+        
+        // Verify zpub/ypub skip fallback (specific types)
+        expect(content).toContain('shouldCheckOthers: false');
+        
+        // Verify xpub allows fallback (ambiguous type)
+        expect(content).toContain('shouldCheckOthers: true');
+    });
+    
+    it('Optimized discovery with fast path and conditional fallback', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Verify fast path that tries primary type first
+        expect(content).toContain('fast path');
+        expect(content).toContain('inferenceResult.primaryType');
+        
+        // Verify early exit when addresses found
+        expect(content).toContain('return discoveredAddresses');
+        
+        // Verify conditional fallback only for ambiguous types
+        expect(content).toContain('inferenceResult.shouldCheckOthers');
+        expect(content).toContain('checking other types for xpub');
+        
+        // Verify no redundant full scan
+        expect(content).not.toContain('Inference yielded no addresses. Falling back to full type detection.');
+    });
+    
+    it('INITIAL_CHECK_LIMIT is optimized to 3 for faster detection', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Verify the constant is reduced from 5 to 3
+        expect(content).toContain('INITIAL_CHECK_LIMIT = 3');
+        expect(content).toContain('Reduced from 5 to 3');
+    });
+    
     it('Parallel type detection is implemented', () => {
         const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
