@@ -87,9 +87,6 @@ describe('Wallet Snapshot Cache', () => {
         beforeEach(() => {
             vi.useFakeTimers();
         });
-        afterEach(() => {
-            vi.useRealTimers();
-        });
 
         it('should respect custom TTL', () => {
             const snapshot = createMockSnapshot();
@@ -121,9 +118,6 @@ describe('Wallet Snapshot Cache', () => {
     describe('Cache Statistics', () => {
         beforeEach(() => {
             vi.useFakeTimers();
-        });
-        afterEach(() => {
-            vi.useRealTimers();
         });
 
         it('should track cache statistics', () => {
@@ -159,9 +153,7 @@ describe('Wallet Snapshot Cache', () => {
         beforeEach(() => {
             vi.useFakeTimers();
         });
-        afterEach(() => {
-            vi.useRealTimers();
-        });
+
         it('should deduplicate concurrent requests', async () => {
             let mockFetchCallCount = 0;
             const mockFetch = async () => {
@@ -190,8 +182,6 @@ describe('Wallet Snapshot Cache', () => {
             });
         });
 
-
-
         it('should track in-flight requests', async () => {
             const mockFetch = async () => {
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -214,8 +204,6 @@ describe('Wallet Snapshot Cache', () => {
             expect(hasInFlightRequest(mockXpub)).toBe(false);
             expect(getInFlightRequestCount()).toBe(0);
         });
-
-
 
         it('should clean up in-flight tracking on error', async () => {
             const mockFetch = async () => {
