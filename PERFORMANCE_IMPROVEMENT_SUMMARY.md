@@ -30,10 +30,14 @@ await Promise.allSettled(types.map(type =>
 for each address { await API call }
 
 // After: Chunked Parallel (2s for 100 addresses)
-for each chunk of 10 { 
+for each chunk of 10 {
   await Promise.allSettled(chunk.map(addr => API call))
 }
 ```
+
+#### XPUB-Aware Detection & Cached Discovery
+- Infer the likely address script type from the XPUB prefix (xpub/ypub/zpub) to skip redundant type scans.
+- Cache discovered addresses for 10 minutes and share in-flight discovery promises to prevent duplicate network bursts.
 
 ### 3. Files Changed
 
@@ -170,9 +174,9 @@ npx tsx tests/test-xpub-performance.ts
 
 ### Future Optimizations (Optional)
 
-1. **Address Caching** (50-90% speedup on repeat logins)
-   - Cache discovered addresses to localStorage
-   - Skip re-scanning known addresses
+1. **Persistent Address Caching** (additional speedup on repeat logins)
+   - Extend the current 10-minute runtime cache to browser/local storage
+   - Skip re-scanning known addresses across sessions
    - Update only when needed
 
 2. **Progressive Loading** (Better UX)

@@ -127,13 +127,42 @@ for (let chunkStart = 0; chunkStart < batch.length; chunkStart += chunkSize) {
 - **Speedup**: 10x faster (90% reduction)
 - **Time saved**: ~18 seconds
 
+#### 3. XPUB-Aware Scanning with Cached Discovery
+
+**Implementation** (Lines 23-95 and 136-196):
+```typescript
+const ADDRESS_DISCOVERY_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const addressDiscoveryCache = new Map<string, { addresses: string[]; timestamp: number }>();
+
+function inferAddressTypesFromXpub(xpub: string): AddressType[] | null {
+  const prefix = xpub.slice(0, 4).toLowerCase();
+  if (prefix === 'ypub' || prefix === 'upub') return ['nested'];
+  if (prefix === 'zpub' || prefix === 'vpub') return ['native'];
+  if (prefix === 'xpub' || prefix === 'tpub') return ['legacy'];
+  return null;
+}
+
+async function getCachedUsedAddresses(xpub: string): Promise<string[]> {
+  const cached = addressDiscoveryCache.get(xpub);
+  if (cached && Date.now() - cached.timestamp < ADDRESS_DISCOVERY_CACHE_TTL_MS) {
+    return cached.addresses;
+  }
+  // ... fall back to discovery and store results ...
+}
+```
+
+**Benefits**:
+- Skips unnecessary address-type detection when the XPUB prefix already signals script type (xpub/ypub/zpub)
+- Avoids duplicate network scans for the same XPUB for 10 minutes (per runtime)
+- Coalesces concurrent discovery requests to the same in-flight promise, reducing thundering herds
+
 ### Configuration Constants
 
 ```typescript
 const GAP_LIMIT = 20; // Standard BIP44 gap limit
 const INITIAL_CHECK_LIMIT = 5; // Addresses to check per type
 const PARALLEL_BATCH_SIZE = 10; // Concurrent address checks
-const TYPE_DETECTION_CONCURRENCY = 3; // Check all types at once
+const ADDRESS_DISCOVERY_CACHE_TTL_MS = 10 * 60 * 1000; // Cache lifetime for discovered addresses
 ```
 
 ## Performance Improvements
@@ -336,7 +365,7 @@ If discovery is still slow, check:
 
 3. **Large Wallet**: Wallets with 500+ addresses may still take 15-20s
    - This is expected due to API rate limits
-   - Consider implementing caching
+   - Recent change: discovery results are cached for 10 minutes per runtime to accelerate repeat logins; longer-term persistence (e.g., browser storage) can further reduce reloads
 
 ### Debug Mode
 

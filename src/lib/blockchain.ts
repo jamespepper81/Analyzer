@@ -7,9 +7,15 @@ import { KNOWN_EXCHANGE_ADDRESSES } from '@/lib/exchange-labels';
 import { esploraGet, fetchJson, getHistoricalPriceRange } from './blockchain-api';
 import { format, startOfDay } from 'date-fns';
 
+type AddressType = 'native' | 'legacy' | 'nested';
+
 const GAP_LIMIT = 20; // Standard gap limit for address discovery
 const INITIAL_CHECK_LIMIT = 5; // How many addresses to check initially to determine wallet type
 const PARALLEL_BATCH_SIZE = 10; // How many addresses to check in parallel
+const ADDRESS_DISCOVERY_CACHE_TTL_MS = 10 * 60 * 1000; // Cache discovered addresses for 10 minutes
+
+const addressDiscoveryCache = new Map<string, { addresses: string[]; timestamp: number }>();
+const addressDiscoveryPromises = new Map<string, Promise<string[]>>();
 
 function getP2wpkhAddress(pubKey: Buffer): string {
     return bitcoin.payments.p2wpkh({ pubkey: pubKey }).address!;
@@ -25,7 +31,7 @@ function getP2shP2wpkhAddress(pubKey: Buffer): string {
 }
 
 // Derives a batch of addresses for a given chain (external/internal) and type
-function deriveAddressBatch(node: any, chain: number, from: number, to: number, type: 'native' | 'legacy' | 'nested'): string[] {
+function deriveAddressBatch(node: any, chain: number, from: number, to: number, type: AddressType): string[] {
     const addresses: string[] = [];
     const chainNode = node.derive(chain);
     for (let i = from; i < to; i++) {
@@ -43,62 +49,46 @@ function deriveAddressBatch(node: any, chain: number, from: number, to: number, 
     return addresses;
 }
 
-// This is the new, more robust implementation with provider readiness check and fallback.
-async function discoverUsedAddresses(xpub: string): Promise<string[]> {
-    const discoveryStartTime = Date.now();
-    const node = bip32.fromBase58(xpub, bitcoin.networks.bitcoin);
-    let allUsedAddresses: string[] = [];
+function inferAddressTypesFromXpub(xpub: string): AddressType[] | null {
+    const prefix = xpub.slice(0, 4).toLowerCase();
+    if (prefix === 'ypub' || prefix === 'upub') return ['nested'];
+    if (prefix === 'zpub' || prefix === 'vpub') return ['native'];
+    if (prefix === 'xpub' || prefix === 'tpub') return ['legacy'];
+    return null;
+}
 
-    // Quick provider readiness check (with fallback & retry under the hood)
-    try {
-        await esploraGet(`/blocks/tip/height`, 60);
-    } catch (e) {
-        throw new Error('Upstream data provider is temporarily unavailable. Please try again in a moment.');
-    }
+async function detectActiveTypes(node: any, typesToCheck: AddressType[]): Promise<{ activeTypes: AddressType[]; detectionTime: number }> {
+    const detectionStart = Date.now();
+    const activeTypes: AddressType[] = [];
 
-    // 1. Determine which address types are active by checking the first few addresses of each type.
-    // We check External chain (0) indices 0-4.
-    // ALL types are checked in PARALLEL for faster detection
-    const typesToCheck: ('native' | 'legacy' | 'nested')[] = ['native', 'nested', 'legacy'];
-    const activeTypes: ('native' | 'legacy' | 'nested')[] = [];
-
-    // Check all address types concurrently
     const typeDetectionResults = await Promise.allSettled(
         typesToCheck.map(async (type) => {
             const batch = deriveAddressBatch(node, 0, 0, INITIAL_CHECK_LIMIT, type);
-            // Check all addresses in this batch in parallel
             const results = await Promise.allSettled(
                 batch.map(addr => esploraGet(`/address/${addr}/txs`, 300))
             );
-            // If any address in the batch has transactions, mark this type as active
-            const hasActivity = results.some(result => 
-                result.status === 'fulfilled' && 
-                Array.isArray(result.value) && 
+            const hasActivity = results.some(result =>
+                result.status === 'fulfilled' &&
+                Array.isArray(result.value) &&
                 result.value.length > 0
             );
             return { type, hasActivity };
         })
     );
 
-    // Collect active types from successful checks
     typeDetectionResults.forEach((result) => {
         if (result.status === 'fulfilled' && result.value.hasActivity) {
             activeTypes.push(result.value.type);
         }
     });
 
-    // If no activity detected, default to Native Segwit (most common modern standard)
-    // or scan all if we want to be super thorough, but defaulting to Native is a safe bet for "new" empty wallets.
-    // However, if it's truly empty, it doesn't matter which we pick, but Native is best practice.
-    if (activeTypes.length === 0) {
-        activeTypes.push('native');
-    }
+    const detectionTime = Date.now() - detectionStart;
+    return { activeTypes, detectionTime };
+}
 
-    const typeDetectionTime = Date.now() - discoveryStartTime;
-    console.log(`[Discovery] Detected active wallet types: ${activeTypes.join(', ')} in ${typeDetectionTime}ms`);
+async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], discoveryStartTime: number): Promise<string[]> {
+    const discoveredAddresses: string[] = [];
 
-    // 2. Perform full discovery for active types
-    // Use parallel processing within each batch for much faster discovery
     for (const type of activeTypes) {
         for (const chain of [0, 1]) { // 0 for external, 1 for internal
             let gap = 0;
@@ -106,22 +96,18 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
 
             while (gap < GAP_LIMIT) {
                 const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT, type);
-                
-                // Process addresses in parallel chunks to avoid overwhelming the API
-                // but still get significant speedup
+
                 const chunkSize = PARALLEL_BATCH_SIZE;
                 const addressTxs: any[] = new Array(batch.length);
-                
+
                 for (let chunkStart = 0; chunkStart < batch.length; chunkStart += chunkSize) {
                     const chunkEnd = Math.min(chunkStart + chunkSize, batch.length);
                     const chunkAddresses = batch.slice(chunkStart, chunkEnd);
-                    
-                    // Check this chunk of addresses in parallel
+
                     const chunkResults = await Promise.allSettled(
                         chunkAddresses.map(addr => esploraGet(`/address/${addr}/txs/chain`, 300))
                     );
-                    
-                    // Store results
+
                     chunkResults.forEach((result, i) => {
                         const absoluteIndex = chunkStart + i;
                         if (result.status === 'fulfilled') {
@@ -135,7 +121,7 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
                 let foundInBatch = false;
                 for (let i = 0; i < addressTxs.length; i++) {
                     if (addressTxs[i] && addressTxs[i].length > 0) {
-                        allUsedAddresses.push(batch[i]);
+                        discoveredAddresses.push(batch[i]);
                         gap = 0;
                         foundInBatch = true;
                     } else {
@@ -144,7 +130,6 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
                 }
 
                 if (!foundInBatch) {
-                    // If a whole batch of 20 is unused, we can likely stop for this chain.
                     break;
                 }
 
@@ -154,10 +139,81 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
     }
 
     const totalDiscoveryTime = Date.now() - discoveryStartTime;
-    const uniqueAddresses = [...new Set(allUsedAddresses)];
+    const uniqueAddresses = [...new Set(discoveredAddresses)];
     console.log(`[Discovery] Found ${uniqueAddresses.length} used addresses in ${totalDiscoveryTime}ms (${(totalDiscoveryTime/1000).toFixed(2)}s)`);
-    
+
     return uniqueAddresses;
+}
+
+// This is the new, more robust implementation with provider readiness check, XPUB inference, caching, and fallback.
+async function discoverUsedAddresses(xpub: string): Promise<string[]> {
+    const discoveryStartTime = Date.now();
+    const node = bip32.fromBase58(xpub, bitcoin.networks.bitcoin);
+    const inferredTypes = inferAddressTypesFromXpub(xpub);
+
+    // Quick provider readiness check (with fallback & retry under the hood)
+    try {
+        await esploraGet(`/blocks/tip/height`, 60);
+    } catch (e) {
+        throw new Error('Upstream data provider is temporarily unavailable. Please try again in a moment.');
+    }
+
+    const defaultTypes: AddressType[] = ['native', 'nested', 'legacy'];
+    let activeTypes: AddressType[] = inferredTypes ? [...new Set(inferredTypes)] : [];
+    let typeDetectionTime = 0;
+
+    if (activeTypes.length > 0) {
+        console.log(`[Discovery] Using XPUB prefix hint to prioritize: ${activeTypes.join(', ')}`);
+    } else {
+        const typeDetection = await detectActiveTypes(node, defaultTypes);
+        activeTypes = typeDetection.activeTypes;
+        typeDetectionTime = typeDetection.detectionTime;
+        console.log(`[Discovery] Detected active wallet types: ${activeTypes.join(', ')} in ${typeDetectionTime}ms`);
+    }
+
+    if (activeTypes.length === 0) {
+        activeTypes.push('native');
+    }
+
+    let discoveredAddresses = await performDiscoveryForTypes(node, activeTypes, discoveryStartTime);
+
+    // If we relied on inference and found nothing, fall back to a full type scan to avoid false negatives
+    if (discoveredAddresses.length === 0 && inferredTypes) {
+        const fallbackDetection = await detectActiveTypes(node, defaultTypes);
+        const fallbackTypes = fallbackDetection.activeTypes.length > 0 ? fallbackDetection.activeTypes : ['native'];
+        console.log('[Discovery] Inference yielded no addresses. Falling back to full type detection.');
+        discoveredAddresses = await performDiscoveryForTypes(node, fallbackTypes, discoveryStartTime);
+    }
+
+    return discoveredAddresses;
+}
+
+async function getCachedUsedAddresses(xpub: string): Promise<string[]> {
+    const now = Date.now();
+    const cached = addressDiscoveryCache.get(xpub);
+
+    if (cached && now - cached.timestamp < ADDRESS_DISCOVERY_CACHE_TTL_MS) {
+        return cached.addresses;
+    }
+
+    const inFlight = addressDiscoveryPromises.get(xpub);
+    if (inFlight) {
+        return inFlight;
+    }
+
+    const discoveryPromise = discoverUsedAddresses(xpub)
+        .then(addresses => {
+            addressDiscoveryCache.set(xpub, { addresses, timestamp: Date.now() });
+            addressDiscoveryPromises.delete(xpub);
+            return addresses;
+        })
+        .catch(error => {
+            addressDiscoveryPromises.delete(xpub);
+            throw error;
+        });
+
+    addressDiscoveryPromises.set(xpub, discoveryPromise);
+    return discoveryPromise;
 }
 
 async function getBatchedHistoricalPrices(dates: Date[], currency: Currency): Promise<Map<string, number>> {
@@ -183,7 +239,7 @@ async function getBatchedHistoricalPrices(dates: Date[], currency: Currency): Pr
 
 export async function getWalletData(xpub: string, currency: Currency = 'USD'): Promise<{ data: WalletData | null; error: string | null; }> {
     try {
-        const usedAddresses = await discoverUsedAddresses(xpub);
+        const usedAddresses = await getCachedUsedAddresses(xpub);
 
         if (usedAddresses.length === 0) {
             return { data: null, error: 'This xpub key has no transaction history and cannot be analyzed. Address discovery failed.' };

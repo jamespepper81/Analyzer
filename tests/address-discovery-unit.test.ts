@@ -17,25 +17,34 @@ describe('Address Discovery Optimization', () => {
         expect(content).toContain('PARALLEL_BATCH_SIZE');
         expect(content).toContain('GAP_LIMIT');
         expect(content).toContain('INITIAL_CHECK_LIMIT');
-        
+        expect(content).toContain('ADDRESS_DISCOVERY_CACHE_TTL_MS');
+
         // Verify Promise.allSettled is used for parallel processing
         expect(content).toContain('Promise.allSettled');
-        
+
         // Verify performance logging is added
         expect(content).toContain('discoveryStartTime');
         expect(content).toContain('totalDiscoveryTime');
+    });
+
+    it('Caches discovery results and infers address types from XPUB prefixes', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+
+        expect(content).toContain('addressDiscoveryCache');
+        expect(content).toContain('addressDiscoveryPromises');
+        expect(content).toContain('inferAddressTypesFromXpub');
     });
     
     it('Parallel type detection is implemented', () => {
         const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
-        
+
         // Verify the parallel type detection pattern
         expect(content).toContain('typeDetectionResults');
         expect(content).toContain('typesToCheck.map(async (type)');
-        
-        // Should process all types concurrently
-        expect(content).toContain('ALL types are checked in PARALLEL');
+        expect(content).toContain('Promise.allSettled');
+        expect(content).toContain('activeTypes.push');
     });
     
     it('Parallel address discovery is implemented', () => {
