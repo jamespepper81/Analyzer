@@ -6,6 +6,12 @@ import type { WalletData, Transaction, AddressInfo, UTXO, Currency, TransactionL
 import { KNOWN_EXCHANGE_ADDRESSES } from '@/lib/exchange-labels';
 import { esploraGet, fetchJson, getHistoricalPriceRange } from './blockchain-api';
 import { format, startOfDay } from 'date-fns';
+import { 
+    getCachedSnapshot, 
+    setCachedSnapshot, 
+    withInFlightDeduplication,
+    type WalletSnapshot 
+} from './wallet-snapshot-cache';
 
 type AddressType = 'native' | 'legacy' | 'nested';
 
@@ -64,13 +70,16 @@ async function detectActiveTypes(node: any, typesToCheck: AddressType[]): Promis
     const typeDetectionResults = await Promise.allSettled(
         typesToCheck.map(async (type) => {
             const batch = deriveAddressBatch(node, 0, 0, INITIAL_CHECK_LIMIT, type);
+            // Use lightweight /address stats endpoint instead of full /txs
+            // This reduces data fetched by ~90% while preserving detection accuracy
             const results = await Promise.allSettled(
-                batch.map(addr => esploraGet(`/address/${addr}/txs`, 300))
+                batch.map(addr => esploraGet(`/address/${addr}`, 300))
             );
             const hasActivity = results.some(result =>
                 result.status === 'fulfilled' &&
-                Array.isArray(result.value) &&
-                result.value.length > 0
+                result.value &&
+                // Combine chain + mempool transaction counts for full coverage
+                ((result.value.chain_stats?.tx_count || 0) + (result.value.mempool_stats?.tx_count || 0)) > 0
             );
             return { type, hasActivity };
         })
@@ -98,29 +107,38 @@ async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], d
                 const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT, type);
 
                 const chunkSize = PARALLEL_BATCH_SIZE;
-                const addressTxs: any[] = new Array(batch.length);
+                const addressStats: any[] = new Array(batch.length);
 
                 for (let chunkStart = 0; chunkStart < batch.length; chunkStart += chunkSize) {
                     const chunkEnd = Math.min(chunkStart + chunkSize, batch.length);
                     const chunkAddresses = batch.slice(chunkStart, chunkEnd);
 
+                    // Use lightweight /address stats endpoint instead of /txs/chain
+                    // This reduces data transfer by ~95% (stats ~500 bytes vs txs ~50KB+)
                     const chunkResults = await Promise.allSettled(
-                        chunkAddresses.map(addr => esploraGet(`/address/${addr}/txs/chain`, 300))
+                        chunkAddresses.map(addr => esploraGet(`/address/${addr}`, 300))
                     );
 
                     chunkResults.forEach((result, i) => {
                         const absoluteIndex = chunkStart + i;
                         if (result.status === 'fulfilled') {
-                            addressTxs[absoluteIndex] = result.value;
+                            addressStats[absoluteIndex] = result.value;
                         } else {
-                            addressTxs[absoluteIndex] = [];
+                            addressStats[absoluteIndex] = null;
                         }
                     });
                 }
 
                 let foundInBatch = false;
-                for (let i = 0; i < addressTxs.length; i++) {
-                    if (addressTxs[i] && addressTxs[i].length > 0) {
+                for (let i = 0; i < addressStats.length; i++) {
+                    const stats = addressStats[i];
+                    // Combine chain + mempool transaction counts for complete coverage
+                    // This ensures pending transactions are included in address discovery
+                    const totalTxCount = stats 
+                        ? (stats.chain_stats?.tx_count || 0) + (stats.mempool_stats?.tx_count || 0)
+                        : 0;
+                    
+                    if (totalTxCount > 0) {
                         discoveredAddresses.push(batch[i]);
                         gap = 0;
                         foundInBatch = true;
@@ -180,7 +198,7 @@ async function discoverUsedAddresses(xpub: string): Promise<string[]> {
     // If we relied on inference and found nothing, fall back to a full type scan to avoid false negatives
     if (discoveredAddresses.length === 0 && inferredTypes) {
         const fallbackDetection = await detectActiveTypes(node, defaultTypes);
-        const fallbackTypes = fallbackDetection.activeTypes.length > 0 ? fallbackDetection.activeTypes : ['native'];
+        const fallbackTypes: AddressType[] = fallbackDetection.activeTypes.length > 0 ? fallbackDetection.activeTypes : ['native'];
         console.log('[Discovery] Inference yielded no addresses. Falling back to full type detection.');
         discoveredAddresses = await performDiscoveryForTypes(node, fallbackTypes, discoveryStartTime);
     }
@@ -237,188 +255,254 @@ async function getBatchedHistoricalPrices(dates: Date[], currency: Currency): Pr
     return priceMap;
 }
 
+/**
+ * Fetch blockchain data for a wallet and create a snapshot
+ * This is the expensive operation that we want to cache
+ */
+async function fetchWalletSnapshot(xpub: string, currency: Currency): Promise<WalletSnapshot | null> {
+    const usedAddresses = await getCachedUsedAddresses(xpub);
+
+    if (usedAddresses.length === 0) {
+        return null;
+    }
+
+    // Fetch non-critical data, allowing for graceful failure.
+    const latestBlockHeight = await esploraGet(`/blocks/tip/height`, 60).catch(() => null);
+
+    const allTxs = new Map<string, any>();
+    const utxos: UTXO[] = [];
+    const addressInfos: AddressInfo[] = [];
+
+    // Fetch all data for used addresses with limited concurrency to avoid provider throttling
+    const concurrency = 6;
+    let idx = 0;
+    async function worker() {
+        while (idx < usedAddresses.length) {
+            const address = usedAddresses[idx++];
+            try {
+                const [txs, initialAddressUtxos, addressInfo] = await Promise.all([
+                    esploraGet(`/address/${address}/txs`).catch(() => []),
+                    esploraGet(`/address/${address}/utxo`).catch(() => []),
+                    esploraGet(`/address/${address}`).catch(() => null)
+                ]);
+
+                // If the address shows a positive balance but the first UTXO call failed,
+                // try a dedicated retry to avoid silently undercounting UTXOs.
+                const addressBalanceSats =
+                    (addressInfo?.chain_stats?.funded_txo_sum || 0) -
+                    (addressInfo?.chain_stats?.spent_txo_sum || 0);
+                const addressUtxos =
+                    Array.isArray(initialAddressUtxos) && initialAddressUtxos.length > 0
+                        ? initialAddressUtxos
+                        : addressBalanceSats > 0
+                            ? await esploraGet(`/address/${address}/utxo`).catch(() => [])
+                            : [];
+                if (Array.isArray(txs)) {
+                    txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
+                }
+                if (Array.isArray(addressUtxos)) {
+                    addressUtxos.forEach((utxo: any) => {
+                        utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
+                    });
+                }
+                if (addressInfo && addressInfo.chain_stats?.tx_count > 0) {
+                    addressInfos.push({
+                        address,
+                        n_tx: addressInfo.chain_stats.tx_count,
+                        balance: addressInfo.chain_stats.funded_txo_sum - addressInfo.chain_stats.spent_txo_sum,
+                    });
+                }
+            } catch {
+                // Skip this address on failure
+            }
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(concurrency, usedAddresses.length) }, () => worker()));
+
+    const transactionDates = Array.from(allTxs.values())
+        .map(tx => new Date(tx.status.confirmed ? tx.status.block_time * 1000 : Date.now()));
+
+    const historicalPrices = await getBatchedHistoricalPrices(transactionDates, currency);
+
+    const transactions: Transaction[] = Array.from(allTxs.values()).map((tx: any): Transaction => {
+        let netAmountSatoshis = 0;
+        const ourAddressesSet = new Set(usedAddresses);
+
+        tx.vout.forEach((out: any) => {
+            if (out.scriptpubkey_address && ourAddressesSet.has(out.scriptpubkey_address)) {
+                netAmountSatoshis += out.value;
+            }
+        });
+        tx.vin.forEach((inp: any) => {
+            if (inp.prevout?.scriptpubkey_address && ourAddressesSet.has(inp.prevout.scriptpubkey_address)) {
+                netAmountSatoshis -= inp.prevout.value;
+            }
+        });
+
+        const netBtc = netAmountSatoshis / 1e8;
+        const isConfirmed = tx.status.confirmed;
+        const confirmations = isConfirmed && latestBlockHeight ? latestBlockHeight - tx.status.block_height + 1 : 0;
+        const txDate = isConfirmed ? new Date(tx.status.block_time * 1000) : new Date();
+
+        const fromAddress = tx.vin?.map((i: any) => i.prevout?.scriptpubkey_address).filter(Boolean) ?? [];
+        const toAddress = tx.vout?.map((o: any) => o.scriptpubkey_address).filter(Boolean) ?? [];
+
+        const labels: TransactionLabel[] = [];
+        fromAddress.forEach((addr: string) => {
+            if (KNOWN_EXCHANGE_ADDRESSES[addr]) {
+                labels.push({ address: addr, label: KNOWN_EXCHANGE_ADDRESSES[addr], type: 'exchange' });
+            }
+        });
+        toAddress.forEach((addr: string) => {
+            if (KNOWN_EXCHANGE_ADDRESSES[addr]) {
+                labels.push({ address: addr, label: KNOWN_EXCHANGE_ADDRESSES[addr], type: 'exchange' });
+            }
+        });
+
+        const dateKey = format(startOfDay(txDate), 'yyyy-MM-dd');
+        const historicalPrice = historicalPrices.get(dateKey) || 0;
+
+        const totalValue = tx.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8;
+
+        return {
+            id: tx.txid, date: txDate.toISOString(), btc: netBtc, status: isConfirmed ? 'Confirmed' : 'Pending', type: netBtc >= 0 ? 'Received' : 'Sent',
+            fromAddress, toAddress, confirmations, fee: tx.fee, size: tx.size, weight: tx.weight, version: tx.version, locktime: tx.locktime,
+            rbf: tx.vin.some((i: any) => i.sequence < 0xfffffffe), blockHeight: tx.status.block_height ?? null,
+            inputs: tx.vin?.map((i: any) => ({ address: i.prevout?.scriptpubkey_address, value: i.prevout?.value })) || [],
+            outputs: tx.vout?.map((o: any) => ({ address: o.scriptpubkey_address, value: o.value, spent: false })) || [],
+            labels: labels.length > 0 ? labels : undefined,
+            historicalPrice,
+            totalValue,
+        };
+    });
+
+    transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const finalBalanceBTC = utxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
+    
+    // Calculate dust using USD as a stable reference (will be recalculated per-currency in assembly)
+    const fiatPriceForDust = 50000; // Approximate USD price, will be updated with real price
+    const dustUtxos = utxos.filter(utxo => (utxo.value / 1e8) * fiatPriceForDust < 1.0);
+    const dustAmountBTC = dustUtxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    let inflowBTC = 0, outflowBTC = 0;
+    transactions.forEach(tx => {
+        if (new Date(tx.date).getTime() > thirtyDaysAgo.getTime()) {
+            if (tx.btc > 0) inflowBTC += tx.btc; else outflowBTC += tx.btc;
+        }
+    });
+
+    const reusedAddressCount = addressInfos.filter(addr => addr.n_tx > 1).length;
+    const reusePercentage = addressInfos.length > 0 ? (reusedAddressCount / addressInfos.length) * 100 : 0;
+
+    let totalFee = 0, totalVSize = 0;
+    transactions.forEach(tx => {
+        if (tx.type === 'Sent' && tx.size > 0 && tx.fee > 0) {
+            totalFee += tx.fee;
+            totalVSize += tx.weight ? tx.weight / 4 : tx.size;
+        }
+    });
+
+    const snapshot: WalletSnapshot = {
+        xpub,
+        timestamp: Date.now(),
+        transactions,
+        utxos,
+        addresses: addressInfos,
+        usedAddressCount: addressInfos.length,
+        securityScore: Math.max(10, 100 - Math.floor(reusePercentage)),
+        opsecThreat: reusePercentage > 50 ? 'High' : reusePercentage > 0 ? 'Medium' : 'Low',
+        dustUtxoCount: dustUtxos.length,
+        dustAmountBTC,
+        averageFeeRate: totalVSize > 0 ? totalFee / totalVSize : 0,
+        inflowBTC,
+        outflowBTC,
+        balanceBTC: finalBalanceBTC,
+    };
+
+    return snapshot;
+}
+
 export async function getWalletData(xpub: string, currency: Currency = 'USD'): Promise<{ data: WalletData | null; error: string | null; }> {
     try {
-        const usedAddresses = await getCachedUsedAddresses(xpub);
-
-        if (usedAddresses.length === 0) {
-            return { data: null, error: 'This xpub key has no transaction history and cannot be analyzed. Address discovery failed.' };
+        // Check for cached snapshot first
+        let snapshot = getCachedSnapshot(xpub);
+        
+        if (!snapshot) {
+            // No cache - fetch with in-flight deduplication
+            console.log(`[WalletData] No cached snapshot, fetching blockchain data for ${xpub.substring(0, 20)}...`);
+            snapshot = await withInFlightDeduplication(xpub, () => fetchWalletSnapshot(xpub, currency));
+            
+            if (!snapshot) {
+                return { data: null, error: 'This xpub key has no transaction history and cannot be analyzed. Address discovery failed.' };
+            }
+            
+            // Cache the snapshot for 5 minutes
+            setCachedSnapshot(snapshot);
+        } else {
+            console.log(`[WalletData] Using cached snapshot for ${xpub.substring(0, 20)}...`);
         }
 
-        // Fetch critical price data first. If this fails, we can't proceed.
+        // Always fetch fresh price data (this is fast and currency-specific)
+        // This is the ONLY thing we re-fetch on currency changes or wallet switches
+        console.log(`[WalletData] Fetching fresh price data for ${currency}...`);
         const btcPrices = await fetchJson('https://blockchain.info/ticker');
         if (typeof btcPrices?.USD?.last !== 'number') {
             return { data: null, error: 'Could not fetch critical BTC price data. The API may be down.' };
         }
 
-        // Fetch non-critical data, allowing for graceful failure.
-        const [latestBlockHeight, priceHistory24h, priceHistory7d, priceHistory30d] = await Promise.all([
-            esploraGet(`/blocks/tip/height`, 60).catch(() => null),
+        // Fetch currency-specific historical price data (cached by blockchain-api)
+        const [priceHistory24h, priceHistory7d, priceHistory30d] = await Promise.all([
             getHistoricalPriceRange(1, currency).catch(() => []),
             getHistoricalPriceRange(7, currency).catch(() => []),
             getHistoricalPriceRange(30, currency).catch(() => [])
         ]);
 
-        const allTxs = new Map<string, any>();
-        const utxos: UTXO[] = [];
-        const addressInfos: AddressInfo[] = [];
-
-        // Fetch all data for used addresses with limited concurrency to avoid provider throttling
-        const concurrency = 6;
-        let idx = 0;
-        async function worker() {
-            while (idx < usedAddresses.length) {
-                const address = usedAddresses[idx++];
-                try {
-                    const [txs, initialAddressUtxos, addressInfo] = await Promise.all([
-                        esploraGet(`/address/${address}/txs`).catch(() => []),
-                        esploraGet(`/address/${address}/utxo`).catch(() => []),
-                        esploraGet(`/address/${address}`).catch(() => null)
-                    ]);
-
-                    // If the address shows a positive balance but the first UTXO call failed,
-                    // try a dedicated retry to avoid silently undercounting UTXOs.
-                    const addressBalanceSats =
-                        (addressInfo?.chain_stats?.funded_txo_sum || 0) -
-                        (addressInfo?.chain_stats?.spent_txo_sum || 0);
-                    const addressUtxos =
-                        Array.isArray(initialAddressUtxos) && initialAddressUtxos.length > 0
-                            ? initialAddressUtxos
-                            : addressBalanceSats > 0
-                                ? await esploraGet(`/address/${address}/utxo`).catch(() => [])
-                                : [];
-                    if (Array.isArray(txs)) {
-                        txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
-                    }
-                    if (Array.isArray(addressUtxos)) {
-                        addressUtxos.forEach((utxo: any) => {
-                            utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
-                        });
-                    }
-                    if (addressInfo && addressInfo.chain_stats?.tx_count > 0) {
-                        addressInfos.push({
-                            address,
-                            n_tx: addressInfo.chain_stats.tx_count,
-                            balance: addressInfo.chain_stats.funded_txo_sum - addressInfo.chain_stats.spent_txo_sum,
-                        });
-                    }
-                } catch {
-                    // Skip this address on failure
-                }
-            }
-        }
-        await Promise.all(Array.from({ length: Math.min(concurrency, usedAddresses.length) }, () => worker()));
-
-        const transactionDates = Array.from(allTxs.values())
-            .map(tx => new Date(tx.status.confirmed ? tx.status.block_time * 1000 : Date.now()));
-
-        const historicalPrices = await getBatchedHistoricalPrices(transactionDates, currency);
-
-        const transactions: Transaction[] = Array.from(allTxs.values()).map((tx: any): Transaction => {
-            let netAmountSatoshis = 0;
-            const ourAddressesSet = new Set(usedAddresses);
-
-            tx.vout.forEach((out: any) => {
-                if (out.scriptpubkey_address && ourAddressesSet.has(out.scriptpubkey_address)) {
-                    netAmountSatoshis += out.value;
-                }
-            });
-            tx.vin.forEach((inp: any) => {
-                if (inp.prevout?.scriptpubkey_address && ourAddressesSet.has(inp.prevout.scriptpubkey_address)) {
-                    netAmountSatoshis -= inp.prevout.value;
-                }
-            });
-
-            const netBtc = netAmountSatoshis / 1e8;
-            const isConfirmed = tx.status.confirmed;
-            const confirmations = isConfirmed && latestBlockHeight ? latestBlockHeight - tx.status.block_height + 1 : 0;
-            const txDate = isConfirmed ? new Date(tx.status.block_time * 1000) : new Date();
-
-            const fromAddress = tx.vin?.map((i: any) => i.prevout?.scriptpubkey_address).filter(Boolean) ?? [];
-            const toAddress = tx.vout?.map((o: any) => o.scriptpubkey_address).filter(Boolean) ?? [];
-
-            const labels: TransactionLabel[] = [];
-            fromAddress.forEach((addr: string) => {
-                if (KNOWN_EXCHANGE_ADDRESSES[addr]) {
-                    labels.push({ address: addr, label: KNOWN_EXCHANGE_ADDRESSES[addr], type: 'exchange' });
-                }
-            });
-            toAddress.forEach((addr: string) => {
-                if (KNOWN_EXCHANGE_ADDRESSES[addr]) {
-                    labels.push({ address: addr, label: KNOWN_EXCHANGE_ADDRESSES[addr], type: 'exchange' });
-                }
-            });
-
-            const dateKey = format(startOfDay(txDate), 'yyyy-MM-dd');
-            const historicalPrice = historicalPrices.get(dateKey) || 0;
-
-            const totalValue = tx.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8;
-
-            return {
-                id: tx.txid, date: txDate.toISOString(), btc: netBtc, status: isConfirmed ? 'Confirmed' : 'Pending', type: netBtc >= 0 ? 'Received' : 'Sent',
-                fromAddress, toAddress, confirmations, fee: tx.fee, size: tx.size, weight: tx.weight, version: tx.version, locktime: tx.locktime,
-                rbf: tx.vin.some((i: any) => i.sequence < 0xfffffffe), blockHeight: tx.status.block_height ?? null,
-                inputs: tx.vin?.map((i: any) => ({ address: i.prevout?.scriptpubkey_address, value: i.prevout?.value })) || [],
-                outputs: tx.vout?.map((o: any) => ({ address: o.scriptpubkey_address, value: o.value, spent: false })) || [],
-                labels: labels.length > 0 ? labels : undefined,
-                historicalPrice,
-                totalValue,
-            };
-        });
-
-        transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-
-        const finalBalanceBTC = utxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
-        const fiatPriceForDust = btcPrices[currency]?.last || btcPrices.USD.last;
-        const dustUtxos = utxos.filter(utxo => (utxo.value / 1e8) * fiatPriceForDust < 1.0);
-        const dustAmountBTC = dustUtxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
-
-        const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        let inflowBTC = 0, outflowBTC = 0;
-        transactions.forEach(tx => {
-            if (new Date(tx.date).getTime() > thirtyDaysAgo.getTime()) {
-                if (tx.btc > 0) inflowBTC += tx.btc; else outflowBTC += tx.btc;
-            }
-        });
-
-        const reusedAddressCount = addressInfos.filter(addr => addr.n_tx > 1).length;
-        const reusePercentage = addressInfos.length > 0 ? (reusedAddressCount / addressInfos.length) * 100 : 0;
-
-        let totalFee = 0, totalVSize = 0;
-        transactions.forEach(tx => {
-            if (tx.type === 'Sent' && tx.size > 0 && tx.fee > 0) {
-                totalFee += tx.fee;
-                totalVSize += tx.weight ? tx.weight / 4 : tx.size;
-            }
-        });
-
+        // Calculate currency-specific performance metrics
         const price24h = priceHistory24h.length > 0 ? priceHistory24h[0][1] : 0;
         const price7d = priceHistory7d.length > 0 ? priceHistory7d[0][1] : 0;
         const price30d = priceHistory30d.length > 0 ? priceHistory30d[0][1] : 0;
-
         const currentPrice = btcPrices[currency]?.last || 0;
 
+        // Recalculate dust UTXOs with current currency price
+        const fiatPriceForDust = btcPrices[currency]?.last || btcPrices.USD.last;
+        const dustUtxos = snapshot.utxos.filter(utxo => (utxo.value / 1e8) * fiatPriceForDust < 1.0);
+        const dustAmountBTC = dustUtxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
+
+        // Assemble final WalletData from cached snapshot + fresh pricing
         const walletData: WalletData = {
-            btcPrices, balanceBTC: finalBalanceBTC, transactions,
-            securityScore: Math.max(10, 100 - Math.floor(reusePercentage)),
-            opsecThreat: reusePercentage > 50 ? 'High' : reusePercentage > 0 ? 'Medium' : 'Low',
-            usedAddressCount: addressInfos.length, dustAmountBTC, dustUtxoCount: dustUtxos.length, addresses: addressInfos, utxos,
+            // Fresh pricing data
+            btcPrices,
+            btcPrice: currentPrice,
             performance: {
                 change24h: price24h > 0 ? ((currentPrice - price24h) / price24h) * 100 : 0,
                 change7d: price7d > 0 ? ((currentPrice - price7d) / price7d) * 100 : 0,
                 change30d: price30d > 0 ? ((currentPrice - price30d) / price30d) * 100 : 0,
             },
-            inflowOutflow: { inflowBTC, outflowBTC },
-            averageFeeRate: totalVSize > 0 ? totalFee / totalVSize : 0,
-            btcPrice: currentPrice,
+            
+            // Cached blockchain data (from snapshot)
+            balanceBTC: snapshot.balanceBTC,
+            transactions: snapshot.transactions,
+            utxos: snapshot.utxos,
+            addresses: snapshot.addresses,
+            usedAddressCount: snapshot.usedAddressCount,
+            securityScore: snapshot.securityScore,
+            opsecThreat: snapshot.opsecThreat,
+            averageFeeRate: snapshot.averageFeeRate,
+            inflowOutflow: { inflowBTC: snapshot.inflowBTC, outflowBTC: snapshot.outflowBTC },
+            
+            // Currency-adjusted dust calculation
+            dustUtxoCount: dustUtxos.length,
+            dustAmountBTC,
         };
 
+        console.log(`[WalletData] Successfully assembled wallet data from snapshot (age: ${((Date.now() - snapshot.timestamp) / 1000).toFixed(1)}s)`);
         return { data: walletData, error: null };
     } catch (error) {
-        console.error(error);
+        console.error('[WalletData] Error:', error);
         const message = error instanceof Error ? error.message : 'An unexpected error occurred while fetching wallet data.';
         return { data: null, error: message };
     }
