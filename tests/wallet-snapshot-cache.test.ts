@@ -23,7 +23,7 @@ describe('Wallet Snapshot Cache', () => {
         vi.useRealTimers();
     });
     
-    const createMockSnapshot = (xpub: string = mockXpub): WalletSnapshot => ({
+    const createMockSnapshot = (xpub: string = mockXpub, currency?: string): WalletSnapshot & { currency?: string } => ({
         xpub,
         timestamp: Date.now(),
         transactions: [],
@@ -38,6 +38,7 @@ describe('Wallet Snapshot Cache', () => {
         inflowBTC: 0,
         outflowBTC: 0,
         balanceBTC: 0,
+        ...(currency && { currency }),
     });
 
     beforeEach(() => {
@@ -150,6 +151,8 @@ describe('Wallet Snapshot Cache', () => {
     });
 
     describe('In-Flight Request Deduplication', () => {
+        const CONCURRENT_REQUEST_COUNT = 3;
+
         beforeEach(() => {
             vi.useFakeTimers();
         });
@@ -162,12 +165,10 @@ describe('Wallet Snapshot Cache', () => {
                 return createMockSnapshot();
             };
 
-            // Fire 3 concurrent requests
-            const promises = [
-                withInFlightDeduplication(mockXpub, mockFetch),
-                withInFlightDeduplication(mockXpub, mockFetch),
-                withInFlightDeduplication(mockXpub, mockFetch),
-            ];
+            // Fire multiple concurrent requests
+            const promises = Array.from({ length: CONCURRENT_REQUEST_COUNT }, () =>
+                withInFlightDeduplication(mockXpub, mockFetch)
+            );
 
             // Fast-forward timers so all fetches resolve
             vi.advanceTimersByTime(100);
@@ -257,23 +258,35 @@ describe('Wallet Snapshot Cache', () => {
 
             let fetchCalled = false;
 
-            // Cached snapshot should be used, fetch should not be called
-            const result = getCachedSnapshot(mockXpub);
+            // Cached snapshot should be used, fetch should not be called, even if using withInFlightDeduplication
+            const result = await withInFlightDeduplication(mockXpub, async () => {
+                fetchCalled = true;
+                // simulate fetch returning a snapshot (which shouldn't happen)
+                return createMockSnapshot(mockXpub);
+            });
             expect(result).toBeDefined();
             expect(fetchCalled).toBe(false);
         });
 
         it('should handle rapid currency switches with cached snapshot', () => {
-            const snapshot = createMockSnapshot();
+            const currencies = ['USD', 'EUR', 'GBP'];
+            const snapshot = createMockSnapshot(mockXpub);
             setCachedSnapshot(snapshot);
 
-            // Simulate rapid currency switches (all should use cached snapshot)
-            const currencies = ['USD', 'EUR', 'GBP'];
+            // Rapidly switch between currencies - cache should return same snapshot
+            // since blockchain data is currency-independent
+            let retrievalCount = 0;
             currencies.forEach(currency => {
                 const cached = getCachedSnapshot(mockXpub);
                 expect(cached).toBeDefined();
                 expect(cached?.xpub).toBe(mockXpub);
+                // Verify the same snapshot instance is returned for all currencies
+                expect(cached).toBe(snapshot);
+                retrievalCount++;
             });
+
+            // Verify we actually switched currencies multiple times
+            expect(retrievalCount).toBe(currencies.length);
         });
 
         it('should handle wallet switching with separate caches', () => {

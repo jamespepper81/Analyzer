@@ -165,6 +165,13 @@ export async function withInFlightDeduplication<T extends WalletSnapshot | null>
 ): Promise<T> {
   const key = getSnapshotCacheKey(xpub);
   
+  // Check cache first - if valid snapshot exists, return it without fetching
+  const cached = getCachedSnapshot(xpub);
+  if (cached) {
+    console.log(`[SnapshotCache] Using cached snapshot for ${xpub.substring(0, 20)}...`);
+    return cached as T;
+  }
+  
   // Check if there's already an in-flight request for this XPUB
   const existing = inFlightRequests.get(key);
   if (existing) {
