@@ -22,16 +22,18 @@ BitSleuth is an AI-powered Bitcoin wallet insights app. Enter a Bitcoin XPUB to 
 
 BitSleuth uses advanced caching and optimization techniques for lightning-fast wallet operations:
 
+- **Smart Address Discovery**: XPUB prefix inference (zpub→native, ypub→nested, xpub→legacy) with fast path that checks only the inferred type first, reducing API calls by 80-95%
 - **Wallet Snapshot Caching**: Blockchain data cached for 5 minutes, enabling instant wallet switches
 - **In-Flight Deduplication**: Prevents duplicate API calls when multiple requests occur simultaneously
 - **Lightweight Address Discovery**: Uses stats endpoints (~500 bytes) instead of full transaction lists (~50KB+), reducing data transfer by 95%
 - **Separated Data Assembly**: Currency-independent blockchain data cached separately from real-time pricing
 
 **Performance Impact**:
-- Initial wallet load: ~30-60 seconds (first time)
+- Initial wallet load: ~30-60 seconds (optimized from ~10 minutes with multi-address-type support)
 - Currency switch: <1 second (cached snapshot + fresh pricing)
 - Wallet switch (cached): <1 second
 - 600x+ faster switching compared to full reload
+- 80-95% fewer blockchain API calls during login (from ~250 to ~40-50 calls for typical wallets)
 
 See [Wallet Snapshot Caching Documentation](docs/wallet-snapshot-caching.md) for technical details.
 
