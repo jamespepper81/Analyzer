@@ -18,6 +18,10 @@ import {
 
 describe('Wallet Snapshot Cache', () => {
     const mockXpub = 'test-xpub-1';
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
     
     const createMockSnapshot = (xpub: string = mockXpub): WalletSnapshot => ({
         xpub,
@@ -152,11 +156,16 @@ describe('Wallet Snapshot Cache', () => {
     });
 
     describe('In-Flight Request Deduplication', () => {
-        it('should deduplicate concurrent requests', async () => {
+        beforeEach(() => {
             vi.useFakeTimers();
-            let fetchCount = 0;
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+        it('should deduplicate concurrent requests', async () => {
+            let mockFetchCallCount = 0;
             const mockFetch = async () => {
-                fetchCount++;
+                mockFetchCallCount++;
                 await new Promise(resolve => setTimeout(resolve, 100));
                 return createMockSnapshot();
             };
@@ -173,17 +182,17 @@ describe('Wallet Snapshot Cache', () => {
             const results = await Promise.all(promises);
 
             // Only one fetch should have been executed
-            expect(fetchCount).toBe(1);
+            expect(mockFetchCallCount).toBe(1);
             
             // All requests should get the same result
             results.forEach(result => {
                 expect(result?.xpub).toBe(mockXpub);
             });
-            vi.useRealTimers();
         });
 
+
+
         it('should track in-flight requests', async () => {
-            vi.useFakeTimers();
             const mockFetch = async () => {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 return createMockSnapshot();
@@ -204,11 +213,11 @@ describe('Wallet Snapshot Cache', () => {
             // Should be cleared after completion
             expect(hasInFlightRequest(mockXpub)).toBe(false);
             expect(getInFlightRequestCount()).toBe(0);
-            vi.useRealTimers();
         });
 
+
+
         it('should clean up in-flight tracking on error', async () => {
-            vi.useFakeTimers();
             const mockFetch = async () => {
                 await new Promise(resolve => setTimeout(resolve, 50));
                 throw new Error('Test error');
@@ -225,14 +234,12 @@ describe('Wallet Snapshot Cache', () => {
             // Should be cleaned up even on error
             expect(hasInFlightRequest(mockXpub)).toBe(false);
             expect(getInFlightRequestCount()).toBe(0);
-            vi.useRealTimers();
         });
 
         it('should handle multiple XPUBs concurrently', async () => {
-            vi.useFakeTimers();
-            let fetchCount = 0;
+            let mockFetchCallCount = 0;
             const mockFetch = async (xpub: string) => {
-                fetchCount++;
+                mockFetchCallCount++;
                 await new Promise(resolve => setTimeout(resolve, 50));
                 return createMockSnapshot(xpub);
             };
@@ -251,8 +258,7 @@ describe('Wallet Snapshot Cache', () => {
             await Promise.all(promises);
 
             // Should fetch once per unique XPUB
-            expect(fetchCount).toBe(2);
-            vi.useRealTimers();
+            expect(mockFetchCallCount).toBe(2);
         });
     });
 
