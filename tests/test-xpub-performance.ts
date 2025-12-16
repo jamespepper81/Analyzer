@@ -4,6 +4,8 @@
  */
 
 import { getWalletData } from '../src/lib/blockchain';
+import { getAddressType } from '../src/lib/utils';
+import * as crypto from 'crypto';
 
 // Test XPUB - MUST be set from environment variable or GitHub secrets
 // DO NOT hardcode real XPUBs in the codebase as they reveal wallet structure
@@ -16,20 +18,27 @@ if (!TEST_XPUB) {
     process.exit(1);
 }
 
+// Type assertion: TEST_XPUB is guaranteed to be defined after the check above
+const XPUB: string = TEST_XPUB;
+
 async function testXpubPerformance() {
     console.log('🚀 Starting XPUB Performance Test');
     console.log('=====================================');
-    console.log(`Testing with XPUB: ${TEST_XPUB.substring(0, 20)}...`);
+    // Log a hash of the XPUB for identification without leaking sensitive information
+    const xpubHash = crypto.createHash('sha256').update(XPUB).digest('hex');
+    console.log(`Testing with XPUB hash: ${xpubHash.substring(0, 12)}...`);
     console.log('');
     
     const startTime = Date.now();
     
     try {
         console.log('⏳ Discovering addresses and fetching wallet data...');
-        const result = await getWalletData(TEST_XPUB, 'USD');
+        const result = await getWalletData(XPUB, 'USD');
         
         const endTime = Date.now();
-        const duration = ((endTime - startTime) / 1000).toFixed(2);
+        const durationMs = endTime - startTime;
+        const durationSeconds = durationMs / 1000;
+        const duration = durationSeconds.toFixed(2);
         
         if (result.error) {
             console.error('❌ Error:', result.error);
@@ -55,28 +64,27 @@ async function testXpubPerformance() {
         
         // Performance targets
         const expectedMaxTime = 20; // seconds
-        const performanceRating = duration < 10 ? '🚀 Excellent' : 
-                                   duration < 20 ? '✅ Good' : 
-                                   duration < 30 ? '⚠️  Acceptable' : 
+        const EXCELLENT_MAX_TIME = 10;
+        const GOOD_MAX_TIME = 20;
+        const ACCEPTABLE_MAX_TIME = 30;
+        
+        const performanceRating = durationSeconds < EXCELLENT_MAX_TIME ? '🚀 Excellent' : 
+                                   durationSeconds < GOOD_MAX_TIME ? '✅ Good' : 
+                                   durationSeconds < ACCEPTABLE_MAX_TIME ? '⚠️  Acceptable' : 
                                    '❌ Needs Improvement';
         
         console.log(`📈 Performance Rating: ${performanceRating}`);
         console.log('');
         
-        if (parseFloat(duration) > expectedMaxTime) {
+        if (durationSeconds > expectedMaxTime) {
             console.warn(`⚠️  Warning: Time exceeded expected maximum of ${expectedMaxTime}s`);
         }
         
         // Verify address type detection worked
         const addressTypes = new Set<string>();
         result.data.addresses.forEach(addr => {
-            if (addr.address.startsWith('bc1')) {
-                addressTypes.add('Native SegWit (P2WPKH)');
-            } else if (addr.address.startsWith('3')) {
-                addressTypes.add('Nested SegWit (P2SH)');
-            } else if (addr.address.startsWith('1')) {
-                addressTypes.add('Legacy (P2PKH)');
-            }
+            const type = getAddressType(addr.address);
+            if (type) addressTypes.add(type);
         });
         
         if (addressTypes.size > 0) {
