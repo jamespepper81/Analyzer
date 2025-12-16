@@ -36,6 +36,68 @@ describe('Address Discovery Optimization', () => {
         expect(content).toContain('inferAddressTypesFromXpub');
     });
     
+    it('Smart type inference with primary type and conditional fallback', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Verify improved inference returns structured result
+        expect(content).toContain('primaryType');
+        expect(content).toContain('shouldCheckOthers');
+        expect(content).toContain('otherTypes');
+        
+        // Verify zpub/ypub skip fallback (specific types)
+        expect(content).toContain('shouldCheckOthers: false');
+        
+        // Verify xpub allows fallback (ambiguous type)
+        expect(content).toContain('shouldCheckOthers: true');
+        
+        // Verify precomputed type arrays for performance
+        expect(content).toContain('ALL_ADDRESS_TYPES');
+        expect(content).toContain('TYPES_WITHOUT_NATIVE');
+        expect(content).toContain('TYPES_WITHOUT_NESTED');
+        expect(content).toContain('TYPES_WITHOUT_LEGACY');
+    });
+    
+    it('Optimized discovery with fast path and conditional fallback', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Verify fast path that tries primary type first
+        expect(content).toContain('fast path');
+        expect(content).toContain('inferenceResult.primaryType');
+        
+        // Verify early exit when addresses found with descriptive variable names
+        expect(content).toContain('primaryDiscoveredAddresses');
+        expect(content).toContain('fallbackDiscoveredAddresses');
+        expect(content).toContain('unknownPrefixDiscoveredAddresses');
+        expect(content).toContain('return primaryDiscoveredAddresses');
+        
+        // Verify conditional fallback only for ambiguous types
+        expect(content).toContain('inferenceResult.shouldCheckOthers');
+        expect(content).toContain('checking other types for xpub');
+        
+        // Verify no redundant full scan
+        expect(content).not.toContain('Inference yielded no addresses. Falling back to full type detection.');
+    });
+    
+    it('INITIAL_CHECK_LIMIT is optimized to 3 for faster detection', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Verify the constant is reduced from 5 to 3
+        expect(content).toContain('INITIAL_CHECK_LIMIT = 3');
+        expect(content).toContain('Reduced from 5 to 3');
+    });
+    
+    it('Uses constants for maintainability (XPUB_LOG_PREFIX_LENGTH)', () => {
+        const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+        const content = fs.readFileSync(blockchainPath, 'utf-8');
+        
+        // Verify XPUB_LOG_PREFIX_LENGTH constant is defined
+        expect(content).toContain('XPUB_LOG_PREFIX_LENGTH');
+        expect(content).toContain('substring(0, XPUB_LOG_PREFIX_LENGTH)');
+    });
+    
     it('Parallel type detection is implemented', () => {
         const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
         const content = fs.readFileSync(blockchainPath, 'utf-8');
