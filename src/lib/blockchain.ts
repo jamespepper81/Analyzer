@@ -290,7 +290,7 @@ async function getCachedUsedAddresses(xpub: string): Promise<string[]> {
     // Wrap discovery with a 2-minute timeout to prevent indefinite hangs
     const DISCOVERY_TIMEOUT_MS = 120000; // 2 minutes
     
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | undefined;
     const discoveryPromise = Promise.race([
         discoverUsedAddresses(xpub),
         new Promise<string[]>((_, reject) => {
@@ -298,13 +298,17 @@ async function getCachedUsedAddresses(xpub: string): Promise<string[]> {
         })
     ])
         .then(addresses => {
-            clearTimeout(timeoutId); // Clean up timeout to prevent memory leak
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId); // Clean up timeout to prevent memory leak
+            }
             addressDiscoveryCache.set(xpub, { addresses, timestamp: Date.now() });
             addressDiscoveryPromises.delete(xpub);
             return addresses;
         })
         .catch(error => {
-            clearTimeout(timeoutId); // Clean up timeout to prevent memory leak
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId); // Clean up timeout to prevent memory leak
+            }
             addressDiscoveryPromises.delete(xpub);
             throw error;
         });

@@ -110,8 +110,13 @@ export default function ConnectWalletPage() {
       setError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.');
     } finally {
       // Dismiss the progress toast and reset submitting state
-      if (progressToast?.dismiss) {
-        progressToast.dismiss();
+      try {
+        if (progressToast?.dismiss) {
+          progressToast.dismiss();
+        }
+      } catch (e) {
+        // Silently handle if toast dismissal fails
+        console.warn('Failed to dismiss toast:', e);
       }
       setIsSubmitting(false);
     }
