@@ -505,7 +505,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         const cached = localStorage.getItem(`walletCache:${newXpub}`);
         if (cached) {
           const parsed = JSON.parse(cached);
-          setData(parsed);
+          // Validate cached data belongs to this XPUB
+          if (parsed._cacheMetadata?.xpub === newXpub) {
+            setData(parsed.data || parsed);
+          } else {
+            console.warn(`[WalletContext] Cache XPUB mismatch on switch, clearing`);
+            localStorage.removeItem(`walletCache:${newXpub}`);
+            setData(null);
+          }
         } else {
           setData(null);
         }
@@ -534,8 +541,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     try {
       const cached = localStorage.getItem(`walletCache:${newXpub}`);
       if (cached) {
-        cachedData = JSON.parse(cached);
-        console.log(`[WalletContext] Found cached data for wallet, showing immediately`);
+        const parsed = JSON.parse(cached);
+        // Validate cached data belongs to this XPUB
+        if (parsed._cacheMetadata?.xpub === newXpub) {
+          cachedData = parsed.data || parsed;
+          console.log(`[WalletContext] Found cached data for wallet, showing immediately`);
+        } else {
+          console.warn(`[WalletContext] Cache XPUB mismatch, clearing stale cache`);
+          localStorage.removeItem(`walletCache:${newXpub}`);
+        }
       }
     } catch (e) {
       console.warn(`[WalletContext] Failed to load cached data during addXpub:`, e);
@@ -562,7 +576,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           // Update with fresh data
           setData(validationResult.data);
           try {
-            localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(validationResult.data));
+            const cacheEntry = {
+              _cacheMetadata: {
+                xpub: newXpub,
+                timestamp: Date.now(),
+              },
+              data: validationResult.data,
+            };
+            localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(cacheEntry));
           } catch (storageError) {
             logger.warn('[WalletContext] Failed to update cache after background validation', storageError);
           }
@@ -591,8 +612,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (validationResult.data) {
       setData(validationResult.data);
       try {
-        localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(validationResult.data));
-      } catch {}
+        const cacheEntry = {
+          _cacheMetadata: {
+            xpub: newXpub,
+            timestamp: Date.now(),
+          },
+          data: validationResult.data,
+        };
+        localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(cacheEntry));
+      } catch (storageError) {
+        logger.warn('[WalletContext] Failed to cache wallet data on add', storageError);
+      }
       justAddedXpub.current = newXpub;
     }
     
@@ -637,8 +667,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setMessages([]);
     track('disconnect_wallet');
     try {
+      // Clear all wallet-related data from localStorage
       localStorage.removeItem('walletXpubs');
       localStorage.removeItem('activeXpub');
+      
+      // Clear all cached wallet data to prevent showing wrong wallet's data
+      // Iterate through all localStorage keys and remove wallet caches
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('walletCache:')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      console.log(`[WalletContext] Cleared ${keysToRemove.length} wallet cache(s) on disconnect`);
     } catch (e) {
       logger.error('Could not access local storage', e);
     }
@@ -669,12 +713,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const cached = localStorage.getItem(`walletCache:${activeXpub}`);
       if (cached) {
         const parsed = JSON.parse(cached);
-        setData(parsed);
-        hasCachedData = true;
-        console.log(`[WalletContext] Showing cached wallet data (instant load)`);
-        // If we have cached data, show it immediately and mark as not loading
-        // We'll still fetch fresh data in the background
-        setIsLoading(false);
+        
+        // Safety check: Verify cached data belongs to current XPUB
+        // The cache includes metadata with the XPUB for validation
+        if (parsed._cacheMetadata?.xpub === activeXpub) {
+          setData(parsed.data || parsed);
+          hasCachedData = true;
+          console.log(`[WalletContext] Showing cached wallet data (instant load)`);
+          // If we have cached data, show it immediately and mark as not loading
+          // We'll still fetch fresh data in the background
+          setIsLoading(false);
+        } else {
+          // Cache mismatch - clear invalid cache
+          console.warn(`[WalletContext] Cache XPUB mismatch, clearing stale cache`);
+          localStorage.removeItem(`walletCache:${activeXpub}`);
+        }
       }
     } catch (e) {
       console.warn(`[WalletContext] Failed to load cached data:`, e);
@@ -697,7 +750,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     } else if (response.data) {
       setData(response.data);
       try {
-        localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(response.data));
+        // Store with metadata for validation to prevent showing wrong wallet's data
+        const cacheEntry = {
+          _cacheMetadata: {
+            xpub: activeXpub,
+            timestamp: Date.now(),
+          },
+          data: response.data,
+        };
+        localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(cacheEntry));
       } catch (storageError) {
         logger.warn('[WalletContext] Failed to cache fresh wallet data', storageError);
       }
