@@ -4,6 +4,9 @@ BitSleuth is an AI-powered Bitcoin wallet insights app. Enter a Bitcoin XPUB to 
 
 ![BitSleuth](public/1200x630.png)
 
+- **🌐 Production:** [https://app.bitsleuth.ai](https://app.bitsleuth.ai)
+- **🧑‍💻 Development:** [https://analyzer-dev--bitsleuth.us-central1.hosted.app](https://analyzer-dev--bitsleuth.us-central1.hosted.app)
+
 ## Features
 
 - Dashboard overview of balance, security score, and recent activity
