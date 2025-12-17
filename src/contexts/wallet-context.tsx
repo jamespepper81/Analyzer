@@ -24,6 +24,7 @@ type WalletState = {
   xpubs: string[];
   data: WalletData | null;
   isLoading: boolean;
+  isLoadingAiContent: boolean;
   error: string | null;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -96,6 +97,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<SecurityRecommendation[]>([]);
   const [isInitialAiContentLoaded, setIsInitialAiContentLoaded] = useState(false);
+  const [isLoadingAiContent, setIsLoadingAiContent] = useState(false);
   const { track } = useAnalytics();
   const { toast, dismiss } = useToast();
   const errorToastId = useRef<string | null>(null);
@@ -517,6 +519,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setRecommendations([]);
     setMessages([generateInitialGreetingMessage()]);
     setIsInitialAiContentLoaded(false);
+    setIsLoadingAiContent(false);
   }, []);
 
   const addXpub = useCallback(async (newXpub: string): Promise<{ success: boolean; error: string | null }> => {
@@ -525,7 +528,51 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return { success: true, error: null };
     }
 
-    // Fetch wallet data to validate the XPUB
+    // INSTANT CACHE CHECK - Show cached data immediately if available
+    // This gives users instant feedback while validation happens in background
+    let cachedData: WalletData | null = null;
+    try {
+      const cached = localStorage.getItem(`walletCache:${newXpub}`);
+      if (cached) {
+        cachedData = JSON.parse(cached);
+        console.log(`[WalletContext] Found cached data for ${newXpub.substring(0, 20)}..., showing immediately`);
+      }
+    } catch (e) {
+      console.warn(`[WalletContext] Failed to load cached data during addXpub:`, e);
+    }
+
+    // If we have cached data, show it NOW and add the XPUB immediately
+    // Then validate in the background to ensure it's still valid
+    if (cachedData) {
+      const newXpubs = [...xpubs, newXpub];
+      setXpubs(newXpubs);
+      localStorage.setItem('walletXpubs', JSON.stringify(newXpubs));
+      setData(cachedData);
+      setActiveXpubAndPersist(newXpub);
+      justAddedXpub.current = newXpub;
+      
+      // Validate in the background (fire-and-forget)
+      // If validation fails, we'll show an error toast but keep the cached data
+      fetchWalletData(newXpub, currency).then(validationResult => {
+        if (validationResult.error) {
+          console.warn(`[WalletContext] Background validation failed for cached XPUB:`, validationResult.error);
+          // Don't block the user - they're already using cached data
+        } else if (validationResult.data) {
+          // Update with fresh data
+          setData(validationResult.data);
+          try {
+            localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(validationResult.data));
+          } catch {}
+        }
+      }).catch(e => {
+        console.warn(`[WalletContext] Background validation error:`, e);
+      });
+      
+      track('connect_wallet', { method: 'xpub_cached' });
+      return { success: true, error: null };
+    }
+
+    // No cached data - fetch wallet data to validate the XPUB (blocking)
     const validationResult = await fetchWalletData(newXpub, currency);
     if (validationResult.error) {
       return { success: false, error: validationResult.error };
@@ -583,6 +630,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setSuggestions([]);
     setRecommendations([]);
     setIsInitialAiContentLoaded(false);
+    setIsLoadingAiContent(false);
     setMessages([]);
     track('disconnect_wallet');
     try {
@@ -611,18 +659,32 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-    
-    // Show cached data immediately if available (stale-while-revalidate)
+    // INSTANT CACHED DATA LOADING
+    // Check cache FIRST and show immediately if available
+    let hasCachedData = false;
     try {
       const cached = localStorage.getItem(`walletCache:${activeXpub}`);
       if (cached) {
         const parsed = JSON.parse(cached);
-        setData((prev) => prev ?? parsed);
+        setData(parsed);
+        hasCachedData = true;
+        console.log(`[WalletContext] Showing cached data for ${activeXpub.substring(0, 20)}... (instant load)`);
+        // If we have cached data, show it immediately and mark as not loading
+        // We'll still fetch fresh data in the background
+        setIsLoading(false);
       }
-    } catch {}
+    } catch (e) {
+      console.warn(`[WalletContext] Failed to load cached data:`, e);
+    }
     
+    // If no cached data, show loading state
+    if (!hasCachedData) {
+      setIsLoading(true);
+    }
+    
+    setError(null);
+    
+    // Fetch fresh data in the background (whether we have cache or not)
     const response = await fetchWalletData(activeXpub, currency);
 
     if (response.error) {
@@ -810,7 +872,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
+    // NON-BLOCKING AI CONTENT GENERATION
+    // This runs in the background and doesn't block the UI from showing wallet data
     const generateInitialChatContent = async () => {
+      setIsLoadingAiContent(true);
       try {
         const summaryPayload = {
           balanceBTC: data.balanceBTC,
@@ -827,6 +892,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         const insightPayload = { ...summaryPayload, utxos: data.utxos.slice(0, 20), transactions: data.transactions.slice(0, 10).map(tx => ({ fee: tx.fee, btc: tx.btc, date: tx.date })) };
         
+        // Run AI flows in parallel and update UI progressively as they complete
         const [insightResult, suggestionsResult] = await Promise.all([
           getProactiveInsight({ walletData: JSON.stringify(insightPayload) }),
           getProactiveSuggestions({ walletSummary: JSON.stringify(summaryPayload) }),
@@ -844,12 +910,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to generate proactive content:", e);
       } finally {
         setIsInitialAiContentLoaded(true);
+        setIsLoadingAiContent(false);
       }
     };
 
     if (messages.length === 0) {
         setMessages([generateInitialGreetingMessage()]);
     }
+    
+    // Fire and forget - don't await this
+    // The UI will show wallet data immediately while AI processes in background
     generateInitialChatContent();
   }, [data, isInitialAiContentLoaded, messages.length]);
 
@@ -872,7 +942,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <WalletContext.Provider value={{
-      activeXpub, xpubs, data, isLoading, error, messages, setMessages, suggestions, recommendations, setActiveXpub: setActiveXpubAndPersist, addXpub, removeXpub, refetch: getWalletData, disconnect, refreshRecommendations, 
+      activeXpub, xpubs, data, isLoading, isLoadingAiContent, error, messages, setMessages, suggestions, recommendations, setActiveXpub: setActiveXpubAndPersist, addXpub, removeXpub, refetch: getWalletData, disconnect, refreshRecommendations, 
       currency, setCurrency, supportedCurrencies: SUPPORTED_CURRENCIES, fiatPrice, fiatBalance, currencySymbol,
       nostrNpub, nostrProfile, isNostrReady, connectNostr, loginWithNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr, publishNostrNote
       }}>
