@@ -18,7 +18,7 @@ type AddressType = 'native' | 'legacy' | 'nested';
 // Performance-optimized address discovery constants
 // The discovery process is the main bottleneck during wallet login/connection
 const GAP_LIMIT = 20; // Standard gap limit for address discovery
-const INITIAL_CHECK_LIMIT = 3; // Reduced from 5 to 3 for faster type detection (40% fewer addresses checked)
+const INITIAL_CHECK_LIMIT = 5; // Number of addresses to check per type for detection (5 provides better accuracy than 3)
 const PARALLEL_BATCH_SIZE = 10; // How many addresses to check in parallel
 const ADDRESS_DISCOVERY_CACHE_TTL_MS = 10 * 60 * 1000; // Cache discovered addresses for 10 minutes
 const XPUB_LOG_PREFIX_LENGTH = 12; // How many characters of XPUB to show in logs (balance of readability vs privacy)

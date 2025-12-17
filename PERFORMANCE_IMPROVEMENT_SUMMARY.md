@@ -88,9 +88,11 @@ for each chunk of 10 {
 ### Configuration
 ```typescript
 const GAP_LIMIT = 20;            // BIP44 standard gap limit
-const INITIAL_CHECK_LIMIT = 5;   // Addresses per type for detection
+const INITIAL_CHECK_LIMIT = 5;   // Addresses per type for detection (5 provides better accuracy than 3)
 const PARALLEL_BATCH_SIZE = 10;  // Concurrent address checks
 ```
+
+**Note**: `INITIAL_CHECK_LIMIT` was briefly reduced to 3 in an attempt to optimize further, but this caused false negatives in type detection when the first 3 addresses were unused, triggering the slower fallback path. The value has been restored to 5 for optimal balance between detection accuracy and performance.
 
 ### API Strategy
 - **Parallel execution**: Up to 10 concurrent API calls
