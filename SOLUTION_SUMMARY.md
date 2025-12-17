@@ -31,7 +31,7 @@ Login performance with XPUB degraded after modifications in PR 296 to `src/lib/b
 ## Performance Validation
 
 ### Test Configuration
-- **XPUB**: `xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz`
+- **XPUB**: `[REDACTED_TEST_XPUB]`
 - **Test Script**: `tests/test-login-performance.ts`
 - **Command**: `TEST_XPUB="..." npx tsx tests/test-login-performance.ts`
 
@@ -108,7 +108,7 @@ npm test
 
 ### Performance Test
 ```bash
-TEST_XPUB="xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz" \
+TEST_XPUB="[REDACTED_TEST_XPUB]" \
 npx tsx tests/test-login-performance.ts
 ```
 **Result**: ✅ 8.04s (Excellent)

@@ -26,7 +26,7 @@ When checking 5 addresses instead of 3:
 
 ## Performance Test Results
 
-Using test XPUB: `xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz`
+Using test XPUB: `[REDACTED_TEST_XPUB]`
 
 ### With INITIAL_CHECK_LIMIT = 5 (Fixed)
 ```

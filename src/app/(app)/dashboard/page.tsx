@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, ArrowUpRight, ArrowDownLeft, Loader2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DashboardPage() {
-  const { data, isLoading, error, activeXpub: xpub, fiatBalance, currency, fiatPrice } = useWallet();
+  const { data, isLoading, isLoadingAiContent, error, activeXpub: xpub, fiatBalance, currency, fiatPrice } = useWallet();
   const hasBlockingError = !!error && !data;
 
   if (!xpub) return <FullPageLoader />;
@@ -47,6 +47,16 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
+      {/* AI Insights Loading Indicator */}
+      {isLoadingAiContent && (
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 flex items-center gap-3">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-900 dark:text-blue-100">
+            <span className="font-semibold">AI insights loading...</span> Your wallet data is ready to analyze. AI-powered recommendations will appear shortly.
+          </p>
+        </div>
+      )}
+      
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-primary/5 via-transparent to-transparent">

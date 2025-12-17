@@ -10,9 +10,9 @@
 
 import * as crypto from 'crypto';
 
-// Test XPUB - This is a publicly known test key used for performance analysis
-// This XPUB was explicitly provided by the user for testing purposes
-const TEST_XPUB = 'xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz';
+// Test XPUB - Generic test key for performance analysis
+// Note: Replace with your own test XPUB when running performance tests
+const TEST_XPUB = 'xpub6D4BDPcP2GT577Vvch3R8wDkScZWzQzMMUm3PWbmWvVJrZwQY4VUNgqFJPMM3No2dFDFGTsxxpG5uJh7n7epu4trkrX7x7DogT5Uv6fcLW5';
 
 console.log('🔍 INITIAL_CHECK_LIMIT Comparison Test');
 console.log('==========================================\n');

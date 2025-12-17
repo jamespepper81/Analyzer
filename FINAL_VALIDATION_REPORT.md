@@ -16,7 +16,7 @@
 
 **Date**: 2025-12-17  
 **Test Script**: `tests/test-login-performance.ts`  
-**XPUB**: `xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz`
+**XPUB**: `[REDACTED_TEST_XPUB]`
 
 **Results**:
 ```
@@ -327,7 +327,7 @@ Tested with real XPUB: **8.04s login time** (Excellent performance)
 
 ### Run Performance Test
 ```bash
-TEST_XPUB="xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz" \
+TEST_XPUB="[REDACTED_TEST_XPUB]" \
 npx tsx tests/test-login-performance.ts
 ```
 
