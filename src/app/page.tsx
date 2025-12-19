@@ -34,7 +34,7 @@ import {
 import { useState, useEffect } from "react";
 import { useWallet } from "@/contexts/wallet-context";
 import { cn } from "@/lib/utils";
-import { DISCOVERY_TIMEOUT_SECONDS } from "@/lib/constants";
+import { DISCOVERY_TIMEOUT_SECONDS, DISCOVERY_TIMEOUT_MINUTES, STAGE_TRANSITION_TIMEOUT_MS } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -120,7 +120,7 @@ export default function ConnectWalletPage() {
         if (isSubmitting) {
           setLoadingStage('Finalizing wallet analysis...');
         }
-      }, (DISCOVERY_TIMEOUT_SECONDS / 2) * 1000); // Half of timeout duration
+      }, STAGE_TRANSITION_TIMEOUT_MS);
 
       const result = await addXpub(values.xpub);
 
@@ -358,7 +358,7 @@ export default function ConnectWalletPage() {
                     {elapsedTime > 60 && elapsedTime <= DISCOVERY_TIMEOUT_SECONDS / 2 && (
                       <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-xs text-blue-900 dark:text-blue-100">
                         <p className="font-semibold mb-1">Processing continues...</p>
-                        <p>Address discovery in progress. This can take up to {DISCOVERY_TIMEOUT_SECONDS / 60} minutes for wallets with many addresses.</p>
+                        <p>Address discovery in progress. This can take up to {DISCOVERY_TIMEOUT_MINUTES} minutes for wallets with many addresses.</p>
                       </div>
                     )}
                     {elapsedTime > DISCOVERY_TIMEOUT_SECONDS / 2 && elapsedTime <= DISCOVERY_TIMEOUT_SECONDS * 0.83 && (
