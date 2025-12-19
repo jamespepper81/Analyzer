@@ -12,6 +12,7 @@ import {
     withInFlightDeduplication,
     type WalletSnapshot 
 } from './wallet-snapshot-cache';
+import { DISCOVERY_TIMEOUT_MS } from './constants';
 
 type AddressType = 'native' | 'legacy' | 'nested';
 
@@ -289,13 +290,12 @@ async function getCachedUsedAddresses(xpub: string): Promise<string[]> {
 
     // Wrap discovery with a 4-minute timeout to prevent indefinite hangs
     // Extended from 2 to 4 minutes to accommodate wallets with many addresses
-    const DISCOVERY_TIMEOUT_MS = 240000; // 4 minutes
     
     let timeoutId: NodeJS.Timeout | undefined;
     const discoveryPromise = Promise.race([
         discoverUsedAddresses(xpub),
         new Promise<string[]>((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error('Address discovery timed out after 4 minutes. This wallet has many addresses or the network is slow. Please check your internet connection and try again.')), DISCOVERY_TIMEOUT_MS);
+            timeoutId = setTimeout(() => reject(new Error(`Address discovery timed out after ${DISCOVERY_TIMEOUT_MS / 1000 / 60} minutes. This wallet has many addresses or the network is slow. Please check your internet connection and try again.`)), DISCOVERY_TIMEOUT_MS);
         })
     ])
         .then(addresses => {

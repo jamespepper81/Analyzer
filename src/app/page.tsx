@@ -34,6 +34,7 @@ import {
 import { useState, useEffect } from "react";
 import { useWallet } from "@/contexts/wallet-context";
 import { cn } from "@/lib/utils";
+import { DISCOVERY_TIMEOUT_SECONDS } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -119,7 +120,7 @@ export default function ConnectWalletPage() {
         if (isSubmitting) {
           setLoadingStage('Finalizing wallet analysis...');
         }
-      }, 120000);
+      }, (DISCOVERY_TIMEOUT_SECONDS / 2) * 1000); // Half of timeout duration
 
       const result = await addXpub(values.xpub);
 
@@ -326,14 +327,14 @@ export default function ConnectWalletPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{loadingStage}</span>
-                        <span className="text-muted-foreground">{elapsedTime}s / ~240s</span>
+                        <span className="text-muted-foreground">{elapsedTime}s / ~{DISCOVERY_TIMEOUT_SECONDS}s</span>
                       </div>
                       <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
                         <div 
                           className="bg-primary h-full transition-all duration-1000 ease-out"
                           style={{ 
                             width: `${Math.min(
-                              (elapsedTime / 240) * 100,
+                              (elapsedTime / DISCOVERY_TIMEOUT_SECONDS) * 100,
                               95
                             )}%` 
                           }}
@@ -343,7 +344,7 @@ export default function ConnectWalletPage() {
                     <div className="rounded-lg bg-muted p-3 text-xs space-y-1 text-muted-foreground">
                       <p className="flex items-center gap-2">
                         <ShieldCheck className="h-3 w-3 text-primary" />
-                        Discovering wallet addresses (typically 30-240s)
+                        Discovering wallet addresses (typically 30-{DISCOVERY_TIMEOUT_SECONDS}s)
                       </p>
                       <p className="flex items-center gap-2">
                         <Activity className="h-3 w-3 text-primary" />
@@ -354,22 +355,22 @@ export default function ConnectWalletPage() {
                         Calculating security and performance metrics
                       </p>
                     </div>
-                    {elapsedTime > 60 && elapsedTime <= 120 && (
+                    {elapsedTime > 60 && elapsedTime <= DISCOVERY_TIMEOUT_SECONDS / 2 && (
                       <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-xs text-blue-900 dark:text-blue-100">
                         <p className="font-semibold mb-1">Processing continues...</p>
-                        <p>Address discovery in progress. This can take up to 4 minutes for wallets with many addresses.</p>
+                        <p>Address discovery in progress. This can take up to {DISCOVERY_TIMEOUT_SECONDS / 60} minutes for wallets with many addresses.</p>
                       </div>
                     )}
-                    {elapsedTime > 120 && elapsedTime <= 200 && (
+                    {elapsedTime > DISCOVERY_TIMEOUT_SECONDS / 2 && elapsedTime <= DISCOVERY_TIMEOUT_SECONDS * 0.83 && (
                       <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-xs text-amber-900 dark:text-amber-100">
                         <p className="font-semibold mb-1">Still discovering addresses...</p>
                         <p>Your wallet has many addresses or the network is slower than usual. This is normal for wallets with extensive transaction history.</p>
                       </div>
                     )}
-                    {elapsedTime > 200 && (
+                    {elapsedTime > DISCOVERY_TIMEOUT_SECONDS * 0.83 && (
                       <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3 text-xs text-red-900 dark:text-red-100">
                         <p className="font-semibold mb-1">Almost there...</p>
-                        <p>The operation will timeout at 240 seconds if it doesn't complete. If this happens, please check your internet connection and try again.</p>
+                        <p>The operation will timeout at {DISCOVERY_TIMEOUT_SECONDS} seconds if it doesn't complete. If this happens, please check your internet connection and try again.</p>
                       </div>
                     )}
                   </div>
