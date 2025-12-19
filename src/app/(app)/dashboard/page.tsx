@@ -28,11 +28,11 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DashboardPage() {
-  const { data, isLoading, isLoadingAiContent, error, activeXpub: xpub, fiatBalance, currency, fiatPrice } = useWallet();
+  const { data, isLoading, isLoadingAiContent, error, activeXpub: xpub, fiatBalance, currency, fiatPrice, isDiscovering, discoveryProgress } = useWallet();
   const hasBlockingError = !!error && !data;
 
   if (!xpub) return <FullPageLoader />;
-  if (isLoading) return <FullPageLoader />;
+  if (isLoading && !data) return <FullPageLoader />;
   if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
 
@@ -47,6 +47,34 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
+      {/* Progressive Discovery Status */}
+      {isDiscovering && discoveryProgress && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-4 shadow-md">
+          <div className="flex items-start gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  🔍 Discovering wallet addresses...
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">
+                  {discoveryProgress.addressesWithActivity} found
+                </p>
+              </div>
+              <p className="text-xs text-blue-800 dark:text-blue-200">
+                Your balance and transactions are updating in real-time as we discover more addresses. You can explore your wallet while discovery continues!
+              </p>
+              <div className="flex items-center gap-2">
+                <Progress value={(discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100} className="h-1.5" />
+                <span className="text-xs text-blue-700 dark:text-blue-300 whitespace-nowrap">
+                  {discoveryProgress.addressesChecked} checked
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* AI Insights Loading Indicator */}
       {isLoadingAiContent && (
         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 flex items-center gap-3">

@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { getPublicKey, nip19, nip04, finalizeEvent, SimplePool } from 'nostr-tools';
 import type { Event as NostrEvent } from 'nostr-tools';
-import { getWalletData as fetchWalletData } from '@/lib/blockchain';
+import { getWalletData as fetchWalletData, discoverUsedAddressesProgressive, getWalletDataProgressive, type DiscoveryProgress, type PartialWalletData } from '@/lib/blockchain';
 import type { WalletData, Message, SecurityRecommendation, NostrProfile, Currency } from '@/lib/types';
 import { getProactiveInsight } from '@/ai/flows/proactive-insights';
 import { getProactiveSuggestions } from '@/ai/flows/proactive-suggestions';
@@ -43,6 +43,9 @@ type WalletState = {
   fiatPrice: number;
   fiatBalance: number;
   currencySymbol: string;
+  // Progressive discovery state
+  discoveryProgress: DiscoveryProgress | null;
+  isDiscovering: boolean;
   // Nostr state
   nostrNpub: string | null;
   nostrProfile: NostrProfile | null;
@@ -98,6 +101,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [recommendations, setRecommendations] = useState<SecurityRecommendation[]>([]);
   const [isInitialAiContentLoaded, setIsInitialAiContentLoaded] = useState(false);
   const [isLoadingAiContent, setIsLoadingAiContent] = useState(false);
+  const [discoveryProgress, setDiscoveryProgress] = useState<DiscoveryProgress | null>(null);
+  const [isDiscovering, setIsDiscovering] = useState(false);
   const { track } = useAnalytics();
   const { toast, dismiss } = useToast();
   const errorToastId = useRef<string | null>(null);
@@ -536,13 +541,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // INSTANT CACHE CHECK - Show cached data immediately if available
-    // This gives users instant feedback while validation happens in background
     let cachedData: WalletData | null = null;
     try {
       const cached = localStorage.getItem(`walletCache:${newXpub}`);
       if (cached) {
         const parsed = JSON.parse(cached);
-        // Validate cached data belongs to this XPUB
         if (parsed._cacheMetadata?.xpub === newXpub) {
           cachedData = parsed.data || parsed;
           console.log(`[WalletContext] Found cached data for wallet, showing immediately`);
@@ -556,8 +559,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       logger.warn('[WalletContext] Cache read error in addXpub', e);
     }
 
-    // If we have cached data, show it NOW and add the XPUB immediately
-    // Then validate in the background to ensure it's still valid
+    // If we have cached data, show it NOW
     if (cachedData) {
       const newXpubs = [...xpubs, newXpub];
       setXpubs(newXpubs);
@@ -565,41 +567,39 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setData(cachedData);
       setActiveXpubAndPersist(newXpub);
       justAddedXpub.current = newXpub;
-      
-      // Validate in the background (fire-and-forget)
-      // If validation fails, we'll show an error toast but keep the cached data
-      fetchWalletData(newXpub, currency).then(validationResult => {
-        if (validationResult.error) {
-          console.warn(`[WalletContext] Background validation failed for cached XPUB:`, validationResult.error);
-          // Don't block the user - they're already using cached data
-        } else if (validationResult.data) {
-          // Update with fresh data
-          setData(validationResult.data);
-          try {
-            const cacheEntry = {
-              _cacheMetadata: {
-                xpub: newXpub,
-                timestamp: Date.now(),
-              },
-              data: validationResult.data,
-            };
-            localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(cacheEntry));
-          } catch (storageError) {
-            logger.warn('[WalletContext] Failed to update cache after background validation', storageError);
-          }
-        }
-      }).catch(e => {
-        console.warn(`[WalletContext] Background validation error:`, e);
-      });
-      
       track('connect_wallet', { method: 'xpub_cached' });
       return { success: true, error: null };
     }
 
-    // No cached data - fetch wallet data to validate the XPUB (blocking)
-    const validationResult = await fetchWalletData(newXpub, currency);
-    if (validationResult.error) {
-      return { success: false, error: validationResult.error };
+    // No cached data - use progressive loading
+    console.log(`[WalletContext] Starting progressive discovery for ${newXpub.substring(0, 20)}...`);
+    setIsDiscovering(true);
+    setDiscoveryProgress(null);
+    setIsLoading(true);
+    
+    const result = await getWalletDataProgressive(newXpub, currency, (partialData: PartialWalletData) => {
+      // Real-time UI updates as addresses are discovered!
+      console.log(`[WalletContext] Progressive update - ${partialData.discoveryProgress.addressesWithActivity} addresses, ${partialData.transactions.length} txs, ${partialData.balanceBTC} BTC`);
+      
+      // Update discovery progress
+      setDiscoveryProgress(partialData.discoveryProgress);
+      
+      // Update wallet data with partial results
+      // Convert PartialWalletData to WalletData by removing progressive fields
+      const { discoveryProgress: _, isComplete: __, ...walletData } = partialData;
+      setData(walletData as WalletData);
+      
+      // If complete, mark as no longer discovering
+      if (partialData.isComplete) {
+        setIsDiscovering(false);
+        setIsLoading(false);
+      }
+    });
+    
+    if (result.error) {
+      setIsDiscovering(false);
+      setIsLoading(false);
+      return { success: false, error: result.error };
     }
 
     // Store the XPUB in our list
@@ -607,17 +607,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setXpubs(newXpubs);
     localStorage.setItem('walletXpubs', JSON.stringify(newXpubs));
     
-    // Set the data immediately to avoid re-fetch in useEffect
-    // Mark that we just added this XPUB so getWalletData can skip fetching
-    if (validationResult.data) {
-      setData(validationResult.data);
+    // Final data is already set by the progress callback
+    if (result.data) {
       try {
         const cacheEntry = {
           _cacheMetadata: {
             xpub: newXpub,
             timestamp: Date.now(),
           },
-          data: validationResult.data,
+          data: result.data,
         };
         localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(cacheEntry));
       } catch (storageError) {
@@ -627,16 +625,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
     
     setActiveXpubAndPersist(newXpub);
+    setIsDiscovering(false);
+    setIsLoading(false);
 
     const savePreference = localStorage.getItem('nostr_save_preference');
     if (nostrNsec && savePreference === 'accepted') {
-      // Fire-and-forget the save operation
       saveXpubsToNostr(newXpubs).catch(e => console.error("Failed to auto-save xpubs to Nostr:", e));
     } else if (nostrNsec) {
       setShowSaveXpubsPrompt(true);
     }
 
-    track('connect_wallet', { method: 'xpub' });
+    track('connect_wallet', { method: 'xpub_progressive' });
     return { success: true, error: null };
   }, [xpubs, setActiveXpubAndPersist, nostrNsec, saveXpubsToNostr, track, currency]);
 
@@ -1011,6 +1010,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     <WalletContext.Provider value={{
       activeXpub, xpubs, data, isLoading, isLoadingAiContent, error, messages, setMessages, suggestions, recommendations, setActiveXpub: setActiveXpubAndPersist, addXpub, removeXpub, refetch: getWalletData, disconnect, refreshRecommendations, 
       currency, setCurrency, supportedCurrencies: SUPPORTED_CURRENCIES, fiatPrice, fiatBalance, currencySymbol,
+      discoveryProgress, isDiscovering,
       nostrNpub, nostrProfile, isNostrReady, connectNostr, loginWithNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr, publishNostrNote
       }}>
       {children}

@@ -61,7 +61,7 @@ export default function ConnectWalletPage() {
   const [loadingStage, setLoadingStage] = useState<string>('');
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  const { addXpub, activeXpub, isLoading: isWalletLoading, loginWithNostr } = useWallet();
+  const { addXpub, activeXpub, isLoading: isWalletLoading, loginWithNostr, isDiscovering, discoveryProgress } = useWallet();
 
   const [isNostrLoginOpen, setNostrLoginOpen] = useState(false);
   const [isNostrSubmitting, setIsNostrSubmitting] = useState(false);
@@ -323,60 +323,86 @@ export default function ConnectWalletPage() {
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      Connecting Your Wallet
+                      {discoveryProgress && discoveryProgress.addressesWithActivity > 0 
+                        ? `Discovering Wallet - ${discoveryProgress.addressesWithActivity} Addresses Found`
+                        : 'Connecting Your Wallet'}
                     </DialogTitle>
                     <DialogDescription className="font-normal">
-                      Please wait while we analyze your Bitcoin wallet...
+                      {discoveryProgress 
+                        ? `${discoveryProgress.addressesChecked} addresses checked, ${discoveryProgress.addressesWithActivity} with activity`
+                        : 'Please wait while we analyze your Bitcoin wallet...'}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{loadingStage}</span>
-                        <span className="text-muted-foreground">{elapsedTime}s / ~{DISCOVERY_TIMEOUT_SECONDS}s</span>
+                    {discoveryProgress && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {discoveryProgress.isComplete 
+                              ? '✅ Discovery complete!' 
+                              : `🔍 Batch ${discoveryProgress.currentBatch} - scanning addresses...`}
+                          </span>
+                          <span className="text-primary font-mono font-semibold">
+                            {discoveryProgress.addressesWithActivity} found
+                          </span>
+                        </div>
+                        <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-primary to-primary/70 h-full transition-all duration-500 ease-out"
+                            style={{ 
+                              width: discoveryProgress.isComplete 
+                                ? '100%' 
+                                : `${Math.min((discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100, 95)}%` 
+                            }}
+                          />
+                        </div>
+                        {!discoveryProgress.isComplete && (
+                          <p className="text-xs text-muted-foreground text-center">
+                            Discovery continues until no more active addresses are found (BIP44 gap limit)
+                          </p>
+                        )}
                       </div>
-                      <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                        <div 
-                          className="bg-primary h-full transition-all duration-1000 ease-out"
-                          style={{ 
-                            width: `${Math.min(
-                              (elapsedTime / DISCOVERY_TIMEOUT_SECONDS) * 100,
-                              95
-                            )}%` 
-                          }}
-                        />
+                    )}
+                    {!discoveryProgress && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{loadingStage || 'Validating XPUB...'}</span>
+                          <span className="text-muted-foreground">{elapsedTime}s</span>
+                        </div>
+                        <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-primary h-full transition-all duration-1000 ease-out"
+                            style={{ 
+                              width: `${Math.min((elapsedTime / DISCOVERY_TIMEOUT_SECONDS) * 100, 95)}%` 
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="rounded-lg bg-muted p-3 text-xs space-y-1 text-muted-foreground">
                       <p className="flex items-center gap-2">
                         <ShieldCheck className="h-3 w-3 text-primary" />
-                        Discovering wallet addresses (typically 30-{DISCOVERY_TIMEOUT_SECONDS}s)
+                        {discoveryProgress 
+                          ? `Found ${discoveryProgress.addressesWithActivity} addresses with ${discoveryProgress.addressesChecked} checked`
+                          : 'Discovering wallet addresses (no timeout - continues until complete)'}
                       </p>
                       <p className="flex items-center gap-2">
                         <Activity className="h-3 w-3 text-primary" />
-                        Fetching transaction history from blockchain
+                        {discoveryProgress && discoveryProgress.addressesWithActivity > 0
+                          ? 'Transactions are being fetched in real-time'
+                          : 'Fetching transaction history from blockchain'}
                       </p>
                       <p className="flex items-center gap-2">
                         <BarChart3 className="h-3 w-3 text-primary" />
-                        Calculating security and performance metrics
+                        {discoveryProgress && discoveryProgress.addressesWithActivity > 0
+                          ? 'You can view your wallet while discovery continues!'
+                          : 'Calculating security and performance metrics'}
                       </p>
                     </div>
-                    {elapsedTime > 60 && elapsedTime <= DISCOVERY_TIMEOUT_SECONDS / 2 && (
-                      <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-xs text-blue-900 dark:text-blue-100">
-                        <p className="font-semibold mb-1">Processing continues...</p>
-                        <p>Address discovery in progress. This can take up to {DISCOVERY_TIMEOUT_MINUTES} minutes for wallets with many addresses.</p>
-                      </div>
-                    )}
-                    {elapsedTime > DISCOVERY_TIMEOUT_SECONDS / 2 && elapsedTime <= DISCOVERY_TIMEOUT_SECONDS * SECOND_WARNING_THRESHOLD && (
-                      <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-xs text-amber-900 dark:text-amber-100">
-                        <p className="font-semibold mb-1">Still discovering addresses...</p>
-                        <p>Your wallet has many addresses or the network is slower than usual. This is normal for wallets with extensive transaction history.</p>
-                      </div>
-                    )}
-                    {elapsedTime > DISCOVERY_TIMEOUT_SECONDS * FINAL_WARNING_THRESHOLD && (
-                      <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3 text-xs text-red-900 dark:text-red-100">
-                        <p className="font-semibold mb-1">Almost there...</p>
-                        <p>The operation will timeout at {DISCOVERY_TIMEOUT_SECONDS} seconds if it doesn't complete. If this happens, please check your internet connection and try again.</p>
+                    {discoveryProgress && discoveryProgress.addressesChecked > 40 && !discoveryProgress.isComplete && (
+                      <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 text-xs text-green-900 dark:text-green-100">
+                        <p className="font-semibold mb-1">🎉 Large wallet detected!</p>
+                        <p>Found {discoveryProgress.addressesWithActivity} addresses so far. Discovery will continue until no more active addresses are found (no timeout!).</p>
                       </div>
                     )}
                   </div>

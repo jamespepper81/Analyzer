@@ -676,3 +676,335 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
         return { data: null, error: message };
     }
 }
+
+/**
+ * Progressive wallet data fetching with real-time updates
+ * Returns partial wallet data as addresses are discovered
+ * Provides 100% wallet coverage with no timeout
+ */
+export interface PartialWalletData extends Omit<WalletData, 'transactions' | 'addresses'> {
+    transactions: Transaction[];
+    addresses: AddressInfo[];
+    discoveryProgress: DiscoveryProgress;
+    isComplete: boolean;
+}
+
+type ProgressCallback = (partialData: PartialWalletData) => void;
+
+export async function getWalletDataProgressive(
+    xpub: string, 
+    currency: Currency = 'USD',
+    onProgress?: ProgressCallback
+): Promise<{ data: WalletData | null; error: string | null; }> {
+    try {
+        // Check for cached snapshot - if available, show it immediately then update progressively
+        const cachedSnapshot = getCachedSnapshot(xpub);
+        
+        // Fetch fresh price data early (needed for all updates)
+        const btcPrices = await fetchJson('https://blockchain.info/ticker');
+        if (typeof btcPrices?.USD?.last !== 'number') {
+            return { data: null, error: 'Could not fetch critical BTC price data. The API may be down.' };
+        }
+
+        const currentPrice = btcPrices[currency]?.last || 0;
+        
+        // If we have cached data, show it first
+        if (cachedSnapshot && onProgress) {
+            const cachedWalletData = await assembleFinalWalletData(cachedSnapshot, btcPrices, currency);
+            if (cachedWalletData) {
+                const partialData: PartialWalletData = {
+                    ...cachedWalletData,
+                    discoveryProgress: {
+                        addressesChecked: cachedSnapshot.addresses.length,
+                        addressesWithActivity: cachedSnapshot.addresses.length,
+                        currentBatch: 0,
+                        isComplete: false,
+                    },
+                    isComplete: false,
+                };
+                onProgress(partialData);
+            }
+        }
+        
+        // Progressive address discovery with real-time updates
+        const discoveredAddresses: string[] = [];
+        const addressDataMap = new Map<string, { txs: any[]; utxos: any[]; info: any }>();
+        
+        const latestBlockHeight = await esploraGet(`/blocks/tip/height`, 60).catch(() => null);
+        
+        await discoverUsedAddressesProgressive(xpub, {
+            onAddressFound: async (address, txCount) => {
+                console.log(`[Progressive] Found address ${address} with ${txCount} transactions`);
+                discoveredAddresses.push(address);
+                
+                // Fetch data for this address immediately
+                try {
+                    const [txs, utxos, info] = await Promise.all([
+                        esploraGet(`/address/${address}/txs`).catch(() => []),
+                        esploraGet(`/address/${address}/utxo`).catch(() => []),
+                        esploraGet(`/address/${address}`).catch(() => null)
+                    ]);
+                    
+                    addressDataMap.set(address, { txs, utxos, info });
+                    
+                    // Build partial wallet data and notify
+                    if (onProgress) {
+                        const partialData = await buildPartialWalletData(
+                            xpub,
+                            Array.from(addressDataMap.entries()),
+                            btcPrices,
+                            currency,
+                            latestBlockHeight,
+                            {
+                                addressesChecked: discoveredAddresses.length,
+                                addressesWithActivity: discoveredAddresses.length,
+                                currentBatch: Math.ceil(discoveredAddresses.length / 20),
+                                isComplete: false,
+                            }
+                        );
+                        onProgress(partialData);
+                    }
+                } catch (err) {
+                    console.error(`[Progressive] Failed to fetch data for address ${address}:`, err);
+                }
+            },
+            onBatchComplete: (progress) => {
+                console.log(`[Progressive] Batch complete - checked: ${progress.addressesChecked}, found: ${progress.addressesWithActivity}`);
+            }
+        });
+        
+        // Discovery complete - build final wallet data
+        console.log(`[Progressive] Discovery complete - ${discoveredAddresses.length} addresses found`);
+        
+        if (discoveredAddresses.length === 0) {
+            return { data: null, error: 'This wallet has no transaction history yet. BitSleuth can only analyze wallets that have been used to send or receive Bitcoin.' };
+        }
+        
+        // Build final snapshot and cache it
+        const finalSnapshot = await buildSnapshotFromAddressData(
+            xpub,
+            Array.from(addressDataMap.entries()),
+            currency,
+            latestBlockHeight
+        );
+        
+        if (finalSnapshot) {
+            setCachedSnapshot(finalSnapshot);
+        }
+        
+        // Assemble final wallet data
+        const finalWalletData = await assembleFinalWalletData(finalSnapshot!, btcPrices, currency);
+        
+        // Send final update with isComplete = true
+        if (onProgress && finalWalletData) {
+            const finalPartialData: PartialWalletData = {
+                ...finalWalletData,
+                discoveryProgress: {
+                    addressesChecked: discoveredAddresses.length,
+                    addressesWithActivity: discoveredAddresses.length,
+                    currentBatch: Math.ceil(discoveredAddresses.length / 20),
+                    isComplete: true,
+                },
+                isComplete: true,
+            };
+            onProgress(finalPartialData);
+        }
+        
+        return { data: finalWalletData, error: null };
+        
+    } catch (error) {
+        console.error('[Progressive WalletData] Error:', error);
+        const message = error instanceof Error ? error.message : 'An unexpected error occurred while fetching wallet data.';
+        return { data: null, error: message };
+    }
+}
+
+// Helper function to build partial wallet data from discovered addresses
+async function buildPartialWalletData(
+    xpub: string,
+    addressData: Array<[string, { txs: any[]; utxos: any[]; info: any }]>,
+    btcPrices: any,
+    currency: Currency,
+    latestBlockHeight: number | null,
+    progress: DiscoveryProgress
+): Promise<PartialWalletData> {
+    const allTxs = new Map<string, any>();
+    const utxos: UTXO[] = [];
+    const addressInfos: AddressInfo[] = [];
+    const usedAddresses = addressData.map(([addr]) => addr);
+    
+    // Process address data
+    for (const [address, data] of addressData) {
+        if (Array.isArray(data.txs)) {
+            data.txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
+        }
+        if (Array.isArray(data.utxos)) {
+            data.utxos.forEach((utxo: any) => {
+                utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
+            });
+        }
+        if (data.info && data.info.chain_stats?.tx_count > 0) {
+            addressInfos.push({
+                address,
+                n_tx: data.info.chain_stats.tx_count,
+                balance: data.info.chain_stats.funded_txo_sum - data.info.chain_stats.spent_txo_sum,
+            });
+        }
+    }
+    
+    // Build transactions (simplified for performance)
+    const transactions: Transaction[] = Array.from(allTxs.values()).map((tx: any): Transaction => {
+        let netAmountSatoshis = 0;
+        const ourAddressesSet = new Set(usedAddresses);
+        
+        tx.vout.forEach((out: any) => {
+            if (out.scriptpubkey_address && ourAddressesSet.has(out.scriptpubkey_address)) {
+                netAmountSatoshis += out.value;
+            }
+        });
+        tx.vin.forEach((inp: any) => {
+            if (inp.prevout?.scriptpubkey_address && ourAddressesSet.has(inp.prevout.scriptpubkey_address)) {
+                netAmountSatoshis -= inp.prevout.value;
+            }
+        });
+        
+        const netBtc = netAmountSatoshis / 1e8;
+        const isConfirmed = tx.status.confirmed;
+        const confirmations = isConfirmed && latestBlockHeight ? latestBlockHeight - tx.status.block_height + 1 : 0;
+        const txDate = isConfirmed ? new Date(tx.status.block_time * 1000) : new Date();
+        
+        return {
+            id: tx.txid,
+            date: txDate.toISOString(),
+            btc: netBtc,
+            status: isConfirmed ? 'Confirmed' : 'Pending',
+            type: netBtc >= 0 ? 'Received' : 'Sent',
+            fromAddress: tx.vin?.map((i: any) => i.prevout?.scriptpubkey_address).filter(Boolean) ?? [],
+            toAddress: tx.vout?.map((o: any) => o.scriptpubkey_address).filter(Boolean) ?? [],
+            confirmations,
+            fee: tx.fee,
+            size: tx.size,
+            weight: tx.weight,
+            version: tx.version,
+            locktime: tx.locktime,
+            rbf: tx.vin.some((i: any) => i.sequence < 0xfffffffe),
+            blockHeight: tx.status.block_height ?? null,
+            inputs: tx.vin?.map((i: any) => ({ address: i.prevout?.scriptpubkey_address, value: i.prevout?.value })) || [],
+            outputs: tx.vout?.map((o: any) => ({ address: o.scriptpubkey_address, value: o.value, spent: false })) || [],
+            historicalPrice: 0,
+            totalValue: tx.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8,
+        };
+    });
+    
+    transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    const balanceBTC = utxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
+    const currentPrice = btcPrices[currency]?.last || 0;
+    
+    // Calculate security metrics
+    const reusedAddressCount = addressInfos.filter(addr => addr.n_tx > 1).length;
+    const reusePercentage = addressInfos.length > 0 ? (reusedAddressCount / addressInfos.length) * 100 : 0;
+    
+    return {
+        btcPrices,
+        btcPrice: currentPrice,
+        balanceBTC,
+        transactions,
+        utxos,
+        addresses: addressInfos,
+        usedAddressCount: addressInfos.length,
+        securityScore: Math.max(10, 100 - Math.floor(reusePercentage)),
+        opsecThreat: reusePercentage > 50 ? 'High' : reusePercentage > 0 ? 'Medium' : 'Low',
+        performance: {
+            change24h: 0,
+            change7d: 0,
+            change30d: 0,
+        },
+        inflowOutflow: {
+            inflowBTC: 0,
+            outflowBTC: 0,
+        },
+        dustUtxoCount: 0,
+        dustAmountBTC: 0,
+        averageFeeRate: 0,
+        discoveryProgress: progress,
+        isComplete: progress.isComplete,
+    };
+}
+
+// Helper function to build snapshot from address data
+async function buildSnapshotFromAddressData(
+    xpub: string,
+    addressData: Array<[string, { txs: any[]; utxos: any[]; info: any }]>,
+    currency: Currency,
+    latestBlockHeight: number | null
+): Promise<WalletSnapshot | null> {
+    const partialData = await buildPartialWalletData(
+        xpub,
+        addressData,
+        {},
+        currency,
+        latestBlockHeight,
+        { addressesChecked: addressData.length, addressesWithActivity: addressData.length, currentBatch: 0, isComplete: true }
+    );
+    
+    return {
+        xpub,
+        timestamp: Date.now(),
+        transactions: partialData.transactions,
+        utxos: partialData.utxos,
+        addresses: partialData.addresses,
+        usedAddressCount: partialData.usedAddressCount,
+        securityScore: partialData.securityScore,
+        opsecThreat: partialData.opsecThreat,
+        dustUtxoCount: partialData.dustUtxoCount,
+        dustAmountBTC: partialData.dustAmountBTC,
+        averageFeeRate: partialData.averageFeeRate,
+        inflowBTC: partialData.inflowOutflow.inflowBTC,
+        outflowBTC: partialData.inflowOutflow.outflowBTC,
+        balanceBTC: partialData.balanceBTC,
+    };
+}
+
+// Helper function to assemble final wallet data from snapshot
+async function assembleFinalWalletData(
+    snapshot: WalletSnapshot,
+    btcPrices: any,
+    currency: Currency
+): Promise<WalletData | null> {
+    const [priceHistory24h, priceHistory7d, priceHistory30d] = await Promise.all([
+        getHistoricalPriceRange(1, currency).catch(() => []),
+        getHistoricalPriceRange(7, currency).catch(() => []),
+        getHistoricalPriceRange(30, currency).catch(() => [])
+    ]);
+    
+    const price24h = priceHistory24h.length > 0 ? priceHistory24h[0][1] : 0;
+    const price7d = priceHistory7d.length > 0 ? priceHistory7d[0][1] : 0;
+    const price30d = priceHistory30d.length > 0 ? priceHistory30d[0][1] : 0;
+    const currentPrice = btcPrices[currency]?.last || 0;
+    
+    const fiatPriceForDust = btcPrices[currency]?.last || btcPrices.USD?.last || 0;
+    const dustUtxos = snapshot.utxos.filter(utxo => (utxo.value / 1e8) * fiatPriceForDust < 1.0);
+    const dustAmountBTC = dustUtxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
+    
+    return {
+        btcPrices,
+        btcPrice: currentPrice,
+        performance: {
+            change24h: price24h > 0 ? ((currentPrice - price24h) / price24h) * 100 : 0,
+            change7d: price7d > 0 ? ((currentPrice - price7d) / price7d) * 100 : 0,
+            change30d: price30d > 0 ? ((currentPrice - price30d) / price30d) * 100 : 0,
+        },
+        balanceBTC: snapshot.balanceBTC,
+        transactions: snapshot.transactions,
+        utxos: snapshot.utxos,
+        addresses: snapshot.addresses,
+        usedAddressCount: snapshot.usedAddressCount,
+        securityScore: snapshot.securityScore,
+        opsecThreat: snapshot.opsecThreat,
+        averageFeeRate: snapshot.averageFeeRate,
+        inflowOutflow: { inflowBTC: snapshot.inflowBTC, outflowBTC: snapshot.outflowBTC },
+        dustUtxoCount: dustUtxos.length,
+        dustAmountBTC,
+    };
+}
