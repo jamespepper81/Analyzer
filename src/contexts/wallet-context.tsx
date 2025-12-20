@@ -513,20 +513,31 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           // Validate cached data belongs to this XPUB
           if (parsed._cacheMetadata?.xpub === newXpub) {
             setData(parsed.data || parsed);
+            // Reset loading states since we have cached data
+            setIsLoading(false);
+            setIsDiscovering(false);
+            setDiscoveryProgress(null);
           } else {
             console.warn(`[WalletContext] Cache XPUB mismatch on switch, clearing`);
             localStorage.removeItem(`walletCache:${newXpub}`);
             setData(null);
+            // Will load via getWalletData, which sets loading states appropriately
           }
         } else {
           setData(null);
+          // No cached data - getWalletData will handle loading states
         }
       } catch {
         setData(null);
+        // Error loading cache - getWalletData will handle loading states
       }
     } else {
       localStorage.removeItem('activeXpub');
       setData(null);
+      // Reset all loading states when disconnecting
+      setIsLoading(false);
+      setIsDiscovering(false);
+      setDiscoveryProgress(null);
     }
     setRecommendations([]);
     setMessages([generateInitialGreetingMessage()]);
