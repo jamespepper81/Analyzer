@@ -225,11 +225,6 @@ async function performDiscoveryForTypesProgressive(
     return uniqueAddresses;
 }
 
-async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], discoveryStartTime: number): Promise<string[]> {
-    // Wrapper that calls progressive version without callbacks for backward compatibility
-    return performDiscoveryForTypesProgressive(node, activeTypes, discoveryStartTime);
-}
-
 /**
  * Progressive address discovery with real-time callbacks
  * This version supports streaming updates as addresses are discovered
