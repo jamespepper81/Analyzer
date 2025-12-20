@@ -586,7 +586,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       
       // Update wallet data with partial results
       // Convert PartialWalletData to WalletData by removing progressive fields
-      const { discoveryProgress: _, isComplete: __, ...walletData } = partialData;
+      const { discoveryProgress, isComplete, ...walletData } = partialData;
       setData(walletData as WalletData);
       
       // If complete, mark as no longer discovering
@@ -733,14 +733,70 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       logger.warn('[WalletContext] Cache read error in getWalletData', e);
     }
     
-    // If no cached data, show loading state
+    // If no cached data, show loading state and use progressive loading
     if (!hasCachedData) {
       setIsLoading(true);
+      setIsDiscovering(true);
+      setDiscoveryProgress(null);
     }
     
     setError(null);
     
-    // Fetch fresh data in the background (whether we have cache or not)
+    // Use progressive loading when no cache exists (like addXpub does)
+    // This prevents timeout errors when switching between wallets
+    if (!hasCachedData) {
+      console.log(`[WalletContext] Starting progressive discovery for wallet switch ${activeXpub.substring(0, 20)}...`);
+      
+      const result = await getWalletDataProgressive(activeXpub, currency, (partialData: PartialWalletData) => {
+        // Real-time UI updates as addresses are discovered!
+        console.log(`[WalletContext] Progressive update - ${partialData.discoveryProgress.addressesWithActivity} addresses, ${partialData.transactions.length} txs, ${partialData.balanceBTC} BTC`);
+        
+        // Update discovery progress
+        setDiscoveryProgress(partialData.discoveryProgress);
+        
+        // Update wallet data with partial results
+        // Convert PartialWalletData to WalletData by removing progressive fields
+        const { discoveryProgress, isComplete, ...walletData } = partialData;
+        setData(walletData as WalletData);
+        
+        // If complete, mark as no longer discovering
+        if (partialData.isComplete) {
+          setIsDiscovering(false);
+          setIsLoading(false);
+        }
+      });
+      
+      if (result.error) {
+        setError(result.error);
+        setIsDiscovering(false);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Final data is already set by the progress callback
+      if (result.data) {
+        try {
+          const cacheEntry = {
+            _cacheMetadata: {
+              xpub: activeXpub,
+              timestamp: Date.now(),
+            },
+            data: result.data,
+          };
+          localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(cacheEntry));
+        } catch (storageError) {
+          logger.warn('[WalletContext] Failed to cache wallet data on switch', storageError);
+        }
+      }
+      
+      // Mark discovery as complete
+      setIsDiscovering(false);
+      setIsLoading(false);
+      return;
+    }
+    
+    // If we have cached data, fetch fresh data in the background using standard method
+    // This is faster and avoids timeout since snapshot cache exists
     const response = await fetchWalletData(activeXpub, currency);
 
     if (response.error) {
