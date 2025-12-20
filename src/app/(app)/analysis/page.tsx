@@ -9,7 +9,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { IconContainer } from '@/components/ui/icon-container';
-import { PieChart, DollarSign, Activity, BarChart3 } from 'lucide-react';
+import { PieChart, DollarSign, Activity, BarChart3, Loader2 } from 'lucide-react';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -28,6 +28,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Scatter, Scatter
 import { useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
 import type { Currency } from '@/lib/types';
+import { Progress } from '@/components/ui/progress';
 
 const CustomFeeTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -65,7 +66,7 @@ const btcToSatsFormatter = (value: any) => {
 
 
 export default function AnalysisPage() {
-  const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency } = useWallet();
+  const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
 
   const balanceChartData = useMemo(() => {
     if (!data || !data.transactions || data.transactions.length === 0) {
@@ -186,9 +187,11 @@ export default function AnalysisPage() {
     return Object.values(feesByMonth).sort((a,b) => a.key.localeCompare(b.key));
   }, [data]);
 
+  const hasBlockingError = !!error && !data;
+
   if (!xpub) return <FullPageLoader />;
-  if (isLoading) return <FullPageLoader />;
-  if (error) return <ErrorDisplay message={error} />;
+  if (isLoading && !data) return <FullPageLoader />;
+  if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
     
   if (balanceChartData.length <= 2) { // only has start and end points
@@ -225,6 +228,32 @@ export default function AnalysisPage() {
 
 
   return (
+    <div className="flex flex-col gap-4 sm:gap-6">
+      {/* Progressive Discovery Status */}
+      {isDiscovering && discoveryProgress && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 shadow-md">
+          <div className="flex items-start gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  🔍 Discovering addresses... Charts updating with new data
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">
+                  {discoveryProgress.addressesWithActivity} addresses
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Progress value={(discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100} className="h-1.5" />
+                <span className="text-xs text-blue-700 dark:text-blue-300 whitespace-nowrap">
+                  {discoveryProgress.addressesChecked} checked
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
        <Card className="lg:col-span-2 border-2 shadow-md">
           <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
@@ -468,6 +497,7 @@ export default function AnalysisPage() {
                 </div>
             </CardContent>
         </Card>
+    </div>
     </div>
   );
 }
