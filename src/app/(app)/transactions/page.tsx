@@ -23,11 +23,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Transaction } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownLeft, Download, Building } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Download, Building, Loader2 } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transaction, fiatPrice: number, currency: string }) => {
   const isReceived = tx.type === 'Received';
@@ -116,13 +117,14 @@ TransactionRow.displayName = 'TransactionRow';
 const TRANSACTIONS_PER_PAGE = 20;
 
 export default function TransactionsPage() {
-  const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency } = useWallet();
+  const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
   const [visibleCount, setVisibleCount] = useState(TRANSACTIONS_PER_PAGE);
   const { toast } = useToast();
+  const hasBlockingError = !!error && !data;
 
   if (!xpub) return <FullPageLoader />;
-  if (isLoading) return <FullPageLoader />;
-  if (error) return <ErrorDisplay message={error} />;
+  if (isLoading && !data) return <FullPageLoader />;
+  if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
 
   const handleExportCSV = () => {
@@ -181,6 +183,32 @@ export default function TransactionsPage() {
   const transactionsToShow = data.transactions.slice(0, visibleCount);
 
   return (
+    <div className="flex flex-col gap-4 sm:gap-6">
+      {/* Progressive Discovery Status */}
+      {isDiscovering && discoveryProgress && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 shadow-md">
+          <div className="flex items-start gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  🔍 Discovering addresses... Transactions updating in real-time
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">
+                  {discoveryProgress.addressesWithActivity} addresses
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Progress value={(discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100} className="h-1.5" />
+                <span className="text-xs text-blue-700 dark:text-blue-300 whitespace-nowrap">
+                  {discoveryProgress.addressesChecked} checked
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     <Card className="border-2 shadow-md">
       <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
@@ -237,5 +265,6 @@ export default function TransactionsPage() {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

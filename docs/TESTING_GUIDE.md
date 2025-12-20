@@ -32,7 +32,7 @@ TEST_XPUB="xpub6..." npx tsx tests/test-xpub-performance.ts
 
 #### Option 2: Set Environment Variable
 ```bash
-export TEST_XPUB="xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz"
+export TEST_XPUB="[REDACTED_TEST_XPUB]"
 npx tsx tests/test-xpub-performance.ts
 ```
 

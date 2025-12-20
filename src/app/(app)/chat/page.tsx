@@ -130,7 +130,7 @@ export default function ChatPage() {
   const { track } = useAnalytics();
   const [isAiLoading, setAiLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { data: walletData, isLoading: isWalletLoading, error: walletError, activeXpub: xpub, messages, setMessages, suggestions: masterSuggestions } = useWallet();
+  const { data: walletData, isLoading: isWalletLoading, isLoadingAiContent, error: walletError, activeXpub: xpub, messages, setMessages, suggestions: masterSuggestions } = useWallet();
   
   const [placeholder, setPlaceholder] = useState(fallbackSuggestions[0]);
   const [displayedSuggestions, setDisplayedSuggestions] = useState<string[]>([]);
@@ -383,6 +383,17 @@ export default function ChatPage() {
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <div className="flex-1 overflow-y-auto px-2 sm:px-4" ref={scrollAreaRef} aria-live="polite">
         <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6 pt-4">
+          {/* AI Insights Loading Indicator */}
+          {isLoadingAiContent && (
+            <Alert className="shadow-md bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+              <CircleDashed className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
+              <AlertTitle className="text-blue-900 dark:text-blue-100">Generating AI insights...</AlertTitle>
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                Your wallet is loaded. AI is analyzing your transactions and will provide personalized insights momentarily.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Alert variant="warning" className="shadow-md">
             <AlertTriangle className="h-5 w-5" />
             <AlertTitle>Update - AI Chat Response Time</AlertTitle>

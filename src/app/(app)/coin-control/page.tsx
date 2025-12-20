@@ -232,10 +232,11 @@ export default function CoinControlPage() {
 
     }, [selectedUtxos, data?.utxos, recommendedFeeRate]);
 
+    const hasBlockingError = !!error && !data;
 
     if (!activeXpub) return <FullPageLoader />;
-    if (isLoading) return <FullPageLoader />;
-    if (error) return <ErrorDisplay message={error} />;
+    if (isLoading && !data) return <FullPageLoader />;
+    if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
     if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
 
     const { utxos } = data;

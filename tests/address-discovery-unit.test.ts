@@ -75,11 +75,12 @@ describe('Address Discovery Optimization', () => {
         expect(content).toContain('checking other types for xpub');
     });
     
-    it('INITIAL_CHECK_LIMIT is optimized to 3 for faster detection', () => {
+    it('INITIAL_CHECK_LIMIT is set to 5 for accurate type detection', () => {
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
-        // Verify the constant is reduced from 5 to 3
-        expect(content).toContain('Reduced from 5 to 3');
+        // Verify INITIAL_CHECK_LIMIT is 5 (provides better accuracy than 3)
+        expect(content).toMatch(/const\s+INITIAL_CHECK_LIMIT\s*=\s*5/);
+        expect(content).toContain('5 provides better accuracy');
     });
     
     it('Uses constants for maintainability (XPUB_LOG_PREFIX_LENGTH)', () => {

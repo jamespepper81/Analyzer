@@ -12,13 +12,14 @@ import {
     withInFlightDeduplication,
     type WalletSnapshot 
 } from './wallet-snapshot-cache';
+import { DISCOVERY_TIMEOUT_MS, DISCOVERY_TIMEOUT_MINUTES } from './constants';
 
 type AddressType = 'native' | 'legacy' | 'nested';
 
 // Performance-optimized address discovery constants
 // The discovery process is the main bottleneck during wallet login/connection
 const GAP_LIMIT = 20; // Standard gap limit for address discovery
-const INITIAL_CHECK_LIMIT = 3; // Reduced from 5 to 3 for faster type detection (40% fewer addresses checked)
+const INITIAL_CHECK_LIMIT = 5; // Number of addresses to check per type for detection (5 provides better accuracy than 3)
 const PARALLEL_BATCH_SIZE = 10; // How many addresses to check in parallel
 const ADDRESS_DISCOVERY_CACHE_TTL_MS = 10 * 60 * 1000; // Cache discovered addresses for 10 minutes
 const XPUB_LOG_PREFIX_LENGTH = 12; // How many characters of XPUB to show in logs (balance of readability vs privacy)
@@ -108,8 +109,28 @@ async function detectActiveTypes(node: any, typesToCheck: AddressType[]): Promis
     return { activeTypes, detectionTime };
 }
 
-async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], discoveryStartTime: number): Promise<string[]> {
+// Progressive discovery callback interface
+export interface DiscoveryProgress {
+    addressesChecked: number;
+    addressesWithActivity: number;
+    currentBatch: number;
+    isComplete: boolean;
+}
+
+export interface ProgressiveDiscoveryCallbacks {
+    onAddressFound?: (address: string, txCount: number) => void;
+    onBatchComplete?: (progress: DiscoveryProgress) => void;
+}
+
+async function performDiscoveryForTypesProgressive(
+    node: any, 
+    activeTypes: AddressType[], 
+    discoveryStartTime: number,
+    callbacks?: ProgressiveDiscoveryCallbacks
+): Promise<string[]> {
     const discoveredAddresses: string[] = [];
+    let totalAddressesChecked = 0;
+    let currentBatchNumber = 0;
 
     for (const type of activeTypes) {
         for (const chain of [0, 1]) { // 0 for external, 1 for internal
@@ -118,6 +139,7 @@ async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], d
 
             while (gap < GAP_LIMIT) {
                 const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT, type);
+                currentBatchNumber++;
 
                 const chunkSize = PARALLEL_BATCH_SIZE;
                 const addressStats: any[] = new Array(batch.length);
@@ -145,6 +167,8 @@ async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], d
                 let foundInBatch = false;
                 for (let i = 0; i < addressStats.length; i++) {
                     const stats = addressStats[i];
+                    totalAddressesChecked++;
+                    
                     // Combine chain + mempool transaction counts for complete coverage
                     // This ensures pending transactions are included in address discovery
                     const totalTxCount = stats 
@@ -155,9 +179,24 @@ async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], d
                         discoveredAddresses.push(batch[i]);
                         gap = 0;
                         foundInBatch = true;
+                        
+                        // Notify callback about found address
+                        if (callbacks?.onAddressFound) {
+                            callbacks.onAddressFound(batch[i], totalTxCount);
+                        }
                     } else {
                         gap++;
                     }
+                }
+
+                // Notify callback about batch completion
+                if (callbacks?.onBatchComplete) {
+                    callbacks.onBatchComplete({
+                        addressesChecked: totalAddressesChecked,
+                        addressesWithActivity: discoveredAddresses.length,
+                        currentBatch: currentBatchNumber,
+                        isComplete: false,
+                    });
                 }
 
                 if (!foundInBatch) {
@@ -173,11 +212,118 @@ async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], d
     const uniqueAddresses = [...new Set(discoveredAddresses)];
     console.log(`[Discovery] Found ${uniqueAddresses.length} used addresses in ${totalDiscoveryTime}ms (${(totalDiscoveryTime/1000).toFixed(2)}s)`);
 
+    // Final callback with completion status
+    if (callbacks?.onBatchComplete) {
+        callbacks.onBatchComplete({
+            addressesChecked: totalAddressesChecked,
+            addressesWithActivity: uniqueAddresses.length,
+            currentBatch: currentBatchNumber,
+            isComplete: true,
+        });
+    }
+
     return uniqueAddresses;
 }
 
 /**
+ * Progressive address discovery with real-time callbacks
+ * This version supports streaming updates as addresses are discovered
+ * No timeout - continues until gap limit is reached (100% coverage)
+ */
+export async function discoverUsedAddressesProgressive(
+    xpub: string,
+    callbacks?: ProgressiveDiscoveryCallbacks
+): Promise<string[]> {
+    const discoveryStartTime = Date.now();
+    
+    // Validate XPUB format early to catch invalid inputs
+    let node;
+    try {
+        node = bip32.fromBase58(xpub, bitcoin.networks.bitcoin);
+    } catch (e) {
+        throw new Error('Invalid XPUB format. Please check that you entered the correct extended public key.');
+    }
+    
+    const inferenceResult = inferAddressTypesFromXpub(xpub);
+
+    // Quick provider readiness check (with fallback & retry under the hood)
+    try {
+        await esploraGet(`/blocks/tip/height`, 60);
+    } catch (e) {
+        throw new Error('Upstream data provider is temporarily unavailable. Please try again in a moment.');
+    }
+
+    let activeTypes: AddressType[] = [];
+
+    if (inferenceResult) {
+        // Strategy: Try primary type first (fast path for 95% of wallets)
+        console.log(`[Progressive Discovery] XPUB prefix indicates primary type: ${inferenceResult.primaryType}`);
+        
+        // First, try just the primary inferred type
+        activeTypes = [inferenceResult.primaryType];
+        const primaryDiscoveredAddresses = await performDiscoveryForTypesProgressive(
+            node, 
+            activeTypes, 
+            discoveryStartTime,
+            callbacks
+        );
+        
+        // If we found addresses, we're done! (Fast path - single type scan)
+        if (primaryDiscoveredAddresses.length > 0) {
+            console.log(`[Progressive Discovery] Found ${primaryDiscoveredAddresses.length} addresses using inferred type ${inferenceResult.primaryType} (fast path)`);
+            return primaryDiscoveredAddresses;
+        }
+        
+        // If no addresses found AND this prefix might use other types
+        if (inferenceResult.shouldCheckOthers) {
+            console.log(`[Progressive Discovery] No addresses found for ${inferenceResult.primaryType}, checking other types for xpub...`);
+            const typeDetection = await detectActiveTypes(node, inferenceResult.otherTypes);
+            
+            if (typeDetection.activeTypes.length > 0) {
+                activeTypes = typeDetection.activeTypes;
+                console.log(`[Progressive Discovery] Detected additional active types: ${activeTypes.join(', ')}`);
+                const fallbackDiscoveredAddresses = await performDiscoveryForTypesProgressive(
+                    node, 
+                    activeTypes, 
+                    discoveryStartTime,
+                    callbacks
+                );
+                return fallbackDiscoveredAddresses;
+            }
+        }
+        
+        // If we still found nothing, return empty (this is likely an unused wallet)
+        console.log(`[Progressive Discovery] No addresses found for ${xpub.substring(0, XPUB_LOG_PREFIX_LENGTH)}... (empty wallet)`);
+        return [];
+        
+    } else {
+        // Unknown XPUB prefix - check all types (rare case for non-standard XPUBs)
+        console.log(`[Progressive Discovery] Unknown XPUB prefix, checking all address types...`);
+        const typeDetection = await detectActiveTypes(node, ALL_ADDRESS_TYPES);
+        activeTypes = typeDetection.activeTypes;
+        console.log(`[Progressive Discovery] Detected active wallet types: ${activeTypes.join(', ')}`);
+        
+        if (activeTypes.length === 0) {
+            activeTypes = ['native']; // Default fallback
+        }
+        
+        const unknownPrefixDiscoveredAddresses = await performDiscoveryForTypesProgressive(
+            node,
+            activeTypes, 
+            discoveryStartTime,
+            callbacks
+        );
+        return unknownPrefixDiscoveredAddresses;
+    }
+}
+
+/**
  * Optimized address discovery with smart type inference and progressive fallback
+ * 
+ * BACKWARD COMPATIBILITY WRAPPER
+ * This function wraps the progressive version to maintain compatibility with existing code.
+ * Once all callsites are migrated to use discoverUsedAddressesProgressive directly,
+ * this wrapper can be removed.
  * 
  * PERFORMANCE OPTIMIZATION STRATEGY:
  * ==================================
@@ -201,69 +347,8 @@ async function performDiscoveryForTypes(node: any, activeTypes: AddressType[], d
  * - Unknown prefix: Full type detection (rare case)
  */
 async function discoverUsedAddresses(xpub: string): Promise<string[]> {
-    const discoveryStartTime = Date.now();
-    const node = bip32.fromBase58(xpub, bitcoin.networks.bitcoin);
-    const inferenceResult = inferAddressTypesFromXpub(xpub);
-
-    // Quick provider readiness check (with fallback & retry under the hood)
-    try {
-        await esploraGet(`/blocks/tip/height`, 60);
-    } catch (e) {
-        throw new Error('Upstream data provider is temporarily unavailable. Please try again in a moment.');
-    }
-
-    let activeTypes: AddressType[] = [];
-    let typeDetectionTime = 0;
-
-    if (inferenceResult) {
-        // Strategy: Try primary type first (fast path for 95% of wallets)
-        console.log(`[Discovery] XPUB prefix indicates primary type: ${inferenceResult.primaryType}`);
-        
-        // First, try just the primary inferred type
-        activeTypes = [inferenceResult.primaryType];
-        const primaryDiscoveredAddresses = await performDiscoveryForTypes(node, activeTypes, discoveryStartTime);
-        
-        // If we found addresses, we're done! (Fast path - single type scan)
-        if (primaryDiscoveredAddresses.length > 0) {
-            console.log(`[Discovery] Found ${primaryDiscoveredAddresses.length} addresses using inferred type ${inferenceResult.primaryType} (fast path)`);
-            return primaryDiscoveredAddresses;
-        }
-        
-        // If no addresses found AND this prefix might use other types (e.g., xpub can use all types)
-        // then check other types, but only if the XPUB type is ambiguous
-        if (inferenceResult.shouldCheckOthers) {
-            console.log(`[Discovery] No addresses found for ${inferenceResult.primaryType}, checking other types for xpub...`);
-            // Use precomputed otherTypes array to avoid repeated filter operations
-            const typeDetection = await detectActiveTypes(node, inferenceResult.otherTypes);
-            
-            if (typeDetection.activeTypes.length > 0) {
-                activeTypes = typeDetection.activeTypes;
-                typeDetectionTime = typeDetection.detectionTime;
-                console.log(`[Discovery] Detected additional active types: ${activeTypes.join(', ')} in ${typeDetectionTime}ms`);
-                const fallbackDiscoveredAddresses = await performDiscoveryForTypes(node, activeTypes, discoveryStartTime);
-                return fallbackDiscoveredAddresses;
-            }
-        }
-        
-        // If we still found nothing, return empty (this is likely an unused wallet)
-        console.log(`[Discovery] No addresses found for ${xpub.substring(0, XPUB_LOG_PREFIX_LENGTH)}... (empty wallet)`);
-        return [];
-        
-    } else {
-        // Unknown XPUB prefix - check all types (rare case for non-standard XPUBs)
-        console.log(`[Discovery] Unknown XPUB prefix, checking all address types...`);
-        const typeDetection = await detectActiveTypes(node, ALL_ADDRESS_TYPES);
-        activeTypes = typeDetection.activeTypes;
-        typeDetectionTime = typeDetection.detectionTime;
-        console.log(`[Discovery] Detected active wallet types: ${activeTypes.join(', ')} in ${typeDetectionTime}ms`);
-        
-        if (activeTypes.length === 0) {
-            activeTypes = ['native']; // Default fallback
-        }
-        
-        const unknownPrefixDiscoveredAddresses = await performDiscoveryForTypes(node, activeTypes, discoveryStartTime);
-        return unknownPrefixDiscoveredAddresses;
-    }
+    // Use progressive version without callbacks for backward compatibility
+    return discoverUsedAddressesProgressive(xpub);
 }
 
 async function getCachedUsedAddresses(xpub: string): Promise<string[]> {
@@ -279,13 +364,28 @@ async function getCachedUsedAddresses(xpub: string): Promise<string[]> {
         return inFlight;
     }
 
-    const discoveryPromise = discoverUsedAddresses(xpub)
+    // Wrap discovery with a 4-minute timeout to prevent indefinite hangs
+    // Extended from 2 to 4 minutes to accommodate wallets with many addresses
+    
+    let timeoutId: NodeJS.Timeout | undefined;
+    const discoveryPromise = Promise.race([
+        discoverUsedAddresses(xpub),
+        new Promise<string[]>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error(`Address discovery timed out after ${DISCOVERY_TIMEOUT_MINUTES} minutes. This wallet has many addresses or the network is slow. Please check your internet connection and try again.`)), DISCOVERY_TIMEOUT_MS);
+        })
+    ])
         .then(addresses => {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId); // Clean up timeout to prevent memory leak
+            }
             addressDiscoveryCache.set(xpub, { addresses, timestamp: Date.now() });
             addressDiscoveryPromises.delete(xpub);
             return addresses;
         })
         .catch(error => {
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId); // Clean up timeout to prevent memory leak
+            }
             addressDiscoveryPromises.delete(xpub);
             throw error;
         });
@@ -501,7 +601,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
             snapshot = await withInFlightDeduplication(xpub, () => fetchWalletSnapshot(xpub, currency));
             
             if (!snapshot) {
-                return { data: null, error: 'This xpub key has no transaction history and cannot be analyzed. Address discovery failed.' };
+                return { data: null, error: 'This wallet has no transaction history yet. BitSleuth can only analyze wallets that have been used to send or receive Bitcoin.' };
             }
             
             // Cache the snapshot for 5 minutes
@@ -570,4 +670,335 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
         const message = error instanceof Error ? error.message : 'An unexpected error occurred while fetching wallet data.';
         return { data: null, error: message };
     }
+}
+
+/**
+ * Progressive wallet data fetching with real-time updates
+ * Returns partial wallet data as addresses are discovered
+ * Provides 100% wallet coverage with no timeout
+ */
+export interface PartialWalletData extends Omit<WalletData, 'transactions' | 'addresses'> {
+    transactions: Transaction[];
+    addresses: AddressInfo[];
+    discoveryProgress: DiscoveryProgress;
+    isComplete: boolean;
+}
+
+type ProgressCallback = (partialData: PartialWalletData) => void;
+
+export async function getWalletDataProgressive(
+    xpub: string, 
+    currency: Currency = 'USD',
+    onProgress?: ProgressCallback
+): Promise<{ data: WalletData | null; error: string | null; }> {
+    try {
+        // Check for cached snapshot - if available, show it immediately then update progressively
+        const cachedSnapshot = getCachedSnapshot(xpub);
+        
+        // Fetch fresh price data early (needed for all updates)
+        const btcPrices = await fetchJson('https://blockchain.info/ticker');
+        if (typeof btcPrices?.USD?.last !== 'number') {
+            return { data: null, error: 'Could not fetch critical BTC price data. The API may be down.' };
+        }
+
+        
+        // If we have cached data, show it first
+        if (cachedSnapshot && onProgress) {
+            const cachedWalletData = await assembleFinalWalletData(cachedSnapshot, btcPrices, currency);
+            if (cachedWalletData) {
+                const partialData: PartialWalletData = {
+                    ...cachedWalletData,
+                    discoveryProgress: {
+                        addressesChecked: cachedSnapshot.addresses.length,
+                        addressesWithActivity: cachedSnapshot.addresses.length,
+                        currentBatch: 0,
+                        isComplete: false,
+                    },
+                    isComplete: false,
+                };
+                onProgress(partialData);
+            }
+        }
+        
+        // Progressive address discovery with real-time updates
+        const discoveredAddresses: string[] = [];
+        const addressDataMap = new Map<string, { txs: any[]; utxos: any[]; info: any }>();
+        
+        const latestBlockHeight = await esploraGet(`/blocks/tip/height`, 60).catch(() => null);
+        
+        await discoverUsedAddressesProgressive(xpub, {
+            onAddressFound: async (address, txCount) => {
+                console.log(`[Progressive] Found address ${address} with ${txCount} transactions`);
+                discoveredAddresses.push(address);
+                
+                // Fetch data for this address immediately
+                try {
+                    const [txs, utxos, info] = await Promise.all([
+                        esploraGet(`/address/${address}/txs`).catch(() => []),
+                        esploraGet(`/address/${address}/utxo`).catch(() => []),
+                        esploraGet(`/address/${address}`).catch(() => null)
+                    ]);
+                    
+                    addressDataMap.set(address, { txs, utxos, info });
+                    
+                    // Build partial wallet data and notify
+                    if (onProgress) {
+                        const partialData = await buildPartialWalletData(
+                            xpub,
+                            Array.from(addressDataMap.entries()),
+                            btcPrices,
+                            currency,
+                            latestBlockHeight,
+                            {
+                                addressesChecked: discoveredAddresses.length,
+                                addressesWithActivity: discoveredAddresses.length,
+                                currentBatch: Math.ceil(discoveredAddresses.length / 20),
+                                isComplete: false,
+                            }
+                        );
+                        onProgress(partialData);
+                    }
+                } catch (err) {
+                    console.error(`[Progressive] Failed to fetch data for address ${address}:`, err);
+                }
+            },
+            onBatchComplete: (progress) => {
+                console.log(`[Progressive] Batch complete - checked: ${progress.addressesChecked}, found: ${progress.addressesWithActivity}`);
+            }
+        });
+        
+        // Discovery complete - build final wallet data
+        console.log(`[Progressive] Discovery complete - ${discoveredAddresses.length} addresses found`);
+        
+        if (discoveredAddresses.length === 0) {
+            return { data: null, error: 'This wallet has no transaction history yet. BitSleuth can only analyze wallets that have been used to send or receive Bitcoin.' };
+        }
+        
+        // Build final snapshot and cache it
+        const finalSnapshot = await buildSnapshotFromAddressData(
+            xpub,
+            Array.from(addressDataMap.entries()),
+            currency,
+            latestBlockHeight
+        );
+        
+        if (finalSnapshot) {
+            setCachedSnapshot(finalSnapshot);
+        }
+        
+        // Assemble final wallet data
+        const finalWalletData = await assembleFinalWalletData(finalSnapshot!, btcPrices, currency);
+        
+        // Send final update with isComplete = true
+        if (onProgress && finalWalletData) {
+            const finalPartialData: PartialWalletData = {
+                ...finalWalletData,
+                discoveryProgress: {
+                    addressesChecked: discoveredAddresses.length,
+                    addressesWithActivity: discoveredAddresses.length,
+                    currentBatch: Math.ceil(discoveredAddresses.length / 20),
+                    isComplete: true,
+                },
+                isComplete: true,
+            };
+            onProgress(finalPartialData);
+        }
+        
+        return { data: finalWalletData, error: null };
+        
+    } catch (error) {
+        console.error('[Progressive WalletData] Error:', error);
+        const message = error instanceof Error ? error.message : 'An unexpected error occurred while fetching wallet data.';
+        return { data: null, error: message };
+    }
+}
+
+// Helper function to build partial wallet data from discovered addresses
+async function buildPartialWalletData(
+    xpub: string,
+    addressData: Array<[string, { txs: any[]; utxos: any[]; info: any }]>,
+    btcPrices: any,
+    currency: Currency,
+    latestBlockHeight: number | null,
+    progress: DiscoveryProgress
+): Promise<PartialWalletData> {
+    const allTxs = new Map<string, any>();
+    const utxos: UTXO[] = [];
+    const addressInfos: AddressInfo[] = [];
+    const usedAddresses = addressData.map(([addr]) => addr);
+    
+    // Process address data
+    for (const [address, data] of addressData) {
+        if (Array.isArray(data.txs)) {
+            data.txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
+        }
+        if (Array.isArray(data.utxos)) {
+            data.utxos.forEach((utxo: any) => {
+                utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
+            });
+        }
+        if (data.info && data.info.chain_stats?.tx_count > 0) {
+            addressInfos.push({
+                address,
+                n_tx: data.info.chain_stats.tx_count,
+                balance: data.info.chain_stats.funded_txo_sum - data.info.chain_stats.spent_txo_sum,
+            });
+        }
+    }
+    
+    // Build transactions (simplified for performance)
+    const transactions: Transaction[] = Array.from(allTxs.values()).map((tx: any): Transaction => {
+        let netAmountSatoshis = 0;
+        const ourAddressesSet = new Set(usedAddresses);
+        
+        tx.vout.forEach((out: any) => {
+            if (out.scriptpubkey_address && ourAddressesSet.has(out.scriptpubkey_address)) {
+                netAmountSatoshis += out.value;
+            }
+        });
+        tx.vin.forEach((inp: any) => {
+            if (inp.prevout?.scriptpubkey_address && ourAddressesSet.has(inp.prevout.scriptpubkey_address)) {
+                netAmountSatoshis -= inp.prevout.value;
+            }
+        });
+        
+        const netBtc = netAmountSatoshis / 1e8;
+        const isConfirmed = tx.status.confirmed;
+        const confirmations = isConfirmed && latestBlockHeight ? latestBlockHeight - tx.status.block_height + 1 : 0;
+        const txDate = isConfirmed ? new Date(tx.status.block_time * 1000) : new Date();
+        
+        return {
+            id: tx.txid,
+            date: txDate.toISOString(),
+            btc: netBtc,
+            status: isConfirmed ? 'Confirmed' : 'Pending',
+            type: netBtc >= 0 ? 'Received' : 'Sent',
+            fromAddress: tx.vin?.map((i: any) => i.prevout?.scriptpubkey_address).filter(Boolean) ?? [],
+            toAddress: tx.vout?.map((o: any) => o.scriptpubkey_address).filter(Boolean) ?? [],
+            confirmations,
+            fee: tx.fee,
+            size: tx.size,
+            weight: tx.weight,
+            version: tx.version,
+            locktime: tx.locktime,
+            rbf: tx.vin.some((i: any) => i.sequence < 0xfffffffe),
+            blockHeight: tx.status.block_height ?? null,
+            inputs: tx.vin?.map((i: any) => ({ address: i.prevout?.scriptpubkey_address, value: i.prevout?.value })) || [],
+            outputs: tx.vout?.map((o: any) => ({ address: o.scriptpubkey_address, value: o.value, spent: false })) || [],
+            historicalPrice: 0,
+            totalValue: tx.vout?.reduce((sum: number, o: any) => sum + o.value, 0) / 1e8,
+        };
+    });
+    
+    transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    const balanceBTC = utxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
+    const currentPrice = btcPrices[currency]?.last || 0;
+    
+    // Calculate security metrics
+    const reusedAddressCount = addressInfos.filter(addr => addr.n_tx > 1).length;
+    const reusePercentage = addressInfos.length > 0 ? (reusedAddressCount / addressInfos.length) * 100 : 0;
+    
+    return {
+        btcPrices,
+        btcPrice: currentPrice,
+        balanceBTC,
+        transactions,
+        utxos,
+        addresses: addressInfos,
+        usedAddressCount: addressInfos.length,
+        securityScore: Math.max(10, 100 - Math.floor(reusePercentage)),
+        opsecThreat: reusePercentage > 50 ? 'High' : reusePercentage > 0 ? 'Medium' : 'Low',
+        performance: {
+            change24h: 0,
+            change7d: 0,
+            change30d: 0,
+        },
+        inflowOutflow: {
+            inflowBTC: 0,
+            outflowBTC: 0,
+        },
+        dustUtxoCount: 0,
+        dustAmountBTC: 0,
+        averageFeeRate: 0,
+        discoveryProgress: progress,
+        isComplete: progress.isComplete,
+    };
+}
+
+// Helper function to build snapshot from address data
+async function buildSnapshotFromAddressData(
+    xpub: string,
+    addressData: Array<[string, { txs: any[]; utxos: any[]; info: any }]>,
+    currency: Currency,
+    latestBlockHeight: number | null
+): Promise<WalletSnapshot | null> {
+    const partialData = await buildPartialWalletData(
+        xpub,
+        addressData,
+        {},
+        currency,
+        latestBlockHeight,
+        { addressesChecked: addressData.length, addressesWithActivity: addressData.length, currentBatch: 0, isComplete: true }
+    );
+    
+    return {
+        xpub,
+        timestamp: Date.now(),
+        transactions: partialData.transactions,
+        utxos: partialData.utxos,
+        addresses: partialData.addresses,
+        usedAddressCount: partialData.usedAddressCount,
+        securityScore: partialData.securityScore,
+        opsecThreat: partialData.opsecThreat,
+        dustUtxoCount: partialData.dustUtxoCount,
+        dustAmountBTC: partialData.dustAmountBTC,
+        averageFeeRate: partialData.averageFeeRate,
+        inflowBTC: partialData.inflowOutflow.inflowBTC,
+        outflowBTC: partialData.inflowOutflow.outflowBTC,
+        balanceBTC: partialData.balanceBTC,
+    };
+}
+
+// Helper function to assemble final wallet data from snapshot
+async function assembleFinalWalletData(
+    snapshot: WalletSnapshot,
+    btcPrices: any,
+    currency: Currency
+): Promise<WalletData | null> {
+    const [priceHistory24h, priceHistory7d, priceHistory30d] = await Promise.all([
+        getHistoricalPriceRange(1, currency).catch(() => []),
+        getHistoricalPriceRange(7, currency).catch(() => []),
+        getHistoricalPriceRange(30, currency).catch(() => [])
+    ]);
+    
+    const price24h = priceHistory24h.length > 0 ? priceHistory24h[0][1] : 0;
+    const price7d = priceHistory7d.length > 0 ? priceHistory7d[0][1] : 0;
+    const price30d = priceHistory30d.length > 0 ? priceHistory30d[0][1] : 0;
+    const currentPrice = btcPrices[currency]?.last || 0;
+    
+    const fiatPriceForDust = btcPrices[currency]?.last || btcPrices.USD?.last || 0;
+    const dustUtxos = snapshot.utxos.filter(utxo => (utxo.value / 1e8) * fiatPriceForDust < 1.0);
+    const dustAmountBTC = dustUtxos.reduce((sum, utxo) => sum + utxo.value, 0) / 1e8;
+    
+    return {
+        btcPrices,
+        btcPrice: currentPrice,
+        performance: {
+            change24h: price24h > 0 ? ((currentPrice - price24h) / price24h) * 100 : 0,
+            change7d: price7d > 0 ? ((currentPrice - price7d) / price7d) * 100 : 0,
+            change30d: price30d > 0 ? ((currentPrice - price30d) / price30d) * 100 : 0,
+        },
+        balanceBTC: snapshot.balanceBTC,
+        transactions: snapshot.transactions,
+        utxos: snapshot.utxos,
+        addresses: snapshot.addresses,
+        usedAddressCount: snapshot.usedAddressCount,
+        securityScore: snapshot.securityScore,
+        opsecThreat: snapshot.opsecThreat,
+        averageFeeRate: snapshot.averageFeeRate,
+        inflowOutflow: { inflowBTC: snapshot.inflowBTC, outflowBTC: snapshot.outflowBTC },
+        dustUtxoCount: dustUtxos.length,
+        dustAmountBTC,
+    };
 }
