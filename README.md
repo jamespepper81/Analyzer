@@ -167,6 +167,12 @@ See [docs/MCP_SETUP.md](docs/MCP_SETUP.md) for configuration details and usage g
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to BitSleuth, including documentation standards and file organization.
 
+### Documentation Guidelines
+
+**All markdown documentation files must be stored in the `docs/` folder.**
+
+Exceptions: `README.md`, `LICENSE`, `CONTRIBUTING.md`, `AGENTS.md`, and files in `.github/`.
+
 ---
 
 ## License

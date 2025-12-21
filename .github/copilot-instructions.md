@@ -34,6 +34,7 @@ BitSleuth is an AI-powered Bitcoin wallet insights app built with Next.js 15 (Ap
 - **Tailwind CSS for styling**; custom themes via context.
 - **Component-first UI**; prefer shadcn/ui patterns for new components.
 - **Environment variables**: All sensitive keys in `.env.local` or `.env`.
+- **Documentation**: All markdown documentation files must be stored in the `docs/` folder (exceptions: `README.md`, `LICENSE`, `CONTRIBUTING.md`, `AGENTS.md`, and files in `.github/`).
 
 ## Examples
 - To add a new AI flow: create a file in `src/ai/flows/`, register in `src/ai/dev.ts`.
