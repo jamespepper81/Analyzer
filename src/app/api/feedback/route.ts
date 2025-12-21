@@ -13,6 +13,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { feedback, userContext } = body;
 
+    const SANITIZE_PREFIX_PATTERN = /^[=+\-@]/;
+    const sanitizeForSheets = (value?: string, fallback = 'N/A'): string => {
+      if (!value) return fallback;
+      const normalized = value.toString().trim();
+      return SANITIZE_PREFIX_PATTERN.test(normalized)
+        ? `'${normalized}`
+        : normalized;
+    };
+
     if (!feedback || typeof feedback !== 'string') {
       return NextResponse.json(
         { error: 'Missing feedback message' },
@@ -71,9 +80,9 @@ export async function POST(request: NextRequest) {
     // Prepare row data
     const newRow = [
       new Date().toISOString(),
-      ipAddress || 'N/A',
-      feedback,
-      userContext || 'Not provided',
+      sanitizeForSheets(ipAddress),
+      sanitizeForSheets(feedback, 'Feedback missing'),
+      sanitizeForSheets(userContext, 'Not provided'),
     ];
 
     // Append to sheet
