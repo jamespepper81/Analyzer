@@ -8,6 +8,16 @@ export type FeedbackRecord = {
   ipAddress?: string;
 };
 
+const SANITIZE_PREFIX_PATTERN = /^[=+\-@]/;
+
+const sanitizeForSheets = (value?: string, fallback = 'N/A'): string => {
+  if (!value) return fallback;
+  const normalized = value.toString().trim();
+  return SANITIZE_PREFIX_PATTERN.test(normalized)
+    ? `'${normalized}`
+    : normalized;
+};
+
 /**
  * Appends a new row of raw feedback data to the configured Google Sheet.
  * This function requires GOOGLE_SHEETS_ID_FEEDBACK (or GOOGLE_SHEETS_ID), GOOGLE_SHEETS_CLIENT_EMAIL, and
@@ -82,9 +92,9 @@ export async function appendToSheet(feedbackData: FeedbackRecord): Promise<void>
     // Column order: Timestamp, IP Address, Feedback, User Context
     const newRow = [
       new Date().toISOString(),
-      ipAddress || 'N/A',
-      feedback,
-      userContext || 'Not provided',
+      sanitizeForSheets(ipAddress),
+      sanitizeForSheets(feedback, 'Feedback missing'),
+      sanitizeForSheets(userContext, 'Not provided'),
     ];
 
     const response = await sheets.spreadsheets.values.append({
