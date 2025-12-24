@@ -586,7 +586,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setShowSaveXpubsPrompt(true);
     }
 
-    let connectMethod: string = 'xpub';
+    let connectMethod: string;
     try {
       connectMethod = localStorage.getItem(`walletCache:${newXpub}`) ? 'xpub_cached' : 'xpub_progressive';
     } catch {
