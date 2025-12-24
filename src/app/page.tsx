@@ -80,16 +80,19 @@ export default function ConnectWalletPage() {
 
   // If a wallet is already connected, redirect to the dashboard.
   useEffect(() => {
-    if (!isWalletLoading && activeXpub) {
+    if (activeXpub) {
       router.push('/dashboard');
     }
-  }, [activeXpub, isWalletLoading, router]);
+  }, [activeXpub, router]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     setError(null);
     setElapsedTime(0);
     setLoadingStage('Validating XPUB format...');
+
+    let isActive = true;
+    const stageTimeouts: Array<ReturnType<typeof setTimeout>> = [];
 
     // Start timer for elapsed time tracking
     const startTime = Date.now();
@@ -99,29 +102,29 @@ export default function ConnectWalletPage() {
 
     try {
       // Update stage after initial validation
-      setTimeout(() => {
-        if (isSubmitting) {
+      stageTimeouts.push(setTimeout(() => {
+        if (isActive) {
           setLoadingStage('Discovering wallet addresses...');
         }
-      }, 2000);
+      }, 2000));
 
-      setTimeout(() => {
-        if (isSubmitting) {
+      stageTimeouts.push(setTimeout(() => {
+        if (isActive) {
           setLoadingStage('Fetching transaction history...');
         }
-      }, 15000);
+      }, 15000));
 
-      setTimeout(() => {
-        if (isSubmitting) {
+      stageTimeouts.push(setTimeout(() => {
+        if (isActive) {
           setLoadingStage('Processing transactions and UTXOs...');
         }
-      }, 35000);
+      }, 35000));
 
-      setTimeout(() => {
-        if (isSubmitting) {
+      stageTimeouts.push(setTimeout(() => {
+        if (isActive) {
           setLoadingStage('Finalizing wallet analysis...');
         }
-      }, STAGE_TRANSITION_TIMEOUT_MS);
+      }, STAGE_TRANSITION_TIMEOUT_MS));
 
       const result = await addXpub(values.xpub);
 
@@ -140,6 +143,8 @@ export default function ConnectWalletPage() {
       // Handle any unexpected errors that might occur
       setError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.');
     } finally {
+      isActive = false;
+      stageTimeouts.forEach(clearTimeout);
       clearInterval(timerInterval);
       setIsSubmitting(false);
       setLoadingStage('');

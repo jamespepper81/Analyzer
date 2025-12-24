@@ -68,6 +68,17 @@ const defaultRelays = [
   'wss://relay.snort.social',
 ];
 
+const XPUB_PREFIXES = new Set(['xpub', 'ypub', 'zpub', 'tpub', 'upub', 'vpub']);
+const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]+$/;
+
+const normalizeXpub = (xpub: string): string => xpub.trim();
+
+const isLikelyXpub = (xpub: string): boolean => {
+  const normalized = normalizeXpub(xpub);
+  if (normalized.length < 100 || normalized.length > 120) return false;
+  if (!BASE58_RE.test(normalized)) return false;
+  return XPUB_PREFIXES.has(normalized.slice(0, 4).toLowerCase());
+};
 
 const generateInitialGreetingMessage = (): Message => {
     const hour = new Date().getHours();
@@ -110,9 +121,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const errorRetryTimeout = useRef<NodeJS.Timeout | null>(null);
   const activeRequestId = useRef(0);
   
-  // Track when we just added/validated an XPUB to prevent duplicate fetches
-  const justAddedXpub = useRef<string | null>(null);
-  
   // Initialize chunk retry mechanism
   useChunkRetry();
   
@@ -137,6 +145,55 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   // This simply signals that we are on the client and can proceed with Nostr logic.
   useEffect(() => {
     setIsNostrReady(true);
+  }, []);
+
+  const setActiveXpubAndPersist = useCallback((newXpub: string | null) => {
+    // Invalidate any in-flight fetches immediately when switching wallets.
+    activeRequestId.current += 1;
+
+    setActiveXpub(newXpub);
+    setError(null);
+    setRecommendations([]);
+    setSuggestions([]);
+    setMessages([generateInitialGreetingMessage()]);
+    setIsInitialAiContentLoaded(false);
+    setIsLoadingAiContent(false);
+    setDiscoveryProgress(null);
+    setIsDiscovering(false);
+
+    if (newXpub) {
+      localStorage.setItem('activeXpub', newXpub);
+
+      let cachedData: WalletData | null = null;
+      try {
+        const cached = localStorage.getItem(`walletCache:${newXpub}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const cacheXpub = parsed._cacheMetadata?.xpub;
+          if (!cacheXpub || cacheXpub === newXpub) {
+            cachedData = parsed.data || parsed;
+          } else {
+            console.warn(`[WalletContext] Cache XPUB mismatch on switch, clearing`);
+            localStorage.removeItem(`walletCache:${newXpub}`);
+          }
+        }
+      } catch {
+        cachedData = null;
+      }
+
+      if (cachedData) {
+        setData(cachedData);
+        setIsLoading(false);
+      } else {
+        setData(null);
+        setIsLoading(true);
+      }
+      return;
+    }
+
+    localStorage.removeItem('activeXpub');
+    setData(null);
+    setIsLoading(false);
   }, []);
 
   const fetchNostrProfile = useCallback(async (pubkey: string): Promise<NostrProfile | null> => {
@@ -184,7 +241,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         const remoteXpubs = JSON.parse(decryptedContent);
         
         if (Array.isArray(remoteXpubs)) {
-            return remoteXpubs;
+            return remoteXpubs.map(normalizeXpub).filter(Boolean);
         }
     } catch (e) {
       console.error("Failed to load or decrypt xpubs from Nostr:", e);
@@ -280,8 +337,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         
         // Set active xpub
         const newActive = remoteXpubs[0];
-        setActiveXpub(newActive);
-        localStorage.setItem('activeXpub', newActive);
+        setActiveXpubAndPersist(newActive);
         
         // Save Nostr session
         setNostrNsec(nsec);
@@ -300,7 +356,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
         return { success: false, error: 'The Nostr private key (nsec) you entered appears to be invalid or malformed. Please double-check the key and try again.' };
     }
-  }, [isNostrReady, loadXpubsFromNostr, fetchNostrProfile, setActiveXpub, track]);
+  }, [isNostrReady, loadXpubsFromNostr, fetchNostrProfile, setActiveXpubAndPersist, track]);
 
   const connectNostr = useCallback(async (nsec: string): Promise<{ success: boolean; error?: string }> => {
     if (!isNostrReady) {
@@ -441,6 +497,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
 
         let currentXpubs = JSON.parse(localStorage.getItem('walletXpubs') || '[]');
+        if (Array.isArray(currentXpubs)) {
+          currentXpubs = Array.from(new Set(currentXpubs.map(normalizeXpub).filter(Boolean)));
+        } else {
+          currentXpubs = [];
+        }
         const storedNsec = localStorage.getItem('nostr_nsec');
 
         if (storedNsec) {
@@ -479,19 +540,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         const storedActiveXpub = localStorage.getItem('activeXpub');
         if (storedActiveXpub && currentXpubs.includes(storedActiveXpub)) {
-          setActiveXpub(storedActiveXpub);
+          setActiveXpubAndPersist(storedActiveXpub);
         } else if (currentXpubs.length > 0) {
-          const newActive = currentXpubs[0];
-          setActiveXpub(newActive);
-          localStorage.setItem('activeXpub', newActive);
+          setActiveXpubAndPersist(currentXpubs[0]);
         } else {
           setIsLoading(false);
         }
 
-        if (currentXpubs.length > 0) {
-            setMessages([generateInitialGreetingMessage()]);
-        }
-        
         // Reset chunk retry count on successful initialization
         resetChunkRetry();
       } catch (e) {
@@ -500,145 +555,29 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     init();
-  }, [isNostrReady, fetchNostrProfile, disconnectNostr, loadXpubsFromNostr]);
+  }, [isNostrReady, fetchNostrProfile, disconnectNostr, loadXpubsFromNostr, setActiveXpubAndPersist]);
 
-  const setActiveXpubAndPersist = useCallback((newXpub: string | null) => {
-    setActiveXpub(newXpub);
-    if (newXpub) {
-      localStorage.setItem('activeXpub', newXpub);
-      // Load cached data for a smoother UX on account switch
-      try {
-        const cached = localStorage.getItem(`walletCache:${newXpub}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          // Validate cached data belongs to this XPUB
-          if (parsed._cacheMetadata?.xpub === newXpub) {
-            setData(parsed.data || parsed);
-            // Reset loading states since we have cached data
-            setIsLoading(false);
-            setIsDiscovering(false);
-            setDiscoveryProgress(null);
-          } else {
-            console.warn(`[WalletContext] Cache XPUB mismatch on switch, clearing`);
-            localStorage.removeItem(`walletCache:${newXpub}`);
-            setData(null);
-            // Will load via getWalletData, which sets loading states appropriately
-          }
-        } else {
-          setData(null);
-          // No cached data - getWalletData will handle loading states
-        }
-      } catch {
-        setData(null);
-        // Error loading cache - getWalletData will handle loading states
-      }
-    } else {
-      localStorage.removeItem('activeXpub');
-      setData(null);
-      // Reset all loading states when disconnecting
-      setIsLoading(false);
-      setIsDiscovering(false);
-      setDiscoveryProgress(null);
+  const addXpub = useCallback(async (inputXpub: string): Promise<{ success: boolean; error: string | null }> => {
+    const newXpub = normalizeXpub(inputXpub);
+
+    if (!newXpub) {
+      return { success: false, error: 'XPUB key is required.' };
     }
-    setRecommendations([]);
-    setMessages([generateInitialGreetingMessage()]);
-    setIsInitialAiContentLoaded(false);
-    setIsLoadingAiContent(false);
-  }, []);
 
-  const addXpub = useCallback(async (newXpub: string): Promise<{ success: boolean; error: string | null }> => {
+    if (!isLikelyXpub(newXpub)) {
+      return { success: false, error: 'Invalid XPUB format. Please check that you entered the correct extended public key.' };
+    }
+
     if (xpubs.includes(newXpub)) {
       setActiveXpubAndPersist(newXpub);
       return { success: true, error: null };
     }
 
-    // INSTANT CACHE CHECK - Show cached data immediately if available
-    let cachedData: WalletData | null = null;
-    try {
-      const cached = localStorage.getItem(`walletCache:${newXpub}`);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed._cacheMetadata?.xpub === newXpub) {
-          cachedData = parsed.data || parsed;
-          console.log(`[WalletContext] Found cached data for wallet, showing immediately`);
-        } else {
-          console.warn(`[WalletContext] Cache XPUB mismatch, clearing stale cache`);
-          localStorage.removeItem(`walletCache:${newXpub}`);
-        }
-      }
-    } catch (e) {
-      console.warn(`[WalletContext] Failed to load cached data during addXpub:`, e);
-      logger.warn('[WalletContext] Cache read error in addXpub', e);
-    }
-
-    // If we have cached data, show it NOW
-    if (cachedData) {
-      const newXpubs = [...xpubs, newXpub];
-      setXpubs(newXpubs);
-      localStorage.setItem('walletXpubs', JSON.stringify(newXpubs));
-      setData(cachedData);
-      setActiveXpubAndPersist(newXpub);
-      justAddedXpub.current = newXpub;
-      track('connect_wallet', { method: 'xpub_cached' });
-      return { success: true, error: null };
-    }
-
-    // No cached data - use progressive loading
-    console.log(`[WalletContext] Starting progressive discovery for ${newXpub.substring(0, 20)}...`);
-    setIsDiscovering(true);
-    setDiscoveryProgress(null);
-    setIsLoading(true);
-    
-    const result = await getWalletDataProgressive(newXpub, currency, (partialData: PartialWalletData) => {
-      // Real-time UI updates as addresses are discovered!
-      console.log(`[WalletContext] Progressive update - ${partialData.discoveryProgress.addressesWithActivity} addresses, ${partialData.transactions.length} txs, ${partialData.balanceBTC} BTC`);
-      
-      // Update discovery progress
-      setDiscoveryProgress(partialData.discoveryProgress);
-      
-      // Update wallet data with partial results
-      // Convert PartialWalletData to WalletData by removing progressive fields
-      const { discoveryProgress, isComplete, ...walletData } = partialData;
-      setData(walletData as WalletData);
-      
-      // If complete, mark as no longer discovering
-      if (partialData.isComplete) {
-        setIsDiscovering(false);
-        setIsLoading(false);
-      }
-    });
-    
-    if (result.error) {
-      setIsDiscovering(false);
-      setIsLoading(false);
-      return { success: false, error: result.error };
-    }
-
-    // Store the XPUB in our list
     const newXpubs = [...xpubs, newXpub];
     setXpubs(newXpubs);
     localStorage.setItem('walletXpubs', JSON.stringify(newXpubs));
-    
-    // Final data is already set by the progress callback
-    if (result.data) {
-      try {
-        const cacheEntry = {
-          _cacheMetadata: {
-            xpub: newXpub,
-            timestamp: Date.now(),
-          },
-          data: result.data,
-        };
-        localStorage.setItem(`walletCache:${newXpub}`, JSON.stringify(cacheEntry));
-      } catch (storageError) {
-        logger.warn('[WalletContext] Failed to cache wallet data on add', storageError);
-      }
-      justAddedXpub.current = newXpub;
-    }
-    
+
     setActiveXpubAndPersist(newXpub);
-    setIsDiscovering(false);
-    setIsLoading(false);
 
     const savePreference = localStorage.getItem('nostr_save_preference');
     if (nostrNsec && savePreference === 'accepted') {
@@ -647,9 +586,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setShowSaveXpubsPrompt(true);
     }
 
-    track('connect_wallet', { method: 'xpub_progressive' });
+    let connectMethod: string = 'xpub';
+    try {
+      connectMethod = localStorage.getItem(`walletCache:${newXpub}`) ? 'xpub_cached' : 'xpub_progressive';
+    } catch {
+      connectMethod = 'xpub';
+    }
+    track('connect_wallet', { method: connectMethod });
     return { success: true, error: null };
-  }, [xpubs, setActiveXpubAndPersist, nostrNsec, saveXpubsToNostr, track, currency]);
+  }, [xpubs, setActiveXpubAndPersist, nostrNsec, saveXpubsToNostr, track]);
 
   const removeXpub = useCallback(async (xpubToRemove: string) => {
     const newXpubs = xpubs.filter(x => x !== xpubToRemove);
@@ -668,9 +613,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   }, [xpubs, activeXpub, setActiveXpubAndPersist, nostrNsec, saveXpubsToNostr]);
 
   const disconnect = useCallback(() => {
+    activeRequestId.current += 1;
     setXpubs([]);
     setActiveXpub(null);
     setData(null);
+    setError(null);
     setSuggestions([]);
     setRecommendations([]);
     setIsInitialAiContentLoaded(false);
@@ -714,15 +661,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
-    // If we just added this XPUB, skip the fetch since we already have the data
-    // This prevents duplicate fetching during login
-    if (justAddedXpub.current === activeXpub) {
-      console.log(`[WalletContext] Skipping fetch for ${activeXpub.substring(0, 20)}... - just added, data already loaded`);
-      justAddedXpub.current = null; // Clear the flag
-      setIsLoading(false);
-      return;
-    }
-
     // INSTANT CACHED DATA LOADING
     // Check cache FIRST and show immediately if available
     let hasCachedData = false;
@@ -733,13 +671,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         
         // Safety check: Verify cached data belongs to current XPUB
         // The cache includes metadata with the XPUB for validation
-        if (parsed._cacheMetadata?.xpub === activeXpub) {
+        const cacheXpub = parsed._cacheMetadata?.xpub;
+        if (!cacheXpub || cacheXpub === activeXpub) {
           setData(parsed.data || parsed);
           hasCachedData = true;
           console.log(`[WalletContext] Showing cached wallet data (instant load)`);
           // If we have cached data, show it immediately and mark as not loading
           // We'll still fetch fresh data in the background
           setIsLoading(false);
+          setIsDiscovering(false);
+          setDiscoveryProgress(null);
         } else {
           // Cache mismatch - clear invalid cache
           console.warn(`[WalletContext] Cache XPUB mismatch, clearing stale cache`);
@@ -760,7 +701,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     
     setError(null);
     
-    // Use progressive loading when no cache exists (like addXpub does)
+    // Use progressive loading when no cache exists (fresh connect or cold switch)
     // This prevents timeout errors when switching between wallets
     if (!hasCachedData) {
       console.log(`[WalletContext] Starting progressive discovery for wallet switch ${activeXpub.substring(0, 20)}...`);
