@@ -13,6 +13,7 @@ This directory contains all documentation files for the BitSleuth project.
 - **[ai-training-content.md](ai-training-content.md)** - AI training content and SEO keywords
 
 ### Development & Tools
+- **[TAILWIND_SETUP.md](TAILWIND_SETUP.md)** - Tailwind CSS Language Server setup and configuration
 - **[MCP_SETUP.md](MCP_SETUP.md)** - Model Context Protocol setup and configuration guide
 - **[GOOGLE_SHEETS_TROUBLESHOOTING.md](GOOGLE_SHEETS_TROUBLESHOOTING.md)** - Google Sheets integration troubleshooting
 - **[TESTING_FEEDBACK_FIX.md](TESTING_FEEDBACK_FIX.md)** - Feedback system testing guide

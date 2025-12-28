@@ -76,6 +76,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@tailwindcss/language-server": "^0.14.29",
     "@types/bs58check": "^2.1.2",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^20",

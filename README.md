@@ -68,6 +68,8 @@ npm run genkit:dev
 
 App runs on `http://localhost:3000` by default.
 
+For VS Code users, install the recommended "Tailwind CSS IntelliSense" extension for autocomplete and class previews. The Tailwind CSS language server is included in `devDependencies` and installed automatically. See [Tailwind Setup Guide](docs/TAILWIND_SETUP.md) for details.
+
 ## Environment variables
 
 Create a `.env` file in the project root. Only the public Firebase keys are required for analytics; other keys enable additional features.
