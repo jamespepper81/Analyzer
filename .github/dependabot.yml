@@ -11,19 +11,76 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-    # Group minor and patch updates to reduce PR noise
+    # Group related updates to reduce PR noise
     groups:
+      # Next.js framework and React runtime (must be updated together)
+      nextjs:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "eslint-config-next"
+      
+      # Tailwind CSS ecosystem (styling framework)
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "tailwindcss-animate"
+          - "tailwind-merge"
+          - "autoprefixer"
+          - "postcss"
+          - "@tailwindcss/*"
+      
+      # Radix UI components (shadcn/ui foundation)
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      
+      # Genkit AI framework
+      genkit:
+        patterns:
+          - "genkit"
+          - "genkit-cli"
+          - "@genkit-ai/*"
+      
+      # TypeScript and type definitions
+      typescript:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      
+      # Form handling and validation
+      forms:
+        patterns:
+          - "react-hook-form"
+          - "@hookform/resolvers"
+          - "zod"
+      
+      # Bitcoin libraries
+      bitcoin:
+        patterns:
+          - "bitcoinjs-lib"
+          - "bip32"
+          - "ecpair"
+          - "bs58check"
+          - "@types/bs58check"
+          - "@bitcoinerlab/secp256k1"
+      
+      # Development tools (minor and patch only)
       development-dependencies:
         dependency-type: "development"
         update-types:
           - "minor"
           - "patch"
-      radix-ui:
-        patterns:
-          - "@radix-ui/*"
-        update-types:
-          - "minor"
-          - "patch"
+        exclude-patterns:
+          - "@types/*"
+          - "typescript"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "autoprefixer"
+          - "postcss"
+          - "eslint-config-next"
+          - "genkit-cli"
     # Automatic security updates
     allow:
       - dependency-type: "all"
