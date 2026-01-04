@@ -58,7 +58,7 @@ patterns:
   - "genkit-cli"
   - "@genkit-ai/*"
 ```
-**Why**: Genkit packages must be compatible across the runtime, CLI, and plugins (Firebase, Next.js, OpenAI compatibility).
+**Why**: Genkit packages must be compatible across the runtime, CLI, and plugins. The `@genkit-ai/*` pattern covers all Genkit plugins including Firebase (`@genkit-ai/firebase`), Next.js (`@genkit-ai/next`), and OpenAI compatibility layer (`@genkit-ai/compat-oai`).
 
 #### 5. **typescript** - TypeScript and Type Definitions
 ```yaml
@@ -99,9 +99,22 @@ exclude-patterns:
   - "@types/*"
   - "typescript"
   - "tailwindcss"
-  - ...
+  - "@tailwindcss/*"
+  - "autoprefixer"
+  - "postcss"
+  - "eslint-config-next"
+  - "genkit-cli"
+  - "@radix-ui/*"
+  - "react-hook-form"
+  - "@hookform/resolvers"
+  - "zod"
+  - "bitcoinjs-lib"
+  - "bip32"
+  - "ecpair"
+  - "bs58check"
+  - "@bitcoinerlab/secp256k1"
 ```
-**Why**: Catches other dev dependencies but excludes packages already in specific groups. Only minor/patch updates to avoid breaking changes.
+**Why**: Catches other dev dependencies but excludes packages already in specific groups to prevent duplicate PRs. Only minor/patch updates to avoid breaking changes in development tools.
 
 ### GitHub Actions Ecosystem
 
@@ -189,10 +202,36 @@ All Dependabot PRs are labeled with:
 
 With React 19, some packages may show peer dependency warnings. This is expected during the ecosystem transition.
 
+**Common warnings you may see:**
+
+```
+npm WARN ERESOLVE overriding peer dependency
+npm WARN While resolving: react-force-graph-2d@1.25.4
+npm WARN Found: react@19.2.0
+npm WARN Could not resolve dependency:
+npm WARN peer react@"^16.0.0 || ^17.0.0 || ^18.0.0" from react-force-graph-2d@1.25.4
+```
+
+**How to interpret:**
+
+- ⚠️ **Warning** (yellow): Usually safe to proceed if the package works in testing
+- ❌ **Error** (red): Package is incompatible, wait for update or find alternative
+
 **Solution**: Review the warning, check if the package supports React 19, and:
 - Update the package if a compatible version exists
+- Test thoroughly in your development environment
 - Use `overrides` in package.json if needed (like we do for tiny-secp256k1)
-- Wait for package maintainer to update
+- Wait for package maintainer to update for breaking incompatibilities
+
+**Common packages with warnings:**
+- Charting libraries (recharts, react-force-graph)
+- Some form libraries
+- Legacy UI component libraries
+
+**When to act vs wait:**
+- ✅ **Act now**: Security vulnerabilities, features you need
+- ⏸️ **Wait**: Package works fine, only peer dependency warning
+- 🔍 **Monitor**: Check package issues/PRs for React 19 support status
 
 ### Merge Conflicts
 

@@ -81,6 +81,15 @@ updates:
           - "postcss"
           - "eslint-config-next"
           - "genkit-cli"
+          - "@radix-ui/*"
+          - "react-hook-form"
+          - "@hookform/resolvers"
+          - "zod"
+          - "bitcoinjs-lib"
+          - "bip32"
+          - "ecpair"
+          - "bs58check"
+          - "@bitcoinerlab/secp256k1"
     # Automatic security updates
     allow:
       - dependency-type: "all"
