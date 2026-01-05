@@ -56,7 +56,7 @@
     "firebase": "^11.9.1",
     "genkit": "^1.24.0",
     "google-auth-library": "^9.11.0",
-    "googleapis": "^140.0.1",
+    "googleapis": "^169.0.0",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "jszip": "^3.10.1",
