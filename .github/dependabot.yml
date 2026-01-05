@@ -10,7 +10,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 75
     # Group related updates to reduce PR noise
     groups:
       # Next.js framework and React runtime (must be updated together)
