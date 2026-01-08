@@ -56,6 +56,12 @@ policies:
         - "**/.env"
         - "**/.env.*"
         - "**/*.env"
+    exclude:
+      globs:
+        - "**/.env.example"
+        - "**/.env.sample"
+        - "**/*.env.example"
+        - "**/*.env.sample"
     match:
       any:
         - regex: .+  # any content triggers
@@ -99,6 +105,14 @@ ignore:
   - "tests/**"
   - "examples/**"
   - "docs/**"
+  # Build artifacts and dependencies (generated files, not source code)
+  - "node_modules/**"
+  - ".next/**"
+  - "build/**"
+  - "dist/**"
+  - ".genkit/**"
+  - "out/**"
+  - "coverage/**"
 
 # -------------------------------------------------------------------
 # 🚀 Expansion Notes:
