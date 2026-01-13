@@ -59,7 +59,7 @@ type SecurityMetricProps = {
 };
 
 const addressScreeningFormSchema = z.object({
-    address: z.string().min(26, { message: 'Please enter a valid Bitcoin address.'}),
+    address: z.string().min(26, { error: 'Please enter a valid Bitcoin address.'}),
 });
 
 function AddressScreener() {

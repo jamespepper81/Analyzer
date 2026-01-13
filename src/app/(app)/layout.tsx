@@ -82,7 +82,7 @@ function AnalyticsWarning() {
 }
 
 const AddAccountFormSchema = z.object({
-    xpub: z.string().min(1, { message: "XPUB key is required." }),
+    xpub: z.string().min(1, { error: "XPUB key is required." }),
 });
 
 function AddAccountDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
@@ -316,7 +316,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   }, [activeXpub, isLoading, router, isProtectedRoute, pathname]);
 
   const NostrFormSchema = z.object({
-    nsec: z.string().startsWith('nsec1', { message: 'Nostr private key must start with "nsec1"' }),
+    nsec: z.string().startsWith('nsec1', { error: 'Nostr private key must start with "nsec1"' }),
   });
 
   const nostrForm = useForm<z.infer<typeof NostrFormSchema>>({
@@ -328,9 +328,9 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     display_name: z.string().max(50).optional(),
     name: z.string().max(50).optional(),
     about: z.string().max(1024).optional(),
-    website: z.string().url({ message: 'Please enter a valid website URL.' }).optional().or(z.literal('')),
-    picture: z.string().url({ message: 'Please enter a valid avatar URL.' }).optional().or(z.literal('')),
-    banner: z.string().url({ message: 'Please enter a valid banner URL.' }).optional().or(z.literal('')),
+    website: z.string().url({ error: 'Please enter a valid website URL.' }).optional().or(z.literal('')),
+    picture: z.string().url({ error: 'Please enter a valid avatar URL.' }).optional().or(z.literal('')),
+    banner: z.string().url({ error: 'Please enter a valid banner URL.' }).optional().or(z.literal('')),
     nip05: z.string().optional(),
     lud16: z.string().optional(),
   });

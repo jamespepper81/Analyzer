@@ -22,7 +22,7 @@ import { useWallet } from '@/contexts/wallet-context';
 
 const formSchema = z.object({
   identifier: z.string().min(10, {
-    message: 'Please enter a valid Bitcoin address or transaction ID.',
+    error: 'Please enter a valid Bitcoin address or transaction ID.',
   }),
 });
 
