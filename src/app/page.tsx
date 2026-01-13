@@ -44,7 +44,7 @@ import Image from "next/image";
 
 const formSchema = z.object({
   xpub: z.string().min(1, {
-    message: "xpub key is required.",
+    error: "xpub key is required.",
   }),
 });
 

@@ -82,7 +82,7 @@ function AnalyticsWarning() {
 }
 
 const AddAccountFormSchema = z.object({
-    xpub: z.string().min(1, { message: "XPUB key is required." }),
+    xpub: z.string().min(1, { error: "XPUB key is required." }),
 });
 
 function AddAccountDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
