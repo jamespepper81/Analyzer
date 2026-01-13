@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, ArrowUpRight, ArrowDownLeft, Loader2 } from 'lucide-react';
+import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, ArrowUpRight, ArrowDownLeft, Loader2, Activity } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -143,6 +143,9 @@ export default function DashboardPage() {
         <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent">
               <CardTitle className="text-base font-medium">Activity (30d)</CardTitle>
+              <IconContainer variant="purple">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
+              </IconContainer>
           </CardHeader>
           <CardContent className="space-y-2 sm:space-y-3 pt-1">
               <div className="flex items-center gap-2 sm:gap-3">

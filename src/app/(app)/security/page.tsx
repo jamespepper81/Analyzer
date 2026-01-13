@@ -308,7 +308,11 @@ export default function SecurityPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <SecurityMetric
-          icon={<ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
+          icon={
+            <IconContainer variant="emerald">
+              <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+            </IconContainer>
+          }
           title="Privacy Threat Level"
           value={data.opsecThreat}
           description="Risk from address reuse. Low is good."
@@ -316,7 +320,11 @@ export default function SecurityPage() {
           tooltipText="This assesses the risk to your privacy based on address reuse. 'Low' means you follow best practices. 'Medium' indicates some reuse. 'High' suggests significant address reuse, which can link your transactions together and compromise your privacy."
         />
         <SecurityMetric
-          icon={<Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
+          icon={
+            <IconContainer variant="blue">
+              <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+            </IconContainer>
+          }
           title="Used Address Count"
           value={usedAddressCount}
           description="Total unique addresses with transaction history."
@@ -325,7 +333,11 @@ export default function SecurityPage() {
           tooltipText="This shows the total number of unique addresses in your wallet that have been involved in at least one transaction. A very high number can sometimes indicate extensive wallet usage."
         />
         <SecurityMetric
-          icon={<TestTube2 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />}
+          icon={
+            <IconContainer variant="amber">
+              <TestTube2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            </IconContainer>
+          }
           title="Dust Value"
           value={formatCurrency(dustAmountFiat)}
           description={`Across ${data.dustUtxoCount} UTXOs worth <${currencySymbol}1 each.`}
