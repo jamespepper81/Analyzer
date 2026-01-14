@@ -98,6 +98,7 @@ const nextConfig: NextConfig = {
   experimental: {
     webVitalsAttribution: ['CLS', 'LCP'],
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
+    turbopackUseSystemTlsCerts: true,
   },
   // Turbopack configuration (replaces webpack)
   // Turbopack has native WASM support - no custom config needed
