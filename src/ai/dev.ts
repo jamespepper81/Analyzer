@@ -1,6 +1,6 @@
 
 import { config } from 'dotenv';
-config();
+config({ quiet: true });
 
 import '@/ai/flows/wallet-insights-chat.ts';
 import '@/ai/flows/proactive-insights.ts';
