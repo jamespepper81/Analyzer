@@ -588,8 +588,8 @@ export default function BasicReportPage() {
                             <ChartContainer config={chartConfig} className="h-full w-full">
                                     <AreaChart 
                                         data={chartData}
-                                        onMouseMove={(e) => {
-                                            if (e.activePayload && e.activePayload.length > 0) {
+                                        onMouseMove={(e: any) => {
+                                            if (e && e.activePayload && e.activePayload.length > 0) {
                                                 setActiveChartDataPoint(e.activePayload[0].payload);
                                             } else {
                                                 setActiveChartDataPoint(null);

@@ -87,7 +87,7 @@ const CustomTreemapTooltip = ({ active, payload, currency, fiatPrice }: any) => 
 const CustomTreemapContent = (props: any, selectedUtxos: Record<string, boolean>) => {
     const { x, y, width, height, value, fill, depth, id } = props;
     // Only render if this is a leaf node (actual UTXO, not a parent container)
-    if (depth !== 1) return null;
+    if (depth !== 1) return <></>;
     
     const showLabel = width > 50 && height > 40;
     const isSelected = selectedUtxos[id];
