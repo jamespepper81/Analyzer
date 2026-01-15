@@ -27,15 +27,15 @@ const XPUB_LOG_PREFIX_LENGTH = 12; // How many characters of XPUB to show in log
 const addressDiscoveryCache = new Map<string, { addresses: string[]; timestamp: number }>();
 const addressDiscoveryPromises = new Map<string, Promise<string[]>>();
 
-function getP2wpkhAddress(pubKey: Buffer): string {
+function getP2wpkhAddress(pubKey: Uint8Array): string {
     return bitcoin.payments.p2wpkh({ pubkey: pubKey }).address!;
 }
 
-function getP2pkhAddress(pubKey: Buffer): string {
+function getP2pkhAddress(pubKey: Uint8Array): string {
     return bitcoin.payments.p2pkh({ pubkey: pubKey }).address!;
 }
 
-function getP2shP2wpkhAddress(pubKey: Buffer): string {
+function getP2shP2wpkhAddress(pubKey: Uint8Array): string {
     const p2wpkh = bitcoin.payments.p2wpkh({ pubkey: pubKey });
     return bitcoin.payments.p2sh({ redeem: p2wpkh }).address!;
 }
