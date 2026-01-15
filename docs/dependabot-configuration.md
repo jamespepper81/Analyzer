@@ -124,11 +124,11 @@ exclude-patterns:
 
 ## Best Practices for This Stack
 
-### Why This Configuration Works for Next.js 15 + React 19 + Tailwind + shadcn
+### Why This Configuration Works for Next.js 16 + React 19 + Tailwind 4 + shadcn
 
-1. **Framework Cohesion**: Next.js 15 with React 19 requires coordinated updates. Our `nextjs` group ensures these are tested together.
+1. **Framework Cohesion**: Next.js 16 with React 19 requires coordinated updates. Our `nextjs` group ensures these are tested together.
 
-2. **Styling Ecosystem**: Tailwind CSS 3.x with its animation plugin, merge utility, and PostCSS build chain need version alignment.
+2. **Styling Ecosystem**: Tailwind CSS 4 with its PostCSS plugin, merge utility, and build chain need version alignment. Note: Tailwind 4 uses a new PostCSS-based architecture with `@tailwindcss/postcss` instead of separate PostCSS plugins.
 
 3. **Component Library**: Radix UI (shadcn/ui foundation) benefits from consistent versioning across all primitives.
 
@@ -189,11 +189,12 @@ All Dependabot PRs are labeled with:
 **Scenario 2**: Next.js + React update
 - Single PR updates Next.js, React, React-DOM together
 - Review Next.js upgrade guide
-- Test App Router functionality, server components
+- Test App Router functionality, server components, React 19 features
 
 **Scenario 3**: Tailwind ecosystem update
 - Single PR updates Tailwind, plugins, PostCSS
-- Review Tailwind changelog for utility changes
+- Review Tailwind changelog for utility changes and v4 migration notes
+- Verify `@tailwindcss/postcss` compatibility
 - Test builds, verify no styling regressions
 
 ## Troubleshooting

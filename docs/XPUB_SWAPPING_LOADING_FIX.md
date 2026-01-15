@@ -329,7 +329,7 @@ $ npm run lint
 
 ### ✅ React State Batching
 **Multiple setState calls in sequence?**
-- React 18 automatic batching combines updates
+- React 19 automatic batching combines updates
 - All loading state resets happen in single render
 - No intermediate UI flicker
 - **Result:** Smooth, atomic state transition

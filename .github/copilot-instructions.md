@@ -1,7 +1,7 @@
 # Copilot Instructions for BitSleuth Analyzer
 
 ## Project Overview
-BitSleuth is an AI-powered Bitcoin wallet insights app built with Next.js 15 (App Router), React 18, and TypeScript. It analyzes Bitcoin XPUBs for transaction history, security posture, address reuse, and trends, and provides AI-driven insights via chat and proactive recommendations.
+BitSleuth is an AI-powered Bitcoin wallet insights app built with Next.js 16 (App Router), React 19, and TypeScript. It analyzes Bitcoin XPUBs for transaction history, security posture, address reuse, and trends, and provides AI-driven insights via chat and proactive recommendations.
 
 ## Architecture & Key Components
 - **App Structure**: Uses Next.js App Router. Main routes are under `src/app/(app)/` (dashboard, transactions, analysis, security, report, coin-control, discover, mempool, market, chat, feedback).

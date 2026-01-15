@@ -23,7 +23,7 @@ Use this skill when you need to:
 
 ## Prerequisites
 
-- Node.js 18+ (20+ recommended) installed on the system
+- Node.js 20+ (required) installed on the system
 - A locally running BitSleuth application at `http://localhost:3000`
 - Playwright will be installed automatically if not present
 - Optional: Test XPUB for wallet analysis testing (set via `TEST_XPUB` environment variable)

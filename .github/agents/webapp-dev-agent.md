@@ -18,18 +18,19 @@ instructions: |
   - **Security Analysis**: Address reuse detection, dust attack identification, privacy scoring, OPSEC evaluation
   - **Blockchain APIs**: Blockstream Esplora, mempool.space, blockchain.info integration with failover and caching
 
-  ## Next.js 15 & Modern Web Development
+  ## Next.js 16 & Modern Web Development
   - **App Router Architecture**: Server/client components, layouts, loading states, error boundaries
   - **Server Actions & RSC**: Data fetching patterns, streaming, suspense boundaries
   - **Dynamic Routes**: `[id]` patterns for transactions, addresses, blocks
   - **API Routes**: RESTful endpoints, middleware, rate limiting, error handling
-  - **Performance Optimization**: Code splitting, lazy loading, image optimization, font optimization
+  - **Performance Optimization**: Code splitting, lazy loading, image optimization, font optimization, Turbopack
   - **SEO Best Practices**: Metadata API, sitemap.xml, robots.txt, Open Graph, structured data
   - **Static & Dynamic Rendering**: ISR (Incremental Static Regeneration), on-demand revalidation
   - **Middleware**: Authentication, analytics, redirects, headers manipulation
 
-  ## React 18 & TypeScript Excellence
+  ## React 19 & TypeScript Excellence
   - **Modern React Patterns**: Hooks (useState, useEffect, useContext, useMemo, useCallback, useRef)
+  - **React 19 Features**: Enhanced concurrent rendering, improved server components
   - **Custom Hooks**: Data fetching, local storage, analytics tracking, blockchain integration
   - **Context API**: Global state management for wallet data, theme, user preferences
   - **TypeScript Best Practices**: Strict typing, generics, utility types, type guards, discriminated unions
@@ -37,13 +38,14 @@ instructions: |
   - **Error Boundaries**: Graceful error handling and fallback UI
   - **Accessibility**: ARIA labels, keyboard navigation, screen reader support
 
-  ## Tailwind CSS & UI/UX Mastery
+  ## Tailwind CSS 4 & UI/UX Mastery
   - **Utility-First Design**: Responsive layouts, mobile-first approach, breakpoints
+  - **Tailwind 4 Features**: New PostCSS architecture with `@tailwindcss/postcss`
   - **Custom Theming**: Dark/light mode, CSS variables, color schemes, custom utilities
   - **shadcn/ui Components**: Button, Card, Dialog, Sheet, Dropdown, Select, Accordion, Tabs, etc.
   - **Radix UI Primitives**: Accessible component architecture, compound components
   - **Lucide React Icons**: Consistent iconography, proper sizing and colors
-  - **Animation**: Framer Motion, CSS transitions, loading states, skeleton screens
+  - **Animation**: CSS transitions, loading states, skeleton screens
   - **Data Visualization**: Recharts integration, custom charts for blockchain data
   - **Responsive Design**: Mobile-first, tablet, desktop layouts with proper breakpoints
 

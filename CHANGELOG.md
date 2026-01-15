@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Initial Release - Complete Bitcoin Wallet Analysis Platform
 
-BitSleuth is an AI-powered Bitcoin wallet insights application built with Next.js 15, React 18, and TypeScript. It provides comprehensive security analysis, transaction insights, and AI-driven recommendations for Bitcoin wallets using only public blockchain data (XPUB keys).
+BitSleuth is an AI-powered Bitcoin wallet insights application built with Next.js 16, React 19, and TypeScript. It provides comprehensive security analysis, transaction insights, and AI-driven recommendations for Bitcoin wallets using only public blockchain data (XPUB keys).
 
 ---
 
@@ -168,9 +168,9 @@ BitSleuth is an AI-powered Bitcoin wallet insights application built with Next.j
 ## Technical Architecture
 
 ### Frontend Stack
-- **Framework**: Next.js 15 with App Router
-- **React**: React 18 with TypeScript
-- **Styling**: Tailwind CSS with custom theming
+- **Framework**: Next.js 16 with App Router
+- **React**: React 19 with TypeScript
+- **Styling**: Tailwind CSS 4 with custom theming
 - **Components**: shadcn/ui component library
 - **Icons**: Lucide React icons
 - **Charts**: Recharts for data visualization
@@ -387,10 +387,11 @@ Comprehensive component library including:
 ## Dependencies
 
 ### Core Dependencies
-- **Next.js**: 15.5.6
+- **Next.js**: 16.1.1
 - **React**: 19.2.0
 - **TypeScript**: 5.9.3
-- **Tailwind CSS**: ^3.4.17
+- **Tailwind CSS**: 4.1.18
+- **Node.js**: >=20.0.0 (required)
 
 ### AI & Backend
 - **Genkit**: 1.24.0

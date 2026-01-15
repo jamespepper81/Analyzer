@@ -18,12 +18,12 @@
 ## Tech stack
 
 ### Core Framework
-- **Next.js 15** (App Router) - React-based web framework
-- **React 18** - UI library with TypeScript
+- **Next.js 16** (App Router) - React-based web framework
+- **React 19** - UI library with TypeScript
 - **TypeScript** - Strict type checking throughout
 
 ### Styling & UI
-- **Tailwind CSS** - Utility-first CSS framework
+- **Tailwind CSS 4** - Utility-first CSS framework
 - **shadcn/ui** - Reusable component library (Radix UI primitives)
 - **Lucide Icons** - Icon system
 - **next-themes** - Theme management (dark/light mode)
@@ -138,7 +138,7 @@ Analyzer/
 ## Development setup
 
 ### Prerequisites
-- Node.js 18+ (Node.js 20+ recommended)
+- Node.js 20+ (required)
 - npm, pnpm, or yarn package manager
 - Git for version control
 
