@@ -18,6 +18,7 @@ import {
   parseSecurityRecommendationsOutput,
   type SecurityRecommendationsOutput,
 } from './ai-output-parsers';
+import { assertGenkitSchema, logAiResponsePayload } from './ai-runtime';
 
 export type { SecurityRecommendationsOutput } from './ai-output-parsers';
 
@@ -55,6 +56,7 @@ const logSchemaShapeOnce = () => {
   }
 
   hasLoggedSchemaShape = true;
+  assertGenkitSchema(SecurityRecommendationsOutputSchema, 'securityRecommendationsFlow output');
   logger.debug('securityRecommendationsFlow: output schema snapshot', {
     schemaDef: (SecurityRecommendationsOutputSchema as { _def?: unknown })?._def,
   });
@@ -132,6 +134,11 @@ const securityRecommendationsFlow = ai.defineFlow(
       const response = await prompt(promptInput);
       const rawOutput = response.output ?? parseJsonFromText(response.text);
       const parsedOutput = parseSecurityRecommendationsOutput(rawOutput);
+
+      logAiResponsePayload('securityRecommendationsFlow', response, {
+        rawOutput,
+        parsedOutput,
+      });
 
       if (!parsedOutput) {
         logger.warn('securityRecommendationsFlow: Invalid model output. Returning empty recommendations.');

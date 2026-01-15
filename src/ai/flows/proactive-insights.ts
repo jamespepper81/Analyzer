@@ -17,6 +17,7 @@ import {
   parseProactiveInsightOutput,
   type ProactiveInsightOutput,
 } from './ai-output-parsers';
+import { assertGenkitSchema, logAiResponsePayload } from './ai-runtime';
 
 export type { ProactiveInsightOutput } from './ai-output-parsers';
 
@@ -45,6 +46,7 @@ const logSchemaShapeOnce = () => {
   }
 
   hasLoggedSchemaShape = true;
+  assertGenkitSchema(ProactiveInsightOutputSchema, 'proactiveInsightFlow output');
   logger.debug('proactiveInsightFlow: output schema snapshot', {
     schemaDef: (ProactiveInsightOutputSchema as { _def?: unknown })?._def,
   });
@@ -96,6 +98,11 @@ const proactiveInsightFlow = ai.defineFlow(
       const response = await prompt(input);
       const rawOutput = response.output ?? parseJsonFromText(response.text);
       const parsedOutput = parseProactiveInsightOutput(rawOutput);
+
+      logAiResponsePayload('proactiveInsightFlow', response, {
+        rawOutput,
+        parsedOutput,
+      });
 
       if (!parsedOutput) {
         logger.warn('proactiveInsightFlow: Invalid model output. Returning empty insight.');

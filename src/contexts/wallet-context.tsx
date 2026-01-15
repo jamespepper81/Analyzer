@@ -15,6 +15,10 @@ import { useToast } from '@/hooks/use-toast';
 import { resetChunkRetry } from '@/lib/chunk-retry-service';
 import { logger } from '@/lib/logger';
 import { ToastAction } from '@/components/ui/toast';
+import {
+  normalizeProactiveInsight,
+  normalizeSecurityRecommendations,
+} from '@/lib/ai-response-guards';
 
 const SUPPORTED_CURRENCIES: Currency[] = ['USD', 'EUR', 'GBP'];
 const RECOMMENDATIONS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
@@ -932,17 +936,29 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
         const isExpired = Date.now() - parsed.timestamp > RECOMMENDATIONS_CACHE_TTL_MS;
         const hasRelevantChanges = parsed.summary !== walletSummary;
+        const normalizedCache = normalizeSecurityRecommendations(parsed.recommendations);
 
         if (!isExpired && !hasRelevantChanges) {
-          setRecommendations(parsed.recommendations);
-          setIsRecommendationsLoading(false);
-          return;
+          if (normalizedCache.error) {
+            localStorage.removeItem(cacheKey);
+          } else {
+            setRecommendations(normalizedCache.recommendations);
+            setIsRecommendationsLoading(false);
+            return;
+          }
         }
 
-        // Keep showing cached recommendations while refreshing if possible
-        if (parsed.recommendations) {
-          setRecommendations(parsed.recommendations);
+        if (!normalizedCache.error) {
+          // Keep showing cached recommendations while refreshing if possible
+          setRecommendations(normalizedCache.recommendations);
           hasCachedRecommendations = true;
+        } else {
+          localStorage.removeItem(cacheKey);
+        }
+
+        if (!isExpired && !hasRelevantChanges && normalizedCache.error) {
+          setIsRecommendationsLoading(false);
+          return;
         }
       }
     } catch (e) {
@@ -955,16 +971,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const recommendationsResult = await getSecurityRecommendations({ walletSummary });
-      const recs = Array.isArray(recommendationsResult.recommendations)
-        ? recommendationsResult.recommendations
-        : [];
-      const hasValidRecommendations = recs.length > 0;
+      const normalized = normalizeSecurityRecommendations(recommendationsResult.recommendations);
+      const recs = normalized.recommendations;
+      const hasValidRecommendations = recs.length > 0 && !normalized.error;
 
       if (hasValidRecommendations) {
         setRecommendations(recs);
       } else if (!hasCachedRecommendations) {
         setRecommendations([]);
-        setRecommendationsError('We could not generate recommendations right now. Please try again.');
+        setRecommendationsError(normalized.error || 'We could not generate recommendations right now. Please try again.');
       }
 
       if (hasValidRecommendations) {
@@ -1030,12 +1045,12 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           getProactiveSuggestions({ walletSummary: JSON.stringify(summaryPayload) }),
         ]);
 
-        const insightText = insightResult.insight?.trim();
-        if (insightText) {
-          const insightMessage: Message = { role: 'assistant', content: insightText };
-          setMessages((prev) => [...prev, insightMessage]);
+        const normalizedInsight = normalizeProactiveInsight(insightResult.insight);
+        if (normalizedInsight.error) {
+          setAiContentError(normalizedInsight.error);
         } else {
-          setAiContentError('AI insights are unavailable right now. Please try again.');
+          const insightMessage: Message = { role: 'assistant', content: normalizedInsight.insight };
+          setMessages((prev) => [...prev, insightMessage]);
         }
 
         if (suggestionsResult.suggestions && suggestionsResult.suggestions.length > 0) {
