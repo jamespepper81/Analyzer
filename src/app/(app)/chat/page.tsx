@@ -425,11 +425,11 @@ export default function ChatPage() {
           
           <Alert
             variant="warning"
-            className="shadow-md border-orange-500/40 bg-orange-50 text-black dark:border-orange-400/40 dark:bg-orange-500/15 dark:text-orange-100"
+            className="shadow-md border-amber-600/50 bg-amber-100 dark:border-orange-400/40 dark:bg-orange-500/15 dark:text-orange-100"
           >
-            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-orange-400" />
-            <AlertTitle className="text-black dark:text-orange-100">Update - AI Chat Response Time</AlertTitle>
-            <AlertDescription className="text-black dark:text-orange-200">
+            <AlertTriangle className="h-5 w-5 text-amber-700 dark:text-orange-400" />
+            <AlertTitle className="text-amber-950 dark:text-orange-100">Update - AI Chat Response Time</AlertTitle>
+            <AlertDescription className="text-amber-900 dark:text-orange-200">
               Thanks for your patience. You might notice that AI Chat responses are slower than usual right now. Our team is already looking into it and working on a fix. Everything should be back to normal shortly. 😊
             </AlertDescription>
           </Alert>
