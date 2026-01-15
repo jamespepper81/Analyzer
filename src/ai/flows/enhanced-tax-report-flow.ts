@@ -8,7 +8,7 @@
  * - EnhancedTaxReportOutput - The return type for the function
  */
 
-import { z } from 'zod';
+import { z } from '@genkit-ai/core';
 import type { WalletData, Transaction, Currency } from '@/lib/types';
 import { eachDayOfInterval, startOfDay, isWithinInterval, format, subDays, addDays, differenceInDays } from 'date-fns';
 import { 

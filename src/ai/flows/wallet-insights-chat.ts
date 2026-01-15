@@ -10,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { z } from '@genkit-ai/core';
 import type { FlowSideChannel } from 'genkit';
 import { securityRecommendationsTool } from './security-recommendations';
 import { analyzeBitcoinTransaction, analyzeBitcoinAddress } from './enhanced-bitcoin-analysis';

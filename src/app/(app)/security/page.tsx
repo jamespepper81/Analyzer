@@ -235,8 +235,56 @@ function RecommendationsLoadingSkeleton() {
     )
 }
 
+function RecommendationsErrorState({
+    message,
+    onRetry,
+    isLoading,
+}: {
+    message: string;
+    onRetry: () => void;
+    isLoading: boolean;
+}) {
+    return (
+        <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <div className="space-y-2">
+                <p className="text-sm text-destructive">{message}</p>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRetry}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Retrying...
+                        </>
+                    ) : (
+                        'Try again'
+                    )}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 export default function SecurityPage() {
-    const { data, isLoading, error, activeXpub: xpub, recommendations, refreshRecommendations, nostrNpub, publishNostrNote, currency, fiatPrice, currencySymbol } = useWallet();
+    const {
+        data,
+        isLoading,
+        error,
+        activeXpub: xpub,
+        recommendations,
+        recommendationsError,
+        isRecommendationsLoading,
+        refreshRecommendations,
+        nostrNpub,
+        publishNostrNote,
+        currency,
+        fiatPrice,
+        currencySymbol,
+    } = useWallet();
     const { toast } = useToast();
     const [isSharing, setIsSharing] = useState(false);
     
@@ -437,6 +485,12 @@ export default function SecurityPage() {
                 recommendations.slice(0, 3).map((rec) => (
                     <RecommendationItem key={rec.title} recommendation={rec} />
                 ))
+            ) : recommendationsError ? (
+                <RecommendationsErrorState
+                    message={recommendationsError}
+                    onRetry={refreshRecommendations}
+                    isLoading={isRecommendationsLoading}
+                />
             ) : (
                 <RecommendationsLoadingSkeleton />
             )}

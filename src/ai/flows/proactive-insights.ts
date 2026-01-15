@@ -10,18 +10,47 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { z } from '@genkit-ai/core';
 import { logger } from '@/lib/logger';
+import {
+  ProactiveInsightOutputSchema,
+  parseProactiveInsightOutput,
+  type ProactiveInsightOutput,
+} from './ai-output-parsers';
+import { assertGenkitSchema, logAiResponsePayload } from './ai-runtime';
+
+export type { ProactiveInsightOutput } from './ai-output-parsers';
 
 const ProactiveInsightInputSchema = z.object({
   walletData: z.string().describe('JSON string containing wallet data including balance, transaction history, security analysis, UTXOs, etc.'),
 });
 export type ProactiveInsightInput = z.infer<typeof ProactiveInsightInputSchema>;
 
-const ProactiveInsightOutputSchema = z.object({
-  insight: z.string().describe("A single, concise, and interesting insight about the user's wallet. It must not start with a greeting like 'Hello' or 'Welcome back'."),
-});
-export type ProactiveInsightOutput = z.infer<typeof ProactiveInsightOutputSchema>;
+const parseJsonFromText = (text: string | undefined): unknown => {
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
+let hasLoggedSchemaShape = false;
+
+const logSchemaShapeOnce = () => {
+  if (hasLoggedSchemaShape) {
+    return;
+  }
+
+  hasLoggedSchemaShape = true;
+  assertGenkitSchema(ProactiveInsightOutputSchema, 'proactiveInsightFlow output');
+  logger.debug('proactiveInsightFlow: output schema snapshot', {
+    schemaDef: (ProactiveInsightOutputSchema as { _def?: unknown })?._def,
+  });
+};
 
 export async function getProactiveInsight(input: ProactiveInsightInput): Promise<ProactiveInsightOutput> {
   return proactiveInsightFlow(input);
@@ -64,15 +93,30 @@ const proactiveInsightFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const {output} = await prompt(input);
-      if (!output) {
-        return { insight: 'Could not generate an insight at this time.' };
+      logSchemaShapeOnce();
+
+      const response = await prompt(input);
+      const rawOutput = response.output ?? parseJsonFromText(response.text);
+      const parsedOutput = parseProactiveInsightOutput(rawOutput);
+
+      logAiResponsePayload('proactiveInsightFlow', response, {
+        rawOutput,
+        parsedOutput,
+      });
+
+      if (!parsedOutput) {
+        logger.warn('proactiveInsightFlow: Invalid model output. Returning empty insight.');
+        logger.debug('proactiveInsightFlow: model output payload', {
+          output: response.output,
+          text: response.text,
+        });
+        return { insight: '' };
       }
-      return output;
-    } catch (e) {
-      logger.error("Error in proactiveInsightFlow:", e);
-      const errorMessage = e instanceof Error ? e.message : String(e);
-      return { insight: `An error occurred while generating an insight: ${errorMessage}` };
+
+      return parsedOutput;
+    } catch (error) {
+      logger.error('Error in proactiveInsightFlow:', error);
+      return { insight: '' };
     }
   }
 );

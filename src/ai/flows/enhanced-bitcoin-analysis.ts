@@ -8,7 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { z } from '@genkit-ai/core';
 import type { WalletData, BitcoinTransactionAnalysis, BitcoinAddressAnalysis } from '@/lib/types';
 
 const PROMPT_CACHE_TTL_SECONDS = 60 * 60; // 1 hour TTL for reusable prompt scaffolding

@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { z } from '@genkit-ai/core';
 import type { WalletData } from '@/lib/types';
 
 const SummarizeAddressInputSchema = z.object({

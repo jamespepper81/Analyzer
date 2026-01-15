@@ -10,8 +10,17 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { z } from '@genkit-ai/core';
 import type { WalletData } from '@/lib/types';
+import { logger } from '@/lib/logger';
+import {
+  SecurityRecommendationsOutputSchema,
+  parseSecurityRecommendationsOutput,
+  type SecurityRecommendationsOutput,
+} from './ai-output-parsers';
+import { assertGenkitSchema, logAiResponsePayload } from './ai-runtime';
+
+export type { SecurityRecommendationsOutput } from './ai-output-parsers';
 
 const SecurityRecommendationsInputSchema = z.object({
   walletSummary: z
@@ -27,24 +36,31 @@ const PromptInputSchema = z.object({
     .describe('JSON string containing a minimal summary of wallet security signals like opsec threat and dust UTXO count.'),
 });
 
-const RecommendationSchema = z.object({
-  title: z.string().describe('A short, clear title for the recommendation.'),
-  description: z
-    .string()
-    .describe(
-      'A concise (2-3 sentences) explanation of the recommendation, its importance, and what the user should do.',
-    ),
-  level: z
-    .enum(['Good', 'Warning', 'Info', 'Critical'])
-    .describe(
-      "The severity or type of recommendation. 'Critical' for severe risks. 'Warning' for medium risks. 'Good' for positive findings. 'Info' for general advice.",
-    ),
-});
+const parseJsonFromText = (text: string | undefined): unknown => {
+  if (!text) {
+    return null;
+  }
 
-const SecurityRecommendationsOutputSchema = z.object({
-  recommendations: z.array(RecommendationSchema).describe("An array of security recommendations."),
-});
-export type SecurityRecommendationsOutput = z.infer<typeof SecurityRecommendationsOutputSchema>;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
+let hasLoggedSchemaShape = false;
+
+const logSchemaShapeOnce = () => {
+  if (hasLoggedSchemaShape) {
+    return;
+  }
+
+  hasLoggedSchemaShape = true;
+  assertGenkitSchema(SecurityRecommendationsOutputSchema, 'securityRecommendationsFlow output');
+  logger.debug('securityRecommendationsFlow: output schema snapshot', {
+    schemaDef: (SecurityRecommendationsOutputSchema as { _def?: unknown })?._def,
+  });
+};
 
 export async function getSecurityRecommendations(
   input: SecurityRecommendationsInput,
@@ -97,44 +113,46 @@ const securityRecommendationsFlow = ai.defineFlow(
     outputSchema: SecurityRecommendationsOutputSchema,
   },
   async (input) => {
+    let parsedSummary: Partial<WalletData> = {};
+
     try {
-      const parsedSummary = JSON.parse(input.walletSummary) as Partial<WalletData>;
+      parsedSummary = JSON.parse(input.walletSummary) as Partial<WalletData>;
+    } catch (error) {
+      logger.warn('securityRecommendationsFlow: Invalid wallet summary JSON. Using defaults.', error);
+    }
 
-      const minimalSummary = {
-        opsecThreat: parsedSummary.opsecThreat ?? 'Low',
-        dustUtxoCount: Math.max(0, Number(parsedSummary.dustUtxoCount) || 0),
-      } satisfies Partial<WalletData>;
+    const minimalSummary = {
+      opsecThreat: parsedSummary.opsecThreat ?? 'Low',
+      dustUtxoCount: Math.max(0, Number(parsedSummary.dustUtxoCount) || 0),
+    } satisfies Partial<WalletData>;
 
-      const promptInput = { walletSummary: JSON.stringify(minimalSummary) };
+    const promptInput = { walletSummary: JSON.stringify(minimalSummary) };
 
-      const { output } = await prompt(promptInput);
+    try {
+      logSchemaShapeOnce();
 
-      if (!output) {
-        return {
-          recommendations: [
-            {
-              title: 'Error',
-              description:
-                'The AI model did not return a response for security recommendations. It might be temporarily unavailable.',
-              level: 'Warning' as const,
-            },
-          ],
-        };
+      const response = await prompt(promptInput);
+      const rawOutput = response.output ?? parseJsonFromText(response.text);
+      const parsedOutput = parseSecurityRecommendationsOutput(rawOutput);
+
+      logAiResponsePayload('securityRecommendationsFlow', response, {
+        rawOutput,
+        parsedOutput,
+      });
+
+      if (!parsedOutput) {
+        logger.warn('securityRecommendationsFlow: Invalid model output. Returning empty recommendations.');
+        logger.debug('securityRecommendationsFlow: model output payload', {
+          output: response.output,
+          text: response.text,
+        });
+        return { recommendations: [] };
       }
-      return output;
-    } catch (e) {
-      console.error('Error in securityRecommendationsFlow:', e);
-      return {
-        recommendations: [
-          {
-            title: 'Analysis Error',
-            description: `An error occurred while generating security recommendations: ${
-              e instanceof Error ? e.message : String(e)
-            }`,
-            level: 'Warning' as const,
-          },
-        ],
-      };
+
+      return parsedOutput;
+    } catch (error) {
+      logger.error('Error in securityRecommendationsFlow:', error);
+      return { recommendations: [] };
     }
   },
 );

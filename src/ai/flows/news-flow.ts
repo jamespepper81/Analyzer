@@ -7,7 +7,7 @@
  * - NewsOutput - The return type for the getNews function.
  */
 
-import { z } from 'zod';
+import { z } from '@genkit-ai/core';
 import { getLatestBitcoinNews } from '@/lib/newsService';
 import type { NewsArticle } from '@/lib/types';
 

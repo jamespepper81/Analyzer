@@ -130,7 +130,18 @@ export default function ChatPage() {
   const { track } = useAnalytics();
   const [isAiLoading, setAiLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { data: walletData, isLoading: isWalletLoading, isLoadingAiContent, error: walletError, activeXpub: xpub, messages, setMessages, suggestions: masterSuggestions } = useWallet();
+  const {
+    data: walletData,
+    isLoading: isWalletLoading,
+    isLoadingAiContent,
+    aiContentError,
+    refreshAiContent,
+    error: walletError,
+    activeXpub: xpub,
+    messages,
+    setMessages,
+    suggestions: masterSuggestions,
+  } = useWallet();
   
   const [placeholder, setPlaceholder] = useState(fallbackSuggestions[0]);
   const [displayedSuggestions, setDisplayedSuggestions] = useState<string[]>([]);
@@ -390,6 +401,24 @@ export default function ChatPage() {
               <AlertTitle className="text-blue-900 dark:text-blue-100">Generating AI insights...</AlertTitle>
               <AlertDescription className="text-blue-800 dark:text-blue-200">
                 Your wallet is loaded. AI is analyzing your transactions and will provide personalized insights momentarily.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {aiContentError && !isLoadingAiContent && (
+            <Alert variant="destructive" className="shadow-md">
+              <AlertTriangle className="h-5 w-5" />
+              <AlertTitle>AI Insights Unavailable</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>{aiContentError}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refreshAiContent({ force: true })}
+                  disabled={isAiLoading}
+                >
+                  Try again
+                </Button>
               </AlertDescription>
             </Alert>
           )}
