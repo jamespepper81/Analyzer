@@ -2,7 +2,7 @@ import eslintConfigNext from 'eslint-config-next';
 
 const [nextConfig, typescriptConfig, ...restConfigs] = eslintConfigNext;
 
-export default [
+const config = [
   {
     ...nextConfig,
     rules: {
@@ -32,3 +32,5 @@ export default [
   },
   ...restConfigs,
 ];
+
+export default config;

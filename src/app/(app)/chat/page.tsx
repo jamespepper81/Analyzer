@@ -251,7 +251,7 @@ export default function ChatPage() {
               updated[assistantMessageIndex] = {
                 ...assistant,
                 content: result.answer,
-                chart: result.chart,
+                chart: result.chart ?? undefined,
               };
             }
             return updated;

@@ -156,7 +156,6 @@ const compactWalletDataForPrompt = (walletDataString: string): string => {
       address: address.address,
       balance: address.balance,
       n_tx: address.n_tx,
-      totalReceived: address.totalReceived,
     }));
 
     const compactPayload = {
@@ -535,7 +534,7 @@ const computeSpendingHabits = (wallet: WalletData) => {
     .filter((tx) => new Date(tx.date).getTime() > Date.now() - 90 * 24 * 60 * 60 * 1000)
     .reduce((sum, tx) => sum + tx.btc, 0);
 
-  const accumulationTrend = recentNetFlow > 0.01
+  const accumulationTrend: 'accumulating' | 'distributing' | 'neutral' = recentNetFlow > 0.01
     ? 'accumulating'
     : recentNetFlow < -0.01
       ? 'distributing'
@@ -617,7 +616,7 @@ const computeRiskSignals = (wallet: WalletData, currentFiatValue: number) => {
     unusualActivityAlert.push('Dust UTXOs present; monitor for potential tracking attempts.');
   }
 
-  const destinationRiskLevel = wallet.transactions.some((tx) =>
+  const destinationRiskLevel: 'low' | 'medium' | 'high' = wallet.transactions.some((tx) =>
     (tx.labels || []).some((label) => label.type === 'exchange')
   )
     ? 'medium'
@@ -638,7 +637,7 @@ const computeMetaAnalytics = (wallet: WalletData) => {
     ? wallet.transactions.filter((tx) => tx.type === 'Sent').length / txCount
     : 0;
 
-  const walletPersona = sendRatio < 0.35
+  const walletPersona: 'HODLer' | 'DCA investor' | 'trader' | 'miner' | 'exchange hot wallet' | 'merchant wallet' | 'unknown' = sendRatio < 0.35
     ? 'HODLer'
     : sendRatio < 0.55
       ? 'DCA investor'
@@ -784,7 +783,7 @@ export const bitcoinDecodeTool = ai.defineTool(
 
         return {
           address,
-          valueSats: txOut.value ?? null,
+          valueSats: txOut.value !== undefined ? Number(txOut.value) : null,
           index,
         };
       });
@@ -793,7 +792,7 @@ export const bitcoinDecodeTool = ai.defineTool(
       const summary = `Decoded PSBT with ${inputs.length} input(s) and ${outputs.length} output(s). ${unsignedInputs} input(s) still need signatures.`;
 
       return {
-        decodedType: 'psbt',
+        decodedType: 'psbt' as const,
         summary,
         details: {
           inputs,
@@ -801,7 +800,7 @@ export const bitcoinDecodeTool = ai.defineTool(
           feeSats: null,
           locktime: psbt.locktime ?? null,
           version: psbt.version ?? null,
-          isRbf: psbt.txInputs.some((inputItem) => inputItem.sequence < 0xfffffffe),
+          isRbf: psbt.txInputs.some((inputItem) => (inputItem.sequence ?? 0xffffffff) < 0xfffffffe),
           warnings,
         },
       };
@@ -828,7 +827,7 @@ export const bitcoinDecodeTool = ai.defineTool(
 
         return {
           address,
-          valueSats: output.value ?? null,
+          valueSats: output.value !== undefined ? Number(output.value) : null,
           index,
         };
       });
@@ -836,7 +835,7 @@ export const bitcoinDecodeTool = ai.defineTool(
       const summary = `Decoded raw transaction with ${inputs.length} input(s) and ${outputs.length} output(s).`;
 
       return {
-        decodedType: 'transaction',
+        decodedType: 'transaction' as const,
         summary,
         details: {
           inputs,
@@ -853,7 +852,7 @@ export const bitcoinDecodeTool = ai.defineTool(
     }
 
     return {
-      decodedType: 'unknown',
+      decodedType: 'unknown' as const,
       summary: 'Unable to decode the provided data. Please ensure it is valid Bitcoin transaction hex or PSBT base64.',
       details: {
         inputs: [],
@@ -1247,14 +1246,14 @@ export const walletIntelligenceTool = ai.defineTool(
         return sum + Math.abs(tx.btc) * ageDays;
       }, 0);
 
-    const coinjoinStatus = wallet.transactions.some((tx) =>
-      tx.labels?.some((label) => label.label?.toLowerCase().includes('coinjoin') || label.type === 'coinjoin')
+    const coinjoinStatus: 'none detected' | 'possible' | 'detected' = wallet.transactions.some((tx) =>
+      tx.labels?.some((label) => label.label?.toLowerCase().includes('coinjoin'))
     )
       ? 'possible'
       : 'none detected';
 
     const lightningExposure = wallet.transactions.some((tx) =>
-      tx.labels?.some((label) => label.label?.toLowerCase().includes('lightning') || label.type === 'lightning')
+      tx.labels?.some((label) => label.label?.toLowerCase().includes('lightning'))
     )
       ? 'possible'
       : 'unknown';
@@ -1409,7 +1408,7 @@ export const bitcoinCAGRCalculatorTool = ai.defineTool(
     };
 
     const scenario = input.scenario || 'moderate';
-    const annualCAGR = historicalCAGR[scenario];
+    const annualCAGR = historicalCAGR[scenario as keyof typeof historicalCAGR];
     const inputCurrency = input.currency || 'USD';
     const currency = inputCurrency.toUpperCase();
     const currentBTCPrice = currencyRates[currency as keyof typeof currencyRates] || currencyRates.USD;
@@ -2216,7 +2215,7 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
 
           const { response, stream } = await withTimeout(
             async () =>
-              ai.generateStream({
+              ai.generateStream<typeof WalletInsightsChatOutputSchema>({
                 system: systemPrompt,
                 prompt: promptWithReminder,
                 messages: messagesForAttempt,
@@ -2235,7 +2234,7 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
                   walletIntelligenceTool,
                   bitcoinDecodeTool,
                 ],
-              }),
+              } as any),
             'walletInsightsChat structured generation'
           );
 
@@ -2246,7 +2245,7 @@ Return only a JSON object with an "answer" string and optional "followUpSuggesti
           }
 
           const finalResponse = await response;
-          const output = finalResponse?.output;
+          const output = finalResponse?.output as WalletInsightsChatOutput | undefined;
 
           if (output) {
             setCachedValue(generationCache, generationCacheKey, output);
