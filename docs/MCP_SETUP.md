@@ -108,7 +108,7 @@ To verify MCP is working:
 ## Troubleshooting
 
 ### MCP Server Not Starting
-- Ensure you have Node.js 20.19+ installed
+- Ensure you have Node.js 20+ installed
 - Check that `.mcp.json` has valid JSON syntax
 - Verify `next.config.ts` has `mcpServer: true` in the experimental section
 
@@ -125,7 +125,7 @@ You may see a warning like:
 ⚠     Unrecognized key(s) in object: 'mcpServer' at "experimental"
 ```
 
-This is expected for Next.js 15.x and can be safely ignored. The feature still works (you'll see `✓ mcpServer` in the experiments list).
+This warning can be safely ignored if you see `✓ mcpServer` in the experiments list, which indicates the feature is working correctly.
 
 ## Additional Resources
 
@@ -142,6 +142,6 @@ This is expected for Next.js 15.x and can be safely ignored. The feature still w
 
 ---
 
-**Last Updated**: November 2025  
-**Next.js Version**: 15.5.6  
+**Last Updated**: January 2026  
+**Next.js Version**: 16.1.1  
 **MCP Version**: Latest
