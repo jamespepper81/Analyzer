@@ -1,11 +1,11 @@
 ---
 name: developer-guide
-description: Comprehensive guide to technical skills, knowledge areas, and competencies required for BitSleuth Analyzer development. Covers Next.js 15 App Router, React 19, TypeScript, AI/Genkit integration, Bitcoin protocol expertise, blockchain APIs, and web security best practices for building a professional-grade Bitcoin wallet analysis platform.
+description: Comprehensive guide to technical skills, knowledge areas, and competencies required for BitSleuth Analyzer development. Covers Next.js 16 App Router, React 19, TypeScript, AI/Genkit integration, Bitcoin protocol expertise, blockchain APIs, and web security best practices for building a professional-grade Bitcoin wallet analysis platform.
 ---
 
 # Required Skills for BitSleuth Analyzer Development
 
-This document outlines the technical skills, knowledge areas, and competencies required to effectively contribute to the **BitSleuth Analyzer** project—an AI-powered Bitcoin wallet insights platform built with Next.js 15 (App Router), React 19, and TypeScript for web.
+This document outlines the technical skills, knowledge areas, and competencies required to effectively contribute to the **BitSleuth Analyzer** project—an AI-powered Bitcoin wallet insights platform built with Next.js 16 (App Router), React 19, and TypeScript for web.
 
 **Live App:** https://app.bitsleuth.ai
 
@@ -31,7 +31,7 @@ This document outlines the technical skills, knowledge areas, and competencies r
 
 ## Core Web Development Skills
 
-### Next.js 15 (Advanced)
+### Next.js 16 (Advanced)
 - **App Router**: Deep understanding of file-based routing, layouts, and route groups
 - **Server Components**: Understanding React Server Components vs Client Components
 - **Route Handlers**: Building API routes in `app/api/` directory
@@ -39,7 +39,7 @@ This document outlines the technical skills, knowledge areas, and competencies r
 - **Loading & Error States**: Implementing `loading.tsx` and `error.tsx` patterns
 - **Parallel & Intercepting Routes**: Advanced routing patterns
 - **Server Actions**: Form handling and mutations (if applicable)
-- **Turbopack**: Development server optimization
+- **Turbopack**: Development server optimization (Next.js 16 improvements)
 - **Configuration**: `next.config.ts` settings and environment variables
 - **Static vs Dynamic Rendering**: Understanding when pages are pre-rendered
 
@@ -288,13 +288,14 @@ This document outlines the technical skills, knowledge areas, and competencies r
 
 ## UI/UX Development
 
-### Tailwind CSS (Advanced)
+### Tailwind CSS 4 (Advanced)
 - **Utility Classes**: Comprehensive use of Tailwind utilities
 - **Responsive Design**: Mobile-first responsive patterns
 - **Dark Mode**: Theme switching with `next-themes`
 - **Custom Configuration**: Extended theme in `tailwind.config.ts`
-- **Animation**: `tailwindcss-animate` for motion
-- **CSS Variables**: Theme customization
+- **PostCSS Integration**: New `@tailwindcss/postcss` architecture in Tailwind 4
+- **CSS Variables**: Theme customization with CSS custom properties
+- **Performance**: Improved build performance with Tailwind 4
 
 ### shadcn/ui Components
 - **Component Library**: Radix UI-based components in `src/components/ui/`
@@ -561,11 +562,11 @@ npm run genkit:watch # AI flows with auto-reload
 Contributing to **BitSleuth Analyzer** requires a blend of modern web development expertise, Bitcoin protocol knowledge, and AI integration skills. This document serves as a comprehensive guide to the skills needed at various levels.
 
 **Priority Skill Areas:**
-1. 🌐 **Next.js 15 & React 19** - Core development platform
+1. 🌐 **Next.js 16 & React 19** - Core development platform
 2. 🔧 **TypeScript** - Primary programming language
 3. 🪙 **Bitcoin Protocol** - Understanding blockchain analysis
 4. 🤖 **AI/Genkit** - Powering insights and chat
-5. 🎨 **Tailwind & shadcn/ui** - UI development
+5. 🎨 **Tailwind 4 & shadcn/ui** - UI development
 
 **For new contributors:**
 - Start with Next.js App Router and TypeScript fundamentals

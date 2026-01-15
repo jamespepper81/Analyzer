@@ -55,8 +55,8 @@ experimental: {
 ## Using MCP with AI Assistants
 
 ### Prerequisites
-- Node.js v20.19+ (latest LTS recommended)
-- Next.js 15+ (Next.js 16+ recommended for full features)
+- Node.js v20+ (required, latest LTS recommended)
+- Next.js 16+ (current version: 16.1.1)
 - An AI coding assistant that supports MCP (GitHub Copilot, Claude, Cursor, etc.)
 
 ### Starting the Development Server

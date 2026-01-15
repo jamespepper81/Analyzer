@@ -74,7 +74,7 @@ The following markdown files are allowed at the root level:
 ## Development Workflow
 
 ### Prerequisites
-- Node.js 18.x or higher (Node.js 20.x or 22.x recommended)
+- Node.js 20.x or higher (required)
 - npm (or pnpm/yarn)
 
 ### Setup

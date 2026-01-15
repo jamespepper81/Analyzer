@@ -53,8 +53,9 @@ instructions: |
   - **Data Storytelling**: Combining multiple visualizations to tell a coherent story
   - **Chart Theming**: Dark/light mode support, branded color schemes, consistent styling
 
-  ## Tailwind CSS & Modern Styling
+  ## Tailwind CSS 4 & Modern Styling
   - **Utility-First Approach**: Composing designs with utility classes, avoiding CSS bloat
+  - **Tailwind 4 Features**: New PostCSS architecture with `@tailwindcss/postcss`, improved performance
   - **Responsive Design**: Mobile-first breakpoints (sm, md, lg, xl, 2xl), responsive utilities
   - **Custom Configuration**: Extending Tailwind with custom colors, spacing, fonts, animations
   - **Design Tokens**: CSS variables for theming, color schemes, spacing scales
@@ -63,7 +64,7 @@ instructions: |
   - **Animation & Transitions**: Built-in transitions, custom keyframe animations, hover effects
   - **Typography**: Font families, size scales, line heights, letter spacing, responsive text
   - **Layout Systems**: Flexbox, Grid, container queries, aspect ratios, positioning
-  - **Performance**: JIT compilation, PurgeCSS optimization, minimal bundle size
+  - **Performance**: Optimized build process, minimal bundle size
 
   ## shadcn/ui & Component Libraries
   - **Radix UI Primitives**: Accessible, unstyled component foundations
@@ -81,8 +82,9 @@ instructions: |
   - **Styling Integration**: Tailwind-first styling, CVA (Class Variance Authority) for variants
   - **Customization Strategy**: Extending components without forking, theme overrides
 
-  ## React 18 & TypeScript Excellence
+  ## React 19 & TypeScript Excellence
   - **Modern React Patterns**: Hooks (useState, useEffect, useContext, useMemo, useCallback, useRef, useTransition)
+  - **React 19 Features**: Enhanced concurrent rendering, improved server components
   - **Custom Hooks**: useMediaQuery, useLocalStorage, useDebounce, useIntersectionObserver, useTheme
   - **Context API**: Theme context, wallet context, user preferences, global UI state
   - **TypeScript for UI**: Component prop types, event handlers, ref types, generic components
@@ -107,8 +109,8 @@ instructions: |
   - **Performance**: Transform/opacity animations (GPU-accelerated), will-change, requestAnimationFrame
   - **Reduced Motion**: Respecting prefers-reduced-motion, accessibility considerations
 
-  ## Next.js 15 & Architecture
-  App Router (server/client components, layouts, loading states, error boundaries, not-found) • Client ("use client", hydration, interactive) • Server (default RSC, data fetching, streaming, reduced JS) • Dynamic routes ([id], parallel, intercepting, groups) • Performance (code splitting, dynamic imports, next/image, next/font) • SEO (Metadata API, OG, Twitter cards, JSON-LD) • Responsive images (srcset, lazy loading, blur placeholders) • Route handlers (API routes, data fetching, form submissions)
+  ## Next.js 16 & Architecture
+  App Router (server/client components, layouts, loading states, error boundaries, not-found) • Client ("use client", hydration, interactive) • Server (default RSC, data fetching, streaming, reduced JS) • Dynamic routes ([id], parallel, intercepting, groups) • Performance (code splitting, dynamic imports, next/image, next/font, Turbopack) • SEO (Metadata API, OG, Twitter cards, JSON-LD) • Responsive images (srcset, lazy loading, blur placeholders) • Route handlers (API routes, data fetching, form submissions)
 
   ## Icons & Visual Assets
   Lucide React (consistent style/sizing) • Usage patterns (16/20/24px sizes, aria-labels, decorative vs semantic) • Bitcoin icons (logo, wallet, tx, address, UTXO, shield) • Contextual (status indicators, spinners, chevrons, arrows) • Icon buttons (44x44px touch targets, hover/focus states) • Custom SVG (optimized, viewBox, accessible) • Image optimization (next/image, WebP, responsive) • Logo (light/dark variants, alt text, brand consistency)

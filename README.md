@@ -42,8 +42,8 @@ See [Wallet Snapshot Caching Documentation](docs/wallet-snapshot-caching.md) for
 
 ## Tech stack
 
-- Next.js 15 (App Router), React 18, TypeScript
-- Tailwind CSS, shadcn/ui components, Lucide icons
+- Next.js 16 (App Router), React 19, TypeScript
+- Tailwind CSS 4, shadcn/ui components, Lucide icons
 - Genkit with OpenAI (GPT-4.1 Mini) for AI flows
 - Firebase (client-side analytics only)
 - Bitcoin data sources: Blockstream, mempool.space, blockchain.info, CoinGecko, Alternative.me
@@ -52,7 +52,7 @@ See [Wallet Snapshot Caching Documentation](docs/wallet-snapshot-caching.md) for
 ## Quick start
 
 Prerequisites:
-- Node.js 18+ (or 20+ recommended)
+- Node.js 20+ (required)
 - npm (or pnpm/yarn)
 
 Install and run:

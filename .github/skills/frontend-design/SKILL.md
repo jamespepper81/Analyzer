@@ -10,9 +10,9 @@ The user provides frontend requirements: a component, page, application, or inte
 ## Technical Stack Requirements
 
 **REQUIRED Technologies:**
-- **Next.js 15** (App Router) — React-based framework
-- **React 18** — Functional components with hooks, TypeScript
-- **Tailwind CSS** — Utility-first styling with custom theme variables
+- **Next.js 16** (App Router) — React-based framework
+- **React 19** — Functional components with hooks, TypeScript
+- **Tailwind CSS 4** — Utility-first styling with custom theme variables
 - **shadcn/ui** — Radix UI primitives, accessible components
 - **Lucide Icons** — Icon system
 - **next-themes** — Theme management (dark/light mode)

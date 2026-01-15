@@ -1,8 +1,8 @@
-# Tailwind CSS Language Server Setup
+# Tailwind CSS 4 Language Server Setup
 
 ## Overview
 
-BitSleuth uses Tailwind CSS for styling, and the Tailwind CSS Language Server provides enhanced IDE features including:
+BitSleuth uses Tailwind CSS 4 for styling, and the Tailwind CSS Language Server provides enhanced IDE features including:
 
 - **IntelliSense**: Autocomplete for Tailwind CSS classes
 - **Linting**: Warnings for unknown or deprecated classes
@@ -61,6 +61,8 @@ The project's Tailwind configuration is located at:
 - `tailwind.config.ts` - Main Tailwind configuration file
 - `postcss.config.mjs` - PostCSS configuration for Tailwind processing
 
+**Note**: Tailwind CSS 4 uses a new PostCSS-based architecture. The project uses `@tailwindcss/postcss` (v4.1.18) instead of the traditional separate PostCSS plugins. This provides improved performance and better integration with Next.js.
+
 ## Features in BitSleuth
 
 ### Custom Class Patterns
@@ -111,15 +113,17 @@ If specific classes aren't autocompleting:
 
 If you see language server errors:
 
-1. **Reinstall globally**: 
+1. **Reinstall dependencies**: 
    ```bash
-   npm uninstall -g @tailwindcss/language-server
-   npm install -g @tailwindcss/language-server
+   rm -rf node_modules package-lock.json
+   npm install
    ```
 
 2. **Check VS Code output**: View → Output → Select "Tailwind CSS Language Server" from dropdown
 
-3. **Verify Node.js version**: Ensure you're using Node.js 18+ or 20+
+3. **Verify Node.js version**: Ensure you're using Node.js 20+
+
+4. **Tailwind v4 compatibility**: The language server should automatically detect Tailwind CSS 4. If issues persist, ensure you have the latest version of the Tailwind CSS IntelliSense extension.
 
 ## Benefits for Development
 

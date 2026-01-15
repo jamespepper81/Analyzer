@@ -84,7 +84,7 @@ Bitcoin users lack comprehensive tools to analyze their wallet security, underst
 
 ## 6. Technical Considerations
 **Platforms:**
-- Web application (Next.js 15 with App Router)
+- Web application (Next.js 16 with App Router)
 - Progressive Web App (PWA) capabilities
 - Responsive design for mobile and desktop
 - Future: Native mobile apps
@@ -98,10 +98,10 @@ Bitcoin users lack comprehensive tools to analyze their wallet security, underst
 - **Data Export:** Google Sheets API for feedback export
 
 **Dependencies:**
-- Node.js 18+ runtime environment
-- Next.js 15 framework
-- React 18 with TypeScript
-- Tailwind CSS for styling
+- Node.js 20+ runtime environment (required)
+- Next.js 16 framework
+- React 19 with TypeScript
+- Tailwind CSS 4 for styling
 - shadcn/ui component library
 - Bitcoin libraries: bitcoinjs-lib, bip32, secp256k1
 - AI/ML: Google Genkit framework with OpenAI GPT-4.1 Mini models
