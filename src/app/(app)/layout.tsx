@@ -296,7 +296,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { activeXpub, isLoading, disconnect, nostrNpub, nostrProfile, isNostrReady, connectNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr } = useWallet();
-  const { setOpenMobile, state: sidebarState } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const { toast } = useToast();
   const [isNostrDialogOpen, setNostrDialogOpen] = React.useState(false);
   const [isEditProfileOpen, setEditProfileOpen] = React.useState(false);
@@ -499,6 +499,9 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   let pageTitle = 'BitSleuth';
   const currentPage = navItems.find(item => pathname.startsWith(item.href));
+  const showLayoutDebug = process.env.NEXT_PUBLIC_LAYOUT_DEBUG === 'true';
+  const layoutHeaderPadding = 'px-4 md:px-6 lg:px-8';
+  const layoutContentPadding = 'p-4 md:p-6 lg:p-8';
   
   if (currentPage) {
       const titles: { [key: string]: string } = {
@@ -520,7 +523,12 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Sidebar collapsible="icon" variant="sidebar">
+      <Sidebar
+        collapsible="icon"
+        variant="sidebar"
+        data-debug={showLayoutDebug}
+        className={cn(showLayoutDebug && 'border-r border-dashed border-emerald-400')}
+      >
         <SidebarHeader className="px-0">
           <div className="grid grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)] items-center">
             <div className="flex h-10 w-full items-center justify-center">
@@ -606,8 +614,12 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm gap-2">
+      <SidebarInset data-debug={showLayoutDebug} className={cn(showLayoutDebug && 'border-l border-dashed border-emerald-400')}>
+        <header className={cn(
+          "sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-sm gap-2",
+          layoutHeaderPadding,
+          showLayoutDebug && 'outline outline-1 outline-emerald-400'
+        )}>
             <div className="flex items-center justify-start gap-2 sm:gap-4 min-w-0">
               <SidebarTrigger />
               <div className="hidden sm:block">
@@ -633,7 +645,8 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         </header>
         <div className={cn(
           "relative flex min-h-svh flex-1 flex-col bg-background overflow-x-hidden transition-[padding] duration-200 ease-linear",
-          sidebarState === 'collapsed' ? "p-4 md:p-6 lg:p-8" : "p-3 md:p-4 lg:p-5"
+          layoutContentPadding,
+          showLayoutDebug && 'outline outline-1 outline-sky-400'
         )}>
           <AnalyticsWarning />
           {children}
@@ -858,9 +871,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
 
     
-
-
-
 
 
 

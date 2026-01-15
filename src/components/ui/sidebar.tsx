@@ -116,6 +116,11 @@ const SidebarProvider = React.forwardRef<
     // We add a state so that we can do data-state="expanded" or "collapsed".
     // This makes it easier to style the sidebar with Tailwind classes.
     const state = open ? "expanded" : "collapsed"
+    const sidebarOffset = isMobile
+      ? "0px"
+      : open
+      ? "var(--sidebar-width-expanded)"
+      : "var(--sidebar-width-collapsed)"
 
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
@@ -137,7 +142,10 @@ const SidebarProvider = React.forwardRef<
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH,
+                "--sidebar-width-expanded": SIDEBAR_WIDTH,
+                "--sidebar-width-collapsed": SIDEBAR_WIDTH_ICON,
                 "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                "--sidebar-offset": sidebarOffset,
                 ...style,
               } as React.CSSProperties
             }
@@ -178,13 +186,6 @@ const Sidebar = React.forwardRef<
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
     const [isMounted, setIsMounted] = React.useState(false);
-    const collapsedWidth =
-      collapsible === "icon"
-        ? variant === "floating" || variant === "inset"
-          ? "calc(var(--sidebar-width-icon) + 1rem)"
-          : "var(--sidebar-width-icon)"
-        : "var(--sidebar-width)"
-    const sidebarWidth = state === "collapsed" ? collapsedWidth : "var(--sidebar-width)"
 
     React.useEffect(() => {
         setIsMounted(true);
@@ -240,21 +241,9 @@ const Sidebar = React.forwardRef<
         data-side={side}
       >
 
-        {/* This is what handles the sidebar gap on desktop */}
-        <div
-          data-sidebar="spacer"
-          style={{ width: sidebarWidth }}
-          className={cn(
-            "duration-200 relative h-svh bg-transparent transition-[width] ease-linear",
-            "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
-          )}
-        />
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-20 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+            "duration-200 fixed inset-y-0 z-20 hidden h-svh w-[var(--sidebar-offset)] transition-[left,right,width] ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -264,7 +253,6 @@ const Sidebar = React.forwardRef<
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
             className
           )}
-          style={{ width: sidebarWidth }}
           {...props}
         >
           <div
@@ -343,7 +331,8 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background",
+        "relative flex min-h-svh min-w-0 flex-1 flex-col bg-background",
+        "peer-data-[variant=sidebar]:ml-[var(--sidebar-offset)] peer-data-[variant=sidebar]:transition-[margin-left] peer-data-[variant=sidebar]:duration-200 peer-data-[variant=sidebar]:ease-linear",
         "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
