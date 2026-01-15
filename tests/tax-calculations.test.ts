@@ -19,6 +19,7 @@ const baseTransaction: Omit<Transaction, 'btc' | 'type' | 'fromAddress' | 'toAdd
   blockHeight: 800000,
   inputs: [],
   outputs: [],
+  totalValue: 0,
 };
 
 describe('classifyTransaction', () => {
