@@ -763,7 +763,8 @@ export async function getWalletDataProgressive(
                 console.log(`[Progressive] Found address ${address} with ${txCount} transactions`);
                 discoveredAddresses.push(address);
                 
-                // Fetch data for this address immediately
+                // Fetch data for this address immediately for final assembly
+                // Note: Not calling onProgress here to avoid server/client boundary issues
                 try {
                     const [txs, utxos, info] = await Promise.all([
                         esploraGet(`/address/${address}/txs`).catch(() => []),
@@ -772,24 +773,6 @@ export async function getWalletDataProgressive(
                     ]);
                     
                     addressDataMap.set(address, { txs, utxos, info });
-                    
-                    // Build partial wallet data and notify
-                    if (onProgress) {
-                        const partialData = await buildPartialWalletData(
-                            xpub,
-                            Array.from(addressDataMap.entries()),
-                            btcPrices,
-                            currency,
-                            latestBlockHeight,
-                            {
-                                addressesChecked: discoveredAddresses.length,
-                                addressesWithActivity: discoveredAddresses.length,
-                                currentBatch: Math.ceil(discoveredAddresses.length / 20),
-                                isComplete: false,
-                            }
-                        );
-                        onProgress(partialData);
-                    }
                 } catch (err) {
                     console.error(`[Progressive] Failed to fetch data for address ${address}:`, err);
                 }
@@ -806,6 +789,22 @@ export async function getWalletDataProgressive(
             const emptySnapshot = createEmptySnapshot(xpub);
             setCachedSnapshot(emptySnapshot);
             const emptyWalletData = await assembleFinalWalletData(emptySnapshot, btcPrices, currency);
+            
+            // Send final update for empty wallet
+            if (onProgress && emptyWalletData) {
+                const finalPartialData: PartialWalletData = {
+                    ...emptyWalletData,
+                    discoveryProgress: {
+                        addressesChecked: 0,
+                        addressesWithActivity: 0,
+                        currentBatch: 0,
+                        isComplete: true,
+                    },
+                    isComplete: true,
+                };
+                onProgress(finalPartialData);
+            }
+            
             return { data: emptyWalletData, error: null };
         }
         

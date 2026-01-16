@@ -775,8 +775,9 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
         return;
       }
       
-      // Final data is already set by the progress callback
+      // Always set the final data (progress callback may not be called for empty wallets)
       if (result.data) {
+        setData(result.data);
         try {
           const cacheEntry = {
             _cacheMetadata: {

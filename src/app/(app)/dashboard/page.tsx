@@ -36,6 +36,9 @@ export default function DashboardPage() {
   if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
 
+  // Check if this is an empty wallet (no transactions)
+  const isEmptyWallet = data && data.transactions.length === 0 && data.balanceBTC === 0;
+
   const recentTransactions = data.transactions.slice(0, 3);
 
   const formatCurrency = (value: number) => {
@@ -75,8 +78,45 @@ export default function DashboardPage() {
         </div>
       )}
       
+      {/* Empty Wallet State */}
+      {isEmptyWallet && !isDiscovering && (
+        <Card className="border-2 border-dashed border-muted-foreground/30 bg-muted/30">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="rounded-full bg-primary/10 p-6 mb-4">
+              <Bitcoin className="h-12 w-12 text-primary" />
+            </div>
+            <h3 className="text-2xl font-bold mb-2">Empty Wallet</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              This wallet has no transaction history yet. Once you receive or send Bitcoin using addresses from this XPUB, they will appear here.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button asChild variant="default">
+                <Link href="/discover">
+                  <Activity className="mr-2 h-4 w-4" />
+                  Explore Bitcoin Network
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/market">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  View Market Data
+                </Link>
+              </Button>
+            </div>
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 max-w-lg">
+              <p className="text-xs text-blue-900 dark:text-blue-100 text-left">
+                <strong className="block mb-1">💡 What to do next:</strong>
+                • Generate a receiving address from your wallet using this XPUB<br />
+                • Send Bitcoin to that address<br />
+                • Return here to see your balance and transaction history
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* AI Insights Loading Indicator */}
-      {isLoadingAiContent && (
+      {!isEmptyWallet && isLoadingAiContent && (
         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 flex items-center gap-3">
           <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
           <p className="text-sm text-blue-900 dark:text-blue-100">
@@ -85,6 +125,9 @@ export default function DashboardPage() {
         </div>
       )}
       
+      {/* Main Dashboard Content - Only show for non-empty wallets */}
+      {!isEmptyWallet && (
+        <>
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
@@ -267,6 +310,8 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }
