@@ -5,6 +5,153 @@ All notable changes to BitSleuth - AI Bitcoin Wallet Analyzer will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-01-16
+
+### Major Framework Upgrades
+
+#### Next.js 16 Migration
+- **Upgraded from Next.js 15.5.9 to 16.1.1** with Turbopack as the default bundler
+- Migrated from webpack to Turbopack configuration with native WASM support
+- Removed 145+ lines of custom webpack configuration
+- Added `turbopackUseSystemTlsCerts: true` to fix Google Fonts TLS errors during build
+- Updated experimental flags for Next.js 16 compatibility
+- Minimum Node.js version now 20.9.0 (enforced via `engines` field in package.json)
+
+#### React 19 Update
+- **Upgraded from React 18 to React 19.2.0**
+- Enhanced concurrent rendering capabilities
+- Improved server components implementation
+- Updated all React-related type definitions
+
+#### Tailwind CSS 4 Migration
+- **Upgraded from Tailwind CSS 3.4.19 to 4.1.18**
+- Migrated to CSS-first configuration with `@theme` directive
+- Replaced PostCSS autoprefixer with `@tailwindcss/postcss@^4.1.18`
+- Converted all 44 custom colors, 3 border radius tokens, and 2 animation tokens to new `@theme` syntax
+- Migrated accordion animations to CSS `@keyframes`
+- Removed `tailwindcss-animate` plugin (functionality now in CSS)
+- Preserved all HSL color variables for runtime theme switching
+
+### Dependency Updates
+
+#### Core Dependencies
+- **firebase**: 11.9.1 → 12.7.0
+- **recharts**: 2.15.1 → 3.6.0 (complete rewrite with new state management)
+- **react-markdown**: 9.0.1 → 10.1.0
+- **date-fns**: 3.6.0 → 4.1.0 (added time zone support)
+- **react-is**: Added ^19.0.0 (new peer dependency for recharts v3)
+- **zod**: Added explicit dependency for schema validation
+
+#### Bitcoin Libraries
+- **bip32**: 4.0.0 → 5.0.0
+- **bitcoinjs-lib**: 6.1.7 → 7.0.1
+- **bs58check**: 3.0.1 → 4.0.0
+- **ecpair**: 2.1.0 → 3.0.0
+- Migrated from Node.js `Buffer` to standard `Uint8Array` for public key handling
+- Removed `@types/bs58check` (v4 includes native TypeScript types)
+- Updated Bitcoin address generation functions for Uint8Array compatibility
+
+### AI & Backend Improvements
+
+#### AI Flow Enhancements
+- Centralized AI output schemas and parsing logic in new `ai-output-parsers.ts`
+- Added robust Zod schemas for security recommendations and proactive insights
+- Enhanced error handling with detailed logging of model responses
+- Improved resilience to malformed AI outputs (returns empty results instead of errors)
+- Added schema validation utilities (`assertGenkitSchema`, safe serialization)
+- Standardized error handling across all AI flows
+
+#### Zod v4 Compatibility
+- Added npm override to force Zod v4.3.5 across all dependencies
+- Updated error message syntax from `{ error: ... }` to `{ message: ... }`
+- Added explicit type annotations for enum literals to satisfy Zod v4 validation
+- Fixed BigInt to Number conversions for Bitcoin transaction values
+
+### User Interface Enhancements
+
+#### Sidebar Improvements
+- Refactored sidebar layout with CSS grid for better alignment
+- Standardized icon sizing (consistent 24px across expanded/collapsed states)
+- Introduced CSS variables for sidebar dimensions (`--sidebar-width-expanded`, `--sidebar-width-collapsed`, `--sidebar-offset`)
+- Fixed z-index layering (header now z-30, sidebar z-20) for proper toggle button accessibility
+- Added smooth transitions for padding and opacity during collapse/expand
+- Improved sidebar spacer logic for better visual consistency
+
+#### Alert & Notification Updates
+- Improved AI Chat alert readability in light mode
+- Updated color scheme: `orange-50` → `amber-100` background, `amber-600/50` border
+- Changed icon color from `red-600` → `amber-700` for cohesive design
+- Enhanced text contrast with `amber-950` title and `amber-900` description
+
+#### Chart Components
+- Updated chart components for recharts v3 compatibility
+- Added new props to `ChartTooltipContent`: `labelFormatter`, `formatter`, `color`, `labelClassName`, `itemStyle`
+- Fixed tooltip payload type changes (`activeLabel` now `string | number`)
+- Updated `ChartLegendContent` with additional flexibility props
+
+### Bug Fixes & Code Quality
+
+#### TypeScript & Linting
+- Resolved all ESLint warnings and TypeScript compilation errors
+- Fixed optional property access with nullish coalescing operators
+- Corrected Tailwind `darkMode` config from array to string syntax
+- Updated ESLint config to use named export instead of anonymous default
+- Added missing `totalValue` property to test transaction fixtures
+- Fixed type assertions for Genkit AI response types
+
+#### Performance & Reliability
+- Fixed race conditions in `MarkdownHooks`
+- Added `fallback` prop to `MarkdownHooks` for better error handling
+- Improved `onMouseMove` handler to check event existence before accessing properties
+- Fixed Treemap rendering to return empty fragment instead of null
+
+### Documentation Updates
+
+#### Version References
+- Updated all documentation for Next.js 16, React 19, Tailwind CSS 4, and Node.js 20+
+- Documented Turbopack improvements and new configuration approach
+- Added comprehensive migration guides:
+  - `docs/BITCOIN_DEPENDENCY_UPDATES.md`: Buffer → Uint8Array migration
+  - `docs/TAILWIND_SETUP.md`: Updated for Tailwind CSS 4
+- Updated skill guides and agent instructions with new framework versions
+- Clarified Node.js 20+ requirement across all setup documentation
+
+### Configuration Changes
+
+#### Build System
+- Updated lint script from `next lint` to `eslint .` for direct control
+- Added explicit `engines` field requiring Node.js >=20.0.0
+- Simplified PostCSS configuration for Tailwind CSS 4
+- Removed legacy experimental flags (`webpackBuildWorker`, `optimizeCss`)
+
+#### Security & Headers
+- Preserved all security headers (CSP, X-Frame-Options, etc.)
+- Maintained image optimization settings (webp, avif)
+- Kept cache control headers for static assets
+
+### Breaking Changes
+
+- **Node.js 20+ Required**: Projects using Node.js 18 or earlier must upgrade
+- **Webpack Removed**: Custom webpack configurations no longer supported; use Turbopack or `--webpack` flag
+- **Buffer → Uint8Array**: Bitcoin library functions now use Uint8Array instead of Node.js Buffer
+- **Zod v4**: Error message syntax changed from `error` to `message` property
+- **recharts v3**: Tooltip payload types and internal APIs changed
+
+### Migration Notes
+
+#### For Developers
+1. Ensure Node.js 20+ is installed
+2. Run `npm install` to update all dependencies
+3. If using Bitcoin libraries directly, update Buffer usage to Uint8Array
+4. Update any Zod schema error messages to use `message` instead of `error`
+5. For WASM support, Turbopack handles it natively (no custom config needed)
+
+#### Rollback Options
+- Use `next dev --webpack` or `next build --webpack` to fallback to webpack if Turbopack issues arise
+- All previous functionality preserved; changes are primarily framework upgrades
+
+---
+
 ## [0.1.0] - 2025-11-06
 
 ### Initial Release - Complete Bitcoin Wallet Analysis Platform
