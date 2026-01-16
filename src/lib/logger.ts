@@ -6,12 +6,23 @@
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-const isDebugLoginFlow = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true';
-
 class Logger {
+  private get isDevelopment(): boolean {
+    return process.env.NODE_ENV === 'development';
+  }
+
+  private get isDebugLoginFlow(): boolean {
+    // Safe client-side check for environment variable
+    if (typeof window !== 'undefined') {
+      // On client, use the NEXT_PUBLIC_ prefixed variable
+      return process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true';
+    }
+    // On server, can access any env variable
+    return process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true';
+  }
+
   private shouldLog(level: LogLevel): boolean {
-    if (isDevelopment) return true;
+    if (this.isDevelopment) return true;
     return level === 'error' || level === 'warn';
   }
 
@@ -43,7 +54,7 @@ class Logger {
    * Login flow specific logging - only logs when DEBUG_LOGIN_FLOW is enabled
    */
   loginFlow(event: string, data?: Record<string, any>): void {
-    if (isDebugLoginFlow || isDevelopment) {
+    if (this.isDebugLoginFlow || this.isDevelopment) {
       const timestamp = Date.now();
       const timeStr = new Date(timestamp).toISOString();
       console.log(`[LOGIN_FLOW] ${timeStr} - ${event}`, data || '');
