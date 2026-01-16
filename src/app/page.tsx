@@ -56,7 +56,7 @@ export default function ConnectWalletPage() {
   const [loadingStage, setLoadingStage] = useState<string>('');
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  const { addXpub, activeXpub, isLoading: isWalletLoading, loginWithNostr, discoveryProgress } = useWallet();
+  const { addXpub, activeXpub, isLoading: isWalletLoading, loginWithNostr, discoveryProgress, testXpub } = useWallet();
 
   const [isNostrLoginOpen, setNostrLoginOpen] = useState(false);
   const [isNostrSubmitting, setIsNostrSubmitting] = useState(false);
@@ -84,6 +84,16 @@ export default function ConnectWalletPage() {
       router.push('/dashboard');
     }
   }, [activeXpub, router]);
+
+  useEffect(() => {
+    if (!testXpub) {
+      return;
+    }
+    const currentValue = form.getValues('xpub');
+    if (!currentValue) {
+      form.setValue('xpub', testXpub, { shouldDirty: true });
+    }
+  }, [form, testXpub]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);

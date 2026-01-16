@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics-tracker';
-import { WalletProvider } from '@/contexts/wallet-context';
+import { WalletProviderWrapper } from '@/components/wallet-provider-wrapper';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
 
@@ -98,6 +98,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isTestMode = process.env.NODE_ENV === 'test';
+  const testXpub = isTestMode ? process.env.TEST_XPUB : undefined;
+
   return (
     <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>
       <head>
@@ -162,9 +165,9 @@ export default function RootLayout({
               disableTransitionOnChange={false}
               storageKey="bitsleuth-theme"
             >
-              <WalletProvider>
+              <WalletProviderWrapper testXpub={testXpub}>
                 {children}
-              </WalletProvider>
+              </WalletProviderWrapper>
               <Toaster />
             </ThemeProvider>
           </Suspense>

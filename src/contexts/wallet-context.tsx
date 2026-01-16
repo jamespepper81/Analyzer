@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from 'react';
 import { getPublicKey, nip19, nip04, finalizeEvent, SimplePool } from 'nostr-tools';
 import type { Event as NostrEvent } from 'nostr-tools';
 import { getWalletData as fetchWalletData, getWalletDataProgressive, type DiscoveryProgress, type PartialWalletData } from '@/lib/blockchain';
@@ -37,6 +37,7 @@ type WalletState = {
   suggestions: string[];
   recommendations: SecurityRecommendation[];
   recommendationsError: string | null;
+  testXpub: string | null;
   setActiveXpub: (xpub: string | null) => void;
   addXpub: (xpub: string) => Promise<{ success: boolean; error: string | null }>;
   removeXpub: (xpub: string) => Promise<void>;
@@ -109,7 +110,14 @@ const generateInitialGreetingMessage = (): Message => {
     };
 };
 
-export const WalletProvider = ({ children }: { children: ReactNode }) => {
+export const WalletProvider = ({ children, testXpub }: { children: ReactNode; testXpub?: string }) => {
+  const testXpubValue = useMemo(() => {
+    if (!testXpub) {
+      return null;
+    }
+    const normalized = normalizeXpub(testXpub);
+    return isLikelyXpub(normalized) ? normalized : null;
+  }, [testXpub]);
   const [xpubs, setXpubs] = useState<string[]>([]);
   const [activeXpub, setActiveXpub] = useState<string | null>(null);
   const [data, setData] = useState<WalletState['data']>(null);
@@ -510,12 +518,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           _setCurrency(storedCurrency);
         }
 
+        const normalizedTestXpub = testXpubValue;
         let currentXpubs = JSON.parse(localStorage.getItem('walletXpubs') || '[]');
         if (Array.isArray(currentXpubs)) {
           currentXpubs = Array.from(new Set(currentXpubs.map(normalizeXpub).filter(Boolean)));
         } else {
           currentXpubs = [];
         }
+
+        if (normalizedTestXpub) {
+          currentXpubs = [normalizedTestXpub];
+          setXpubs(currentXpubs);
+          localStorage.setItem('walletXpubs', JSON.stringify(currentXpubs));
+          setActiveXpubAndPersist(normalizedTestXpub);
+          resetChunkRetry();
+          return;
+        }
+
         const storedNsec = localStorage.getItem('nostr_nsec');
 
         if (storedNsec) {
@@ -569,7 +588,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     init();
-  }, [isNostrReady, fetchNostrProfile, disconnectNostr, loadXpubsFromNostr, setActiveXpubAndPersist]);
+  }, [isNostrReady, fetchNostrProfile, disconnectNostr, loadXpubsFromNostr, setActiveXpubAndPersist, testXpubValue]);
 
   const addXpub = useCallback(async (inputXpub: string): Promise<{ success: boolean; error: string | null }> => {
     const newXpub = normalizeXpub(inputXpub);
@@ -1113,6 +1132,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       suggestions,
       recommendations,
       recommendationsError,
+      testXpub: testXpubValue,
       setActiveXpub: setActiveXpubAndPersist,
       addXpub,
       removeXpub,
