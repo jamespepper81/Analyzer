@@ -58,7 +58,7 @@ export default function DashboardPage() {
         style: 'currency',
         currency: currency,
     }).format(value);
-  }
+  };
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
