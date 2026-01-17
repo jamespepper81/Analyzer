@@ -296,7 +296,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { activeXpub, isLoading, disconnect, nostrNpub, nostrProfile, isNostrReady, connectNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr } = useWallet();
-  const { setOpenMobile } = useSidebar();
+  const { setOpenMobile, isMobile } = useSidebar();
   const { toast } = useToast();
   const [isNostrDialogOpen, setNostrDialogOpen] = React.useState(false);
   const [isEditProfileOpen, setEditProfileOpen] = React.useState(false);
@@ -529,7 +529,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         data-debug={showLayoutDebug}
         className={cn(showLayoutDebug && 'border-r border-dashed border-emerald-400')}
       >
-        <SidebarHeader className="px-0">
+        <SidebarHeader className="px-0 pb-3">
           <div className="grid grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)] items-center">
             <div className="flex h-10 w-full items-center justify-center">
               <Logo className="h-8 w-8" style={{ color: 'hsl(var(--brand))' }} />
@@ -541,25 +541,30 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
+        <SidebarContent className="px-2 pb-2 md:px-0">
+          <SidebarMenu className="gap-2 md:gap-1">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith(item.href)}
+                  size={isMobile ? "lg" : "default"}
                   tooltip={{
                     children: item.description,
                     className: "max-w-xs",
                   }}
                   onClick={handleLinkClick}
+                  className={cn(isMobile && "rounded-xl")}
                 >
                   <Link href={item.href}>
                     <span className="flex h-full w-full items-center justify-center">
-                      <item.icon className="h-6 w-6" />
+                      <item.icon className={cn("h-5 w-5", isMobile && "h-6 w-6")} />
                     </span>
                     <span className="min-w-0 overflow-hidden pr-2">
-                      <span className="block truncate transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0">
+                      <span className={cn(
+                        "block truncate transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0",
+                        isMobile && "text-base"
+                      )}>
                         {item.label}
                       </span>
                     </span>
@@ -871,7 +876,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
 
     
-
 
 
 
