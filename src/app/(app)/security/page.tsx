@@ -402,66 +402,71 @@ export default function SecurityPage() {
             <CardContent className="flex flex-col h-full">
                 <div className="text-xl sm:text-2xl font-bold mb-2">Share</div>
                 <div className="text-xs text-muted-foreground font-normal">Help others improve their Bitcoin privacy.</div>
-                <div className="flex justify-start mt-3">
-                 <AlertDialog>
+                <div className="flex flex-col items-start mt-3">
+                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button
-                            className="w-fit"
-                            disabled={!nostrNpub}
-                            size="sm"
-                        >
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Share on Nostr
-                        </Button>
+                      <Button
+                        className="w-fit"
+                        disabled={!nostrNpub}
+                        size="sm"
+                      >
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Share on Nostr
+                      </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Preview Nostr Note</AlertDialogTitle>
-                            <AlertDialogDescription className="font-normal">
-                                This is a preview of the note that will be published to Nostr from your connected Nostr key.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Preview Nostr Note</AlertDialogTitle>
+                        <AlertDialogDescription className="font-normal">
+                          This is a preview of the note that will be published to Nostr from your connected Nostr key.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
 
-                        {/* Rich preview of the final post */}
-                        <div className="mt-2 space-y-4 rounded-md border bg-muted p-4 text-sm text-muted-foreground">
-                            <p className="whitespace-pre-wrap font-normal">{`Just checked the privacy threat level of my Bitcoin wallet using BitSleuth - free and fast wallet analysis powered by AI.\n\nCheck yours now:`}</p>
-                            
-                            {/* The Link Preview Card */}
-                            <div className="overflow-hidden rounded-lg border bg-background text-card-foreground">
-                                <Image
-                                    src="https://placehold.co/1200x630.png"
-                                    alt="BitSleuth Share Preview"
-                                    width={1200}
-                                    height={630}
-                                    className="aspect-[1.91/1] w-full object-cover"
-                                    data-ai-hint="logo brand"
-                                />
-                                <div className="p-3 space-y-0.5">
-                                    <p className="text-xs text-muted-foreground font-normal">app.bitsleuth.ai</p>
-                                    <p className="font-bold">BitSleuth | AI Bitcoin Wallet Analyzer</p>
-                                    <p className="text-sm text-muted-foreground font-normal">Get AI-powered insights into any Bitcoin wallet. Analyze transactions, security, and privacy with BitSleuth.</p>
-                                </div>
-                            </div>
+                      {/* Rich preview of the final post */}
+                      <div className="mt-2 space-y-4 rounded-md border bg-muted p-4 text-sm text-muted-foreground">
+                        <p className="whitespace-pre-wrap font-normal">{`Just checked the privacy threat level of my Bitcoin wallet using BitSleuth - free and fast wallet analysis powered by AI.\n\nCheck yours now:`}</p>
 
-                            <p className="whitespace-pre-wrap font-normal">{shareHashtags}</p>
+                        {/* The Link Preview Card */}
+                        <div className="overflow-hidden rounded-lg border bg-background text-card-foreground">
+                          <Image
+                            src="https://placehold.co/1200x630.png"
+                            alt="BitSleuth Share Preview"
+                            width={1200}
+                            height={630}
+                            className="aspect-[1.91/1] w-full object-cover"
+                            data-ai-hint="logo brand"
+                          />
+                          <div className="p-3 space-y-0.5">
+                            <p className="text-xs text-muted-foreground font-normal">app.bitsleuth.ai</p>
+                            <p className="font-bold">BitSleuth | AI Bitcoin Wallet Analyzer</p>
+                            <p className="text-sm text-muted-foreground font-normal">Get AI-powered insights into any Bitcoin wallet. Analyze transactions, security, and privacy with BitSleuth.</p>
+                          </div>
                         </div>
 
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={isSharing}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleShare} disabled={isSharing}>
-                                {isSharing ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Publishing...
-                                    </>
-                                ) : (
-                                    'Publish'
-                                )}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
+                        <p className="whitespace-pre-wrap font-normal">{shareHashtags}</p>
+                      </div>
+
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSharing}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleShare} disabled={isSharing}>
+                          {isSharing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Publishing...
+                            </>
+                          ) : (
+                            'Publish'
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
                     </AlertDialogContent>
-                </AlertDialog>
-                {!nostrNpub && <div className="text-xs text-center text-muted-foreground mt-2 font-normal">Connect Nostr to share.</div>}
+                  </AlertDialog>
+                  {!nostrNpub && (
+                    <div className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-600">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Connect Nostr to share.
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1"></div>
             </CardContent>
