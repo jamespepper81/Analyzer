@@ -49,7 +49,7 @@ export default function DashboardPage() {
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
 
   // Check if this is an empty wallet (no transactions)
-  const isEmptyWallet = data && data.transactions.length === 0 && data.balanceBTC === 0;
+  const isEmptyWallet = data.transactions.length === 0 && data.balanceBTC === 0;
 
   const recentTransactions = data.transactions.slice(0, 3);
 
