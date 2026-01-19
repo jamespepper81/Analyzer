@@ -560,11 +560,18 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                     <span className="flex h-full w-full items-center justify-center">
                       <item.icon className={cn("h-5 w-5", isMobile && "h-6 w-6")} />
                     </span>
-                    <span className="min-w-0 overflow-hidden pr-2">
-                      <span className={cn(
-                        "block truncate transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0",
-                        isMobile && "text-base"
-                      )}>
+                    <span
+                      className={cn(
+                        "min-w-0 overflow-hidden pr-2",
+                        isMobile && "pr-0 text-center"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "block truncate transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0",
+                          isMobile && "text-base text-center"
+                        )}
+                      >
                         {item.label}
                       </span>
                     </span>
@@ -876,7 +883,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
 
     
-
 
 
 
