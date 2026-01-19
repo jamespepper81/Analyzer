@@ -186,7 +186,12 @@ function AccountSwitcher() {
                         role="button"
                         aria-label="Switch wallet"
                         onClick={handleTriggerClick}
-                        className="grid w-full cursor-pointer grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)] items-center rounded-md py-2 transition-colors hover:bg-primary/20"
+                        className={cn(
+                            "grid w-full cursor-pointer items-center rounded-md py-2 transition-colors hover:bg-primary/20",
+                            isMobile
+                                ? "grid-cols-1 justify-items-center text-center gap-1 py-3"
+                                : "grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)]"
+                        )}
                     >
                         <div className="flex h-10 w-full items-center justify-center">
                             <Avatar className="h-8 w-8">
@@ -195,9 +200,14 @@ function AccountSwitcher() {
                                 </AvatarFallback>
                             </Avatar>
                         </div>
-                        <div className="min-w-0 overflow-hidden pr-2 transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0">
-                            <div className="flex items-center gap-2">
-                                <div className="min-w-0 flex-1 text-left">
+                        <div
+                            className={cn(
+                                "min-w-0 overflow-hidden pr-2 transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0",
+                                isMobile && "pr-0 text-center"
+                            )}
+                        >
+                            <div className={cn("flex items-center gap-2", isMobile && "flex-col gap-1")}>
+                                <div className={cn("min-w-0 flex-1 text-left", isMobile && "text-center")}>
                                     <span className='block truncate font-semibold text-sm'>Active XPUB Key</span>
                                     <span className='block truncate font-mono text-xs text-muted-foreground'>{`${activeXpub.substring(0, 12)}...`}</span>
                                 </div>
@@ -585,7 +595,14 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col gap-2 px-0 py-2">
                 <AccountSwitcher />
                 <SidebarSeparator className="my-0 w-auto" />
-                <div className="grid grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)] items-center rounded-md py-2">
+                <div
+                  className={cn(
+                    "grid items-center rounded-md py-2",
+                    isMobile
+                      ? "grid-cols-1 justify-items-center text-center gap-1 py-3"
+                      : "grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)]"
+                  )}
+                >
                   <div className="flex h-10 w-full items-center justify-center">
                     {nostrNpub ? (
                       <Avatar className="h-8 w-8">
@@ -602,10 +619,15 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                       </Avatar>
                     )}
                   </div>
-                  <div className="min-w-0 overflow-hidden pr-2 transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0">
+                  <div
+                    className={cn(
+                      "min-w-0 overflow-hidden pr-2 transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0",
+                      isMobile && "pr-0 text-center"
+                    )}
+                  >
                     {nostrNpub ? (
-                      <div className="flex items-start gap-2">
-                        <div className='min-w-0 flex-1'>
+                      <div className={cn("flex items-start gap-2", isMobile && "flex-col items-center gap-1")}>
+                        <div className={cn('min-w-0 flex-1', isMobile && "text-center")}>
                           <span className='block truncate font-semibold text-sm'>{nostrProfile?.display_name || nostrProfile?.name || 'Nostr User'}</span>
                           <span className='block truncate text-xs text-muted-foreground font-mono' title={nostrNpub}>{`${nostrNpub.substring(0, 12)}...`}</span>
                         </div>
@@ -614,9 +636,18 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                         </Button>
                       </div>
                     ) : (
-                      <div className='flex flex-col'>
+                      <div className={cn('flex flex-col', isMobile && "items-center text-center")}>
                           <span className='font-semibold text-sm truncate'>Nostr Account</span>
-                          <Button variant="link" size="sm" className="p-0 h-auto text-primary justify-start text-xs hover:no-underline" onClick={() => setNostrDialogOpen(true)} disabled={!isNostrReady}>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className={cn(
+                              "p-0 h-auto text-primary justify-start text-xs hover:no-underline",
+                              isMobile && "justify-center"
+                            )}
+                            onClick={() => setNostrDialogOpen(true)}
+                            disabled={!isNostrReady}
+                          >
                             {isNostrReady ? 'Connect Account' : <Loader2 className="h-3 w-3 animate-spin"/>}
                           </Button>
                       </div>
@@ -883,7 +914,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
 
     
-
-
 
 
