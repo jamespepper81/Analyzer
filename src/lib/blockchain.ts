@@ -670,7 +670,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
         // Always fetch fresh price data (this is fast and currency-specific)
         // This is the ONLY thing we re-fetch on currency changes or wallet switches
         console.log(`[WalletData] Fetching fresh price data for ${currency}...`);
-        let btcPrices: Record<string, BtcPriceInfo> = { ...DEFAULT_BTC_PRICES };
+        let btcPrices: Record<string, BtcPriceInfo>;
         try {
             const fetchedPrices = await fetchJson('https://blockchain.info/ticker');
             btcPrices = normalizeBtcPrices(fetchedPrices);
@@ -757,7 +757,7 @@ export async function getWalletDataProgressive(
         const cachedSnapshot = getCachedSnapshot(xpub);
         
         // Fetch fresh price data early (needed for all updates)
-        let btcPrices: Record<string, BtcPriceInfo> = { ...DEFAULT_BTC_PRICES };
+        let btcPrices: Record<string, BtcPriceInfo>;
         try {
             const fetchedPrices = await fetchJson('https://blockchain.info/ticker');
             btcPrices = normalizeBtcPrices(fetchedPrices);
