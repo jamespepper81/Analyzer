@@ -150,7 +150,7 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
+              "group/sidebar-wrapper flex min-h-dvh w-full has-[[data-variant=inset]]:bg-sidebar",
               className
             )}
             ref={ref}
@@ -213,7 +213,7 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             aria-describedby="sidebar-description"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            className="h-dvh w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -243,7 +243,7 @@ const Sidebar = React.forwardRef<
 
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-20 hidden h-svh w-[var(--sidebar-offset)] transition-[left,right,width] ease-linear md:flex",
+            "duration-200 fixed inset-y-0 z-20 hidden h-dvh w-[var(--sidebar-offset)] transition-[left,right,width] ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -331,9 +331,9 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh min-w-0 flex-1 flex-col bg-background",
+        "relative flex min-h-dvh min-w-0 flex-1 flex-col bg-background",
         "peer-data-[variant=sidebar]:ml-[var(--sidebar-offset)] peer-data-[variant=sidebar]:transition-[margin-left] peer-data-[variant=sidebar]:duration-200 peer-data-[variant=sidebar]:ease-linear",
-        "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
+        "peer-data-[variant=inset]:min-h-[calc(100dvh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
       {...props}
