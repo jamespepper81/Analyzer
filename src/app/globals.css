@@ -82,6 +82,22 @@
   }
 }
 
+/* Warning alert text colors - explicit overrides for light mode visibility */
+[role="alert"].bg-orange-100 > h5,
+[role="alert"].bg-orange-100 > div {
+  color: #431407; /* orange-950 */
+}
+[role="alert"].bg-orange-100 > svg {
+  color: #c2410c; /* orange-700 */
+}
+.dark [role="alert"].dark\:bg-orange-500\/20 > h5,
+.dark [role="alert"].dark\:bg-orange-500\/20 > div {
+  color: #fff7ed; /* orange-50 */
+}
+.dark [role="alert"].dark\:bg-orange-500\/20 > svg {
+  color: #fb923c; /* orange-400 */
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
