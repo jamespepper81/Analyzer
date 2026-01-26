@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, ArrowUpRight, ArrowDownLeft, Loader2, Activity } from 'lucide-react';
+import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, ArrowUpRight, ArrowDownLeft, Loader2, Activity, RefreshCw } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -23,15 +23,45 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useWallet } from '@/contexts/wallet-context';
-import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
+import { ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
+import { LoadingProgress, CompactProgress, DashboardSkeleton } from '@/components/dashboard/loading-progress';
+import { SkeletonCard, SkeletonTransactionRow } from '@/components/ui/orbital-loader';
+import type { LoadStage } from '@/components/ui/orbital-loader';
 
 export default function DashboardPage() {
-  const { data, isLoading, isLoadingAiContent, error, activeXpub: xpub, fiatBalance, currency, fiatPrice, isDiscovering, discoveryProgress } = useWallet();
+  const { data, isLoading, isLoadingAiContent, error, activeXpub: xpub, fiatBalance, currency, fiatPrice, isDiscovering, discoveryProgress, refetch } = useWallet();
   const hasBlockingError = !!error && !data;
+  const [loadStartTime] = useState(() => Date.now());
+  const [isLongWait, setIsLongWait] = useState(false);
+
+  // Determine current loading stage for premium UX
+  const getLoadStage = (): LoadStage => {
+    if (!xpub) return 'CONNECTING';
+    if (isDiscovering && discoveryProgress) {
+      if (discoveryProgress.addressesWithActivity === 0) return 'DISCOVERING';
+      if (data && data.transactions.length > 0) return 'TRANSACTIONS';
+      return 'BALANCES';
+    }
+    if (isLoading && !data) return 'DISCOVERING';
+    if (isLoadingAiContent) return 'ENRICHING';
+    if (data) return 'COMPLETE';
+    return 'CONNECTING';
+  };
+
+  const loadStage = getLoadStage();
+  const stageNumber = {
+    'CONNECTING': 1,
+    'NOSTR_SYNCING': 1,
+    'DISCOVERING': 2,
+    'BALANCES': 2,
+    'TRANSACTIONS': 3,
+    'ENRICHING': 4,
+    'COMPLETE': 4,
+  }[loadStage];
 
   // Log when dashboard mounts for login flow tracking
   useEffect(() => {
@@ -43,8 +73,55 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!xpub) return <FullPageLoader />;
-  if (isLoading && !data) return <FullPageLoader />;
+  // Track long wait times (30+ seconds)
+  useEffect(() => {
+    if (!isLoading && data) {
+      setIsLongWait(false);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      if (isLoading || isDiscovering) {
+        setIsLongWait(true);
+      }
+    }, 30000);
+
+    return () => clearTimeout(timeout);
+  }, [isLoading, isDiscovering, data]);
+
+  // Show skeleton dashboard immediately when no xpub
+  if (!xpub) {
+    return (
+      <div className="flex flex-col gap-4 sm:gap-6">
+        <LoadingProgress
+          stage="CONNECTING"
+          stageNumber={1}
+          message="Connecting to your wallet..."
+        />
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  // Premium loading state: show skeleton with progress
+  if (isLoading && !data) {
+    return (
+      <div className="flex flex-col gap-4 sm:gap-6">
+        <LoadingProgress
+          stage={loadStage}
+          stageNumber={stageNumber}
+          message={discoveryProgress
+            ? `Discovering addresses... Found ${discoveryProgress.addressesWithActivity}`
+            : 'Connecting to blockchain...'}
+          addressesFound={discoveryProgress?.addressesWithActivity}
+          transactionsLoaded={0}
+          isLongWait={isLongWait}
+        />
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
   if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
 
@@ -62,32 +139,14 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Progressive Discovery Status */}
+      {/* Progressive Discovery Status - Premium compact progress */}
       {isDiscovering && discoveryProgress && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-4 shadow-md">
-          <div className="flex items-start gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                  🔍 Discovering wallet addresses...
-                </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">
-                  {discoveryProgress.addressesWithActivity} found
-                </p>
-              </div>
-              <p className="text-xs text-blue-800 dark:text-blue-200">
-                Your balance and transactions are updating in real-time as we discover more addresses. You can explore your wallet while discovery continues!
-              </p>
-              <div className="flex items-center gap-2">
-                <Progress value={(discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100} className="h-1.5" />
-                <span className="text-xs text-blue-700 dark:text-blue-300 whitespace-nowrap">
-                  {discoveryProgress.addressesChecked} checked
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CompactProgress
+          stage={loadStage}
+          message="Discovering addresses in real-time..."
+          addressesFound={discoveryProgress.addressesWithActivity}
+          transactionsLoaded={data.transactions.length}
+        />
       )}
       
       {/* Empty Wallet State */}
@@ -129,12 +188,11 @@ export default function DashboardPage() {
       
       {/* AI Insights Loading Indicator */}
       {!isEmptyWallet && isLoadingAiContent && (
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 flex items-center gap-3">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-          <p className="text-sm text-blue-900 dark:text-blue-100">
-            <span className="font-semibold">AI insights loading...</span> Your wallet data is ready to analyze. AI-powered recommendations will appear shortly.
-          </p>
-        </div>
+        <CompactProgress
+          stage="ENRICHING"
+          message="Analyzing your wallet with AI..."
+          isRefreshing={false}
+        />
       )}
       
       {/* Main Dashboard Content - Only show for non-empty wallets */}
@@ -322,6 +380,23 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Refresh button */}
+      <div className="flex justify-center pt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={refetch}
+          disabled={isLoading || isDiscovering}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className={cn(
+            "h-4 w-4 mr-2",
+            (isLoading || isDiscovering) && "animate-spin"
+          )} />
+          {isLoading || isDiscovering ? 'Refreshing...' : 'Refresh data'}
+        </Button>
+      </div>
         </>
       )}
     </div>
