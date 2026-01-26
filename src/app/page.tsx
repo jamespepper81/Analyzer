@@ -28,8 +28,9 @@ import {
   Activity,
   BarChart3,
   Search,
+  Zap,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { useWallet } from "@/contexts/wallet-context";
 import { cn } from "@/lib/utils";
 import {
@@ -37,10 +38,12 @@ import {
   STAGE_TRANSITION_TIMEOUT_MS,
 } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { WalletConnectionProgress } from "@/components/ui/wallet-connection-progress";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Image from "next/image";
 import { LoginFlowTimer } from "@/lib/logger";
+import { validateAuthInput, measureAuthValidation } from "@/lib/fast-auth";
 
 
 const formSchema = z.object({
@@ -54,8 +57,6 @@ export default function ConnectWalletPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadingStage, setLoadingStage] = useState<string>('');
-  const [elapsedTime, setElapsedTime] = useState(0);
   
   // Timer for tracking login flow performance
   const loginTimer = useRef(new LoginFlowTimer());
@@ -110,52 +111,31 @@ export default function ConnectWalletPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Reset navigation flag for new submission
     hasNavigated.current = false;
-    
+
     // Start timing the login flow
     loginTimer.current.start('connectStart');
-    
+
     setIsSubmitting(true);
     setError(null);
-    setElapsedTime(0);
-    setLoadingStage('Validating XPUB format...');
-
-    let isActive = true;
-    const stageTimeouts: Array<ReturnType<typeof setTimeout>> = [];
-
-    // Start timer for elapsed time tracking
-    const startTime = Date.now();
-    const timerInterval = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
 
     try {
+      // FAST PATH: Validate synchronously (<50ms target)
       loginTimer.current.mark('validationStart');
-      
-      // Update stage after initial validation
-      stageTimeouts.push(setTimeout(() => {
-        if (isActive) {
-          setLoadingStage('Discovering wallet addresses...');
-        }
-      }, 2000));
+      const { result: validation, durationMs } = measureAuthValidation(values.xpub);
+      loginTimer.current.mark('validationComplete', { durationMs, success: validation.success });
 
-      stageTimeouts.push(setTimeout(() => {
-        if (isActive) {
-          setLoadingStage('Fetching transaction history...');
-        }
-      }, 15000));
+      if (!validation.success) {
+        setError(validation.error || 'Invalid XPUB format');
+        setIsSubmitting(false);
+        return;
+      }
 
-      stageTimeouts.push(setTimeout(() => {
-        if (isActive) {
-          setLoadingStage('Processing transactions and UTXOs...');
-        }
-      }, 35000));
+      // INSTANT ROUTE: Navigate immediately, don't wait for data
+      loginTimer.current.mark('instantRouteStart');
 
-      stageTimeouts.push(setTimeout(() => {
-        if (isActive) {
-          setLoadingStage('Finalizing wallet analysis...');
-        }
-      }, STAGE_TRANSITION_TIMEOUT_MS));
-
+      // Add XPUB to context (this triggers background loading)
+      // The navigation will happen via useEffect, but we call addXpub
+      // which sets activeXpub synchronously
       loginTimer.current.mark('addXpubStart');
       const result = await addXpub(values.xpub);
       loginTimer.current.mark('addXpubComplete', { success: !result.error });
@@ -163,33 +143,23 @@ export default function ConnectWalletPage() {
       if (result.error) {
         loginTimer.current.mark('addXpubError', { error: result.error });
         setError(result.error);
+        setIsSubmitting(false);
       } else {
+        // Success - navigation will happen via useEffect when activeXpub updates
         loginTimer.current.mark('connectionSuccessful');
-        setLoadingStage('Connection successful! Redirecting...');
-        
-        toast({
-          title: "Connection Successful",
-          description: "Redirecting to your dashboard.",
-        });
-        
-        // The navigation will happen via the useEffect when activeXpub updates
-        // But we'll also log the summary here for debugging
-        setTimeout(() => {
-          if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true') {
+
+        // Log timing summary in dev mode
+        if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true') {
+          setTimeout(() => {
             console.log(loginTimer.current.getSummary());
-          }
-        }, 100);
+          }, 100);
+        }
+        // Keep isSubmitting true - user will see brief loading then navigate
       }
     } catch (error) {
       loginTimer.current.mark('unexpectedError', { error: error instanceof Error ? error.message : String(error) });
-      // Handle any unexpected errors that might occur
       setError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.');
-    } finally {
-      isActive = false;
-      stageTimeouts.forEach(clearTimeout);
-      clearInterval(timerInterval);
       setIsSubmitting(false);
-      setLoadingStage('');
     }
   }
 
@@ -197,9 +167,24 @@ export default function ConnectWalletPage() {
     // Reset navigation flag
     hasNavigated.current = false;
     loginTimer.current.start('nostrLoginStart');
-    
+
     setIsNostrSubmitting(true);
     setError(null);
+
+    // FAST PATH: Validate nsec format locally first
+    loginTimer.current.mark('nsecValidationStart');
+    const validation = validateAuthInput(values.nsec);
+    loginTimer.current.mark('nsecValidationComplete', { success: validation.success });
+
+    if (!validation.success) {
+      setError(validation.error || 'Invalid Nostr key format');
+      setIsNostrSubmitting(false);
+      setNostrLoginOpen(false);
+      return;
+    }
+
+    // Close the input dialog immediately so the progress modal can show
+    setNostrLoginOpen(false);
 
     loginTimer.current.mark('loginWithNostrStart');
     const result = await loginWithNostr(values.nsec);
@@ -208,22 +193,18 @@ export default function ConnectWalletPage() {
     if (result.error) {
       loginTimer.current.mark('nostrLoginError', { error: result.error });
       setError(result.error);
-      setNostrLoginOpen(false);
+      setIsNostrSubmitting(false);
     } else {
       loginTimer.current.mark('nostrLoginSuccessful');
-      toast({
-        title: "Login Successful",
-        description: "Found your saved wallets. Redirecting to your dashboard.",
-      });
-      setNostrLoginOpen(false);
-      // The useEffect will handle the redirect when activeXpub updates
-      setTimeout(() => {
-        if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true') {
+      // Navigation happens via useEffect when activeXpub updates
+
+      if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true') {
+        setTimeout(() => {
           console.log(loginTimer.current.getSummary());
-        }
-      }, 100);
+        }, 100);
+      }
+      // Keep isNostrSubmitting true - user will navigate shortly
     }
-    setIsNostrSubmitting(false);
   }
 
   const handleTryAgain = () => {
@@ -400,7 +381,7 @@ export default function ConnectWalletPage() {
                     )}
                   </Button>
 
-                  {/* Progress Dialog */}
+                  {/* Enhanced connecting progress modal */}
                   <Dialog open={isSubmitting} onOpenChange={(open) => !open && setIsSubmitting(false)}>
                     <DialogContent
                       className="sm:max-w-md"
@@ -408,92 +389,7 @@ export default function ConnectWalletPage() {
                       onPointerDownOutside={(e) => e.preventDefault()}
                       onEscapeKeyDown={(e) => e.preventDefault()}
                     >
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                          {discoveryProgress && discoveryProgress.addressesWithActivity > 0
-                            ? `Discovering Wallet - ${discoveryProgress.addressesWithActivity} Addresses Found`
-                            : 'Connecting Your Wallet'}
-                        </DialogTitle>
-                        <DialogDescription className="font-normal">
-                          {discoveryProgress
-                            ? `${discoveryProgress.addressesChecked} addresses checked, ${discoveryProgress.addressesWithActivity} with activity`
-                            : 'Please wait while we analyze your Bitcoin wallet...'}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        {discoveryProgress && (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                {discoveryProgress.isComplete
-                                  ? '✅ Discovery complete!'
-                                  : `🔍 Batch ${discoveryProgress.currentBatch} - scanning addresses...`}
-                              </span>
-                              <span className="text-primary font-mono font-semibold">
-                                {discoveryProgress.addressesWithActivity} found
-                              </span>
-                            </div>
-                            <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-gradient-to-r from-primary to-primary/70 h-full transition-all duration-500 ease-out"
-                                style={{
-                                  width: discoveryProgress.isComplete
-                                    ? '100%'
-                                    : `${Math.min((discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100, 95)}%`
-                                }}
-                              />
-                            </div>
-                            {!discoveryProgress.isComplete && (
-                              <p className="text-xs text-muted-foreground text-center">
-                                Discovery continues until no more active addresses are found (BIP44 gap limit)
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        {!discoveryProgress && (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">{loadingStage || 'Validating XPUB...'}</span>
-                              <span className="text-muted-foreground">{elapsedTime}s</span>
-                            </div>
-                            <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-primary h-full transition-all duration-1000 ease-out"
-                                style={{
-                                  width: `${Math.min((elapsedTime / DISCOVERY_TIMEOUT_SECONDS) * 100, 95)}%`
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        <div className="rounded-lg bg-muted p-3 text-xs space-y-1 text-muted-foreground">
-                          <p className="flex items-center gap-2">
-                            <ShieldCheck className="h-3 w-3 text-primary" />
-                            {discoveryProgress
-                              ? `Found ${discoveryProgress.addressesWithActivity} addresses with ${discoveryProgress.addressesChecked} checked`
-                              : 'Discovering wallet addresses (no timeout - continues until complete)'}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <Activity className="h-3 w-3 text-primary" />
-                            {discoveryProgress && discoveryProgress.addressesWithActivity > 0
-                              ? 'Transactions are being fetched in real-time'
-                              : 'Fetching transaction history from blockchain'}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <BarChart3 className="h-3 w-3 text-primary" />
-                            {discoveryProgress && discoveryProgress.addressesWithActivity > 0
-                              ? 'You can view your wallet while discovery continues!'
-                              : 'Calculating security and performance metrics'}
-                          </p>
-                        </div>
-                        {discoveryProgress && discoveryProgress.addressesChecked > 40 && !discoveryProgress.isComplete && (
-                          <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 text-xs text-green-900 dark:text-green-100">
-                            <p className="font-semibold mb-1">🎉 Large wallet detected!</p>
-                            <p>Found {discoveryProgress.addressesWithActivity} addresses so far. Discovery will continue until no more active addresses are found (no timeout!).</p>
-                          </div>
-                        )}
-                      </div>
+                      <WalletConnectionProgress type="xpub" isOpen={isSubmitting} />
                     </DialogContent>
                   </Dialog>
 
@@ -555,6 +451,18 @@ export default function ConnectWalletPage() {
                         </Form>
                       </DialogContent>
                     )}
+                  </Dialog>
+
+                  {/* Enhanced Nostr connection progress modal */}
+                  <Dialog open={isNostrSubmitting && !isNostrLoginOpen} onOpenChange={() => {}}>
+                    <DialogContent
+                      className="sm:max-w-md"
+                      hideCloseButton
+                      onPointerDownOutside={(e) => e.preventDefault()}
+                      onEscapeKeyDown={(e) => e.preventDefault()}
+                    >
+                      <WalletConnectionProgress type="nostr" isOpen={isNostrSubmitting && !isNostrLoginOpen} />
+                    </DialogContent>
                   </Dialog>
                 </div>
               </form>
