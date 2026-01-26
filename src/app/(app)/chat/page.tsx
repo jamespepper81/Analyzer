@@ -42,6 +42,59 @@ const fallbackSuggestions = [
 const MAX_CHAT_HISTORY = 8;
 const MAX_CHAT_MESSAGE_LENGTH = 1200;
 
+/**
+ * Extracts the answer content from a partial JSON stream.
+ * The AI streams JSON like: {"answer": "Your wallet has...", "chart": null, ...}
+ * This function extracts just the answer text as it's being built.
+ */
+const extractAnswerFromStream = (jsonStream: string): string | null => {
+  // Look for the start of the answer field
+  const answerStart = jsonStream.indexOf('"answer"');
+  if (answerStart === -1) return null;
+
+  // Find the colon and opening quote after "answer"
+  const colonIndex = jsonStream.indexOf(':', answerStart);
+  if (colonIndex === -1) return null;
+
+  // Find the opening quote of the answer value
+  const openQuoteIndex = jsonStream.indexOf('"', colonIndex);
+  if (openQuoteIndex === -1) return null;
+
+  // Extract content after the opening quote
+  let content = '';
+  let i = openQuoteIndex + 1;
+
+  while (i < jsonStream.length) {
+    const char = jsonStream[i];
+
+    // Handle escape sequences
+    if (char === '\\' && i + 1 < jsonStream.length) {
+      const nextChar = jsonStream[i + 1];
+      switch (nextChar) {
+        case '"': content += '"'; break;
+        case '\\': content += '\\'; break;
+        case 'n': content += '\n'; break;
+        case 'r': content += '\r'; break;
+        case 't': content += '\t'; break;
+        default: content += nextChar;
+      }
+      i += 2;
+      continue;
+    }
+
+    // End of answer string - found unescaped quote
+    if (char === '"') {
+      return content;
+    }
+
+    content += char;
+    i++;
+  }
+
+  // Return partial content (string not yet closed)
+  return content;
+};
+
 const sanitizeHistory = (history: Message[]): Message[] => {
   const trimmedHistory = history.slice(-MAX_CHAT_HISTORY);
 
@@ -220,10 +273,10 @@ export default function ChatPage() {
       } else {
           track('ask_ai_chat', { type: 'question', length: message.length });
 
-          // Use streamFlow but don't display raw streaming chunks to the user.
-          // Genkit with structured output schemas streams raw JSON being built,
-          // which includes `{"answer":`, `"chart": null`, `"followUpSuggestions": ...`.
-          // We wait for the final parsed output and display only the clean answer.
+          // Add empty assistant message for streaming content into
+          const assistantMessageIndex = currentHistory.length + 1;
+          setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
           const { stream, output } = streamFlow({
             url: '/api/chat',
             headers: {
@@ -237,25 +290,59 @@ export default function ChatPage() {
             },
           });
 
-          // Consume the stream to ensure the request completes, but don't display raw JSON
+          // Accumulate the JSON stream and extract answer progressively
+          // Genkit streams the JSON being built: {"answer": "...", "chart": null, ...}
+          // We extract just the answer text to display in real-time
+          let jsonAccumulator = '';
+          let lastExtractedLength = 0;
+
           for await (const chunk of stream as AsyncIterable<WalletInsightsChatStreamChunk>) {
-            // Stream consumed but not displayed - raw JSON chunks are not user-friendly
-            void chunk;
+            if (chunk.type === 'token' && chunk.content) {
+              jsonAccumulator += chunk.content;
+
+              // Try to extract the answer from the accumulated JSON
+              const extractedAnswer = extractAnswerFromStream(jsonAccumulator);
+
+              // Only update if we have new content to show
+              if (extractedAnswer && extractedAnswer.length > lastExtractedLength) {
+                lastExtractedLength = extractedAnswer.length;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  if (updated[assistantMessageIndex]) {
+                    updated[assistantMessageIndex] = {
+                      ...updated[assistantMessageIndex],
+                      content: extractedAnswer,
+                    };
+                  }
+                  return updated;
+                });
+              }
+            }
           }
 
-          // Get the final parsed result with clean answer text
+          // Get the final parsed result with chart data
           const result = (await output) as WalletInsightsChatOutput;
 
           // Validate result has a proper answer string
-          const answer = typeof result?.answer === 'string' && result.answer.trim()
+          const finalAnswer = typeof result?.answer === 'string' && result.answer.trim()
             ? result.answer
             : 'I was unable to generate a response. Please try again.';
 
-          assistantMessage = {
-            role: 'assistant',
-            content: answer,
-            chart: result?.chart ?? undefined,
-          };
+          // Update with final answer and chart data
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (updated[assistantMessageIndex]) {
+              updated[assistantMessageIndex] = {
+                ...updated[assistantMessageIndex],
+                content: finalAnswer,
+                chart: result?.chart ?? undefined,
+              };
+            }
+            return updated;
+          });
+
+          // Don't add again via assistantMessage since we already updated in place
+          assistantMessage = null;
       }
 
       if (assistantMessage) {
@@ -268,7 +355,13 @@ export default function ChatPage() {
         role: 'system',
         content: 'I\'m sorry, I encountered an error. Please try again.',
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      // Remove any empty assistant message from streaming, then add error
+      setMessages((prev) => {
+        const filtered = prev.filter(
+          (msg) => !(msg.role === 'assistant' && !msg.content.trim())
+        );
+        return [...filtered, errorMessage];
+      });
     } finally {
       setAiLoading(false);
       updateSuggestions();
@@ -413,6 +506,8 @@ export default function ChatPage() {
           </Alert>
 
           {messages.map((message, index) => (
+            // Hide empty assistant messages (streaming placeholder) - "Thinking..." indicator handles loading state
+            message.role === 'assistant' && !message.content ? null : (
             <div key={index} className={cn('flex items-start gap-2 sm:gap-4', message.role === 'user' && 'justify-end')}>
               {message.role === 'assistant' && (
                 <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border shadow-sm flex-shrink-0">
@@ -427,7 +522,7 @@ export default function ChatPage() {
                  </Alert>
               )}
               
-              {message.role !== 'system' && (
+              {message.role !== 'system' && message.content && (
                 <div
                     className={cn(
                     'max-w-[85%] sm:max-w-[90%] rounded-xl break-words overflow-hidden',
@@ -460,7 +555,7 @@ export default function ChatPage() {
                 </Avatar>
               )}
             </div>
-          ))}
+          )))}
           {isAiLoading && (
             <div className="flex items-start gap-2 sm:gap-4" aria-label="AI is thinking">
                 <Avatar className="h-6 w-6 sm:h-8 sm:w-8 border shadow-sm flex-shrink-0">
