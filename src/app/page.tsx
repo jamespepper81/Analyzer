@@ -38,6 +38,7 @@ import {
   STAGE_TRANSITION_TIMEOUT_MS,
 } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { WalletConnectionProgress } from "@/components/ui/wallet-connection-progress";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Image from "next/image";
@@ -182,6 +183,9 @@ export default function ConnectWalletPage() {
       return;
     }
 
+    // Close the input dialog immediately so the progress modal can show
+    setNostrLoginOpen(false);
+
     loginTimer.current.mark('loginWithNostrStart');
     const result = await loginWithNostr(values.nsec);
     loginTimer.current.mark('loginWithNostrComplete', { success: !result.error });
@@ -189,10 +193,9 @@ export default function ConnectWalletPage() {
     if (result.error) {
       loginTimer.current.mark('nostrLoginError', { error: result.error });
       setError(result.error);
-      setNostrLoginOpen(false);
+      setIsNostrSubmitting(false);
     } else {
       loginTimer.current.mark('nostrLoginSuccessful');
-      setNostrLoginOpen(false);
       // Navigation happens via useEffect when activeXpub updates
 
       if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_LOGIN_FLOW === 'true') {
@@ -378,26 +381,15 @@ export default function ConnectWalletPage() {
                     )}
                   </Button>
 
-                  {/* Brief connecting indicator - routes immediately to dashboard */}
+                  {/* Enhanced connecting progress modal */}
                   <Dialog open={isSubmitting} onOpenChange={(open) => !open && setIsSubmitting(false)}>
                     <DialogContent
-                      className="sm:max-w-sm"
+                      className="sm:max-w-md"
                       hideCloseButton
                       onPointerDownOutside={(e) => e.preventDefault()}
                       onEscapeKeyDown={(e) => e.preventDefault()}
                     >
-                      <div className="flex flex-col items-center justify-center py-8 gap-4">
-                        <div className="relative">
-                          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                          <Zap className="h-4 w-4 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                        </div>
-                        <div className="text-center space-y-1">
-                          <p className="font-semibold text-lg">Connecting...</p>
-                          <p className="text-sm text-muted-foreground">
-                            Taking you to your dashboard
-                          </p>
-                        </div>
-                      </div>
+                      <WalletConnectionProgress type="xpub" isOpen={isSubmitting} />
                     </DialogContent>
                   </Dialog>
 
@@ -459,6 +451,18 @@ export default function ConnectWalletPage() {
                         </Form>
                       </DialogContent>
                     )}
+                  </Dialog>
+
+                  {/* Enhanced Nostr connection progress modal */}
+                  <Dialog open={isNostrSubmitting && !isNostrLoginOpen} onOpenChange={() => {}}>
+                    <DialogContent
+                      className="sm:max-w-md"
+                      hideCloseButton
+                      onPointerDownOutside={(e) => e.preventDefault()}
+                      onEscapeKeyDown={(e) => e.preventDefault()}
+                    >
+                      <WalletConnectionProgress type="nostr" isOpen={isNostrSubmitting && !isNostrLoginOpen} />
+                    </DialogContent>
                   </Dialog>
                 </div>
               </form>
