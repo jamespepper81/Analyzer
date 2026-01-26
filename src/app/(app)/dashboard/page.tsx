@@ -35,10 +35,10 @@ export default function DashboardPage() {
 
   // Log when dashboard mounts for login flow tracking
   useEffect(() => {
-    logger.loginFlow('dashboardMounted', { 
-      hasData: !!data, 
+    logger.loginFlow('dashboardMounted', {
+      hasData: !!data,
       isLoading,
-      activeXpub: xpub?.substring(0, 20) + '...'
+      activeXpub: xpub ? xpub.substring(0, 20) + '...' : null
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

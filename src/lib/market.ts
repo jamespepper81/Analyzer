@@ -50,12 +50,12 @@ export async function getMarketPageData(range: string = '1', currency: Currency 
             last_updated: marketInfo.last_updated,
         };
 
-        const chartData: MarketChartPoint[] = chartDataResponse.prices.map((p: [number, number]) => ({
+        const chartData: MarketChartPoint[] = (chartDataResponse?.prices ?? []).map((p: [number, number]) => ({
             timestamp: p[0],
             price: p[1],
         }));
 
-        const candlestickData: CandlestickDataPoint[] = candlestickDataResponse.map((d: number[]) => ({
+        const candlestickData: CandlestickDataPoint[] = (Array.isArray(candlestickDataResponse) ? candlestickDataResponse : []).map((d: number[]) => ({
             time: d[0],
             open: d[1],
             high: d[2],

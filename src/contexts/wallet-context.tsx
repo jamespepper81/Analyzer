@@ -171,9 +171,9 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     activeRequestId.current += 1;
 
     // Note: activeXpub is intentionally not in dependencies to avoid circular updates
-    logger.loginFlow('setActiveXpubAndPersist', { 
-      newXpub: newXpub?.substring(0, 20) + '...',
-      previousXpub: activeXpub?.substring(0, 20) + '...'
+    logger.loginFlow('setActiveXpubAndPersist', {
+      newXpub: newXpub ? newXpub.substring(0, 20) + '...' : null,
+      previousXpub: activeXpub ? activeXpub.substring(0, 20) + '...' : null
     });
 
     setActiveXpub(newXpub);

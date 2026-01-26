@@ -478,8 +478,9 @@ export function classifyTransaction(tx: Transaction, walletAddresses: Set<string
   // Sent transaction
   if (tx.btc < 0) {
     // Check if all outputs go to our own addresses (self-transfer)
-    const allToOwnAddresses = tx.toAddress.every(addr => walletAddresses.has(addr));
-    
+    // Note: Empty toAddress array should not be considered self-transfer
+    const allToOwnAddresses = tx.toAddress.length > 0 && tx.toAddress.every(addr => walletAddresses.has(addr));
+
     if (allToOwnAddresses) {
       return {
         isTaxable: false,

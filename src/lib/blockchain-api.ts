@@ -152,7 +152,7 @@ export async function getAddressData(address: string): Promise<{ data: { address
             fetchJson(tickerUrl, {}, 60), // Cache price for 1 min
         ]);
 
-        if (!addressStats || addressStats.chain_stats.tx_count === 0) return { data: null, error: 'Could not fetch data for this address. It may not have any transaction history.' };
+        if (!addressStats || !addressStats.chain_stats || addressStats.chain_stats.tx_count === 0) return { data: null, error: 'Could not fetch data for this address. It may not have any transaction history.' };
 
         const btcPrice = btcTicker?.USD?.last;
         if (typeof btcPrice !== 'number') return { data: null, error: 'Could not fetch a valid BTC price.' };
