@@ -186,17 +186,19 @@ export default function MempoolPage() {
                 </Card>
 
                 <Card className="border-2 shadow-md">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
-                        <CardTitle className="text-sm font-medium">Network Activity</CardTitle>
-                        <IconContainer variant="emerald">
-                            <Zap className="h-4 w-4" />
-                        </IconContainer>
+                    <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                            <IconContainer variant="emerald">
+                                <Zap className="h-5 w-5" />
+                            </IconContainer>
+                            Network Activity
+                        </CardTitle>
+                        <CardDescription className="mt-2">Current high-priority fee rate.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
                         <div className="text-3xl font-bold">{networkFeeRate.toFixed(0)} <span className="text-xl text-muted-foreground font-normal">sat/vB</span></div>
-                        <p className="text-xs text-muted-foreground">Current high-priority fee rate.</p>
 
-                        <div className="mt-4 flex items-center gap-4">
+                        <div className="flex items-center gap-4">
                             <Badge
                                 className={cn(
                                     networkFeeLevel === 'Low' && 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
