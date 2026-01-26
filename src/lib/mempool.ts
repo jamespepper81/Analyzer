@@ -23,7 +23,7 @@ export async function getMempoolData(): Promise<{ data: MempoolData | null; erro
         fetchJson(blocksUrl, {}, 60),
     ]);
 
-    const networkFeeRate = recommendedFees.fastestFee;
+    const networkFeeRate = recommendedFees?.fastestFee ?? 0;
     let networkFeeLevel: 'Low' | 'Medium' | 'High';
     if (networkFeeRate < 20) {
         networkFeeLevel = 'Low';
