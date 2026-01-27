@@ -35,7 +35,6 @@ import type { LoadStage } from '@/components/ui/orbital-loader';
 export default function DashboardPage() {
   const { data, isLoading, isLoadingAiContent, error, activeXpub: xpub, fiatBalance, currency, fiatPrice, isDiscovering, discoveryProgress, refetch } = useWallet();
   const hasBlockingError = !!error && !data;
-  const [loadStartTime] = useState(() => Date.now());
   const [isLongWait, setIsLongWait] = useState(false);
 
   // Determine current loading stage for premium UX
