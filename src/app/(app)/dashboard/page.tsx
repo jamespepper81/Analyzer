@@ -29,7 +29,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
 import { LoadingProgress, CompactProgress, DashboardSkeleton } from '@/components/dashboard/loading-progress';
-import { SkeletonCard, SkeletonTransactionRow } from '@/components/ui/orbital-loader';
 import type { LoadStage } from '@/components/ui/orbital-loader';
 
 export default function DashboardPage() {
