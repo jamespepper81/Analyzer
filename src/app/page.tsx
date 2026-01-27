@@ -28,7 +28,6 @@ import {
   Activity,
   BarChart3,
   Search,
-  Zap,
 } from "lucide-react";
 import { useState, useEffect, useRef, useTransition } from "react";
 import { useWallet } from "@/contexts/wallet-context";
