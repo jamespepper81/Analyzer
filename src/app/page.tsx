@@ -32,10 +32,6 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@/contexts/wallet-context";
 import { cn } from "@/lib/utils";
-import {
-  DISCOVERY_TIMEOUT_SECONDS,
-  STAGE_TRANSITION_TIMEOUT_MS,
-} from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { WalletConnectionProgress } from "@/components/ui/wallet-connection-progress";
 import Link from "next/link";
