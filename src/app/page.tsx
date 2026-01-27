@@ -29,7 +29,7 @@ import {
   BarChart3,
   Search,
 } from "lucide-react";
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@/contexts/wallet-context";
 import { cn } from "@/lib/utils";
 import {
