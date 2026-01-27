@@ -49,7 +49,7 @@ const formSchema = z.object({
 
 export default function ConnectWalletPage() {
   const router = useRouter();
-  const { toast } = useToast();
+  useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
