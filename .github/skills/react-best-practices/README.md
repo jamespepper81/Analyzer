@@ -1,6 +1,6 @@
 # React Best Practices
 
-A structured repository for creating and maintaining React Best Practices optimized for agents and LLMs.
+Performance optimization guidelines for React and Next.js applications in the BitSleuth project.
 
 ## Structure
 
@@ -8,52 +8,26 @@ A structured repository for creating and maintaining React Best Practices optimi
   - `_sections.md` - Section metadata (titles, impacts, descriptions)
   - `_template.md` - Template for creating new rules
   - `area-description.md` - Individual rule files
-- `src/` - Build scripts and utilities
 - `metadata.json` - Document metadata (version, organization, abstract)
-- __`AGENTS.md`__ - Compiled output (generated)
-- __`test-cases.json`__ - Test cases for LLM evaluation (generated)
+- `AGENTS.md` - Compiled output with all rules expanded
+- `SKILL.md` - Skill definition and quick reference
 
-## Getting Started
+## Rule Categories
 
-1. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-
-2. Build AGENTS.md from rules:
-   ```bash
-   pnpm build
-   ```
-
-3. Validate rule files:
-   ```bash
-   pnpm validate
-   ```
-
-4. Extract test cases:
-   ```bash
-   pnpm extract-tests
-   ```
-
-## Creating a New Rule
-
-1. Copy `rules/_template.md` to `rules/area-description.md`
-2. Choose the appropriate area prefix:
-   - `async-` for Eliminating Waterfalls (Section 1)
-   - `bundle-` for Bundle Size Optimization (Section 2)
-   - `server-` for Server-Side Performance (Section 3)
-   - `client-` for Client-Side Data Fetching (Section 4)
-   - `rerender-` for Re-render Optimization (Section 5)
-   - `rendering-` for Rendering Performance (Section 6)
-   - `js-` for JavaScript Performance (Section 7)
-   - `advanced-` for Advanced Patterns (Section 8)
-3. Fill in the frontmatter and content
-4. Ensure you have clear examples with explanations
-5. Run `pnpm build` to regenerate AGENTS.md and test-cases.json
+| Priority | Category | Impact | Prefix |
+|----------|----------|--------|--------|
+| 1 | Eliminating Waterfalls | CRITICAL | `async-` |
+| 2 | Bundle Size Optimization | CRITICAL | `bundle-` |
+| 3 | Server-Side Performance | HIGH | `server-` |
+| 4 | Client-Side Data Fetching | MEDIUM-HIGH | `client-` |
+| 5 | Re-render Optimization | MEDIUM | `rerender-` |
+| 6 | Rendering Performance | MEDIUM | `rendering-` |
+| 7 | JavaScript Performance | LOW-MEDIUM | `js-` |
+| 8 | Advanced Patterns | LOW | `advanced-` |
 
 ## Rule File Structure
 
-Each rule file should follow this structure:
+Each rule file follows this structure:
 
 ```markdown
 ---
@@ -69,19 +43,18 @@ Brief explanation of the rule and why it matters.
 
 **Incorrect (description of what's wrong):**
 
-```typescript
+\`\`\`typescript
 // Bad code example
-```
+\`\`\`
 
 **Correct (description of what's right):**
 
-```typescript
+\`\`\`typescript
 // Good code example
-```
-
-Optional explanatory text after examples.
+\`\`\`
 
 Reference: [Link](https://example.com)
+```
 
 ## File Naming Convention
 
@@ -89,7 +62,6 @@ Reference: [Link](https://example.com)
 - Rule files: `area-description.md` (e.g., `async-parallel.md`)
 - Section is automatically inferred from filename prefix
 - Rules are sorted alphabetically by title within each section
-- IDs (e.g., 1.1, 1.2) are auto-generated during build
 
 ## Impact Levels
 
@@ -100,24 +72,10 @@ Reference: [Link](https://example.com)
 - `LOW-MEDIUM` - Low-medium gains
 - `LOW` - Incremental improvements
 
-## Scripts
+## Adding a New Rule
 
-- `pnpm build` - Compile rules into AGENTS.md
-- `pnpm validate` - Validate all rule files
-- `pnpm extract-tests` - Extract test cases for LLM evaluation
-- `pnpm dev` - Build and validate
-
-## Contributing
-
-When adding or modifying rules:
-
-1. Use the correct filename prefix for your section
-2. Follow the `_template.md` structure
-3. Include clear bad/good examples with explanations
-4. Add appropriate tags
-5. Run `pnpm build` to regenerate AGENTS.md and test-cases.json
-6. Rules are automatically sorted by title - no need to manage numbers!
-
-## Acknowledgments
-
-Originally created by [@shuding](https://x.com/shuding) at [Vercel](https://vercel.com).
+1. Copy `rules/_template.md` to `rules/area-description.md`
+2. Choose the appropriate area prefix for your section
+3. Fill in the frontmatter and content
+4. Ensure you have clear examples with explanations
+5. Update `AGENTS.md` with the new rule content

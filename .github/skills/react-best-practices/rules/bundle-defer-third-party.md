@@ -12,7 +12,7 @@ Analytics, logging, and error tracking don't block user interaction. Load them a
 **Incorrect (blocks initial bundle):**
 
 ```tsx
-import { Analytics } from '@vercel/analytics/react'
+import { Analytics } from '@/components/Analytics'
 
 export default function RootLayout({ children }) {
   return (
@@ -32,7 +32,7 @@ export default function RootLayout({ children }) {
 import dynamic from 'next/dynamic'
 
 const Analytics = dynamic(
-  () => import('@vercel/analytics/react').then(m => m.Analytics),
+  () => import('@/components/Analytics').then(m => m.Analytics),
   { ssr: false }
 )
 
@@ -47,3 +47,42 @@ export default function RootLayout({ children }) {
   )
 }
 ```
+
+**Firebase Analytics example:**
+
+```tsx
+// src/components/Analytics.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { getAnalytics, isSupported } from 'firebase/analytics'
+import { app } from '@/lib/firebase'
+
+export function Analytics() {
+  useEffect(() => {
+    isSupported().then(supported => {
+      if (supported) {
+        getAnalytics(app)
+      }
+    })
+  }, [])
+
+  return null
+}
+
+// In layout - load dynamically after hydration
+const Analytics = dynamic(
+  () => import('@/components/Analytics').then(m => m.Analytics),
+  { ssr: false }
+)
+```
+
+**Common libraries to defer:**
+
+- Analytics (Firebase Analytics, Mixpanel, Amplitude)
+- Error tracking (Sentry, Bugsnag)
+- Chat widgets (Intercom, Crisp)
+- Social embeds (Twitter, Facebook)
+- A/B testing tools
+
+This pattern reduces initial bundle size and improves Time to Interactive (TTI).

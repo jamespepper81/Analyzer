@@ -1,7 +1,7 @@
 # React Best Practices
 
-**Version 1.0.0**  
-Vercel Engineering  
+**Version 1.0.0**
+BitSleuth
 January 2026
 
 > **Note:**  
@@ -434,7 +434,7 @@ Direct imports provide 15-70% faster dev boot, 28% faster builds, 40% faster col
 
 Libraries commonly affected: `lucide-react`, `@mui/material`, `@mui/icons-material`, `@tabler/icons-react`, `react-icons`, `@headlessui/react`, `@radix-ui/react-*`, `lodash`, `ramda`, `date-fns`, `rxjs`, `react-use`.
 
-Reference: [https://vercel.com/blog/how-we-optimized-package-imports-in-next-js](https://vercel.com/blog/how-we-optimized-package-imports-in-next-js)
+Reference: [Next.js optimizePackageImports](https://nextjs.org/docs/app/api-reference/config/next-config-js/optimizePackageImports)
 
 ### 2.2 Conditional Module Loading
 
@@ -472,7 +472,7 @@ Analytics, logging, and error tracking don't block user interaction. Load them a
 **Incorrect: blocks initial bundle**
 
 ```tsx
-import { Analytics } from '@vercel/analytics/react'
+import { Analytics } from '@/components/Analytics'
 
 export default function RootLayout({ children }) {
   return (
@@ -492,7 +492,7 @@ export default function RootLayout({ children }) {
 import dynamic from 'next/dynamic'
 
 const Analytics = dynamic(
-  () => import('@vercel/analytics/react').then(m => m.Analytics),
+  () => import('@/components/Analytics').then(m => m.Analytics),
   { ssr: false }
 )
 
@@ -507,6 +507,39 @@ export default function RootLayout({ children }) {
   )
 }
 ```
+
+**Firebase Analytics example:**
+
+```tsx
+// src/components/Analytics.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { getAnalytics, isSupported } from 'firebase/analytics'
+import { app } from '@/lib/firebase'
+
+export function Analytics() {
+  useEffect(() => {
+    isSupported().then(supported => {
+      if (supported) {
+        getAnalytics(app)
+      }
+    })
+  }, [])
+
+  return null
+}
+```
+
+**Common libraries to defer:**
+
+- Analytics (Firebase Analytics, Mixpanel, Amplitude)
+- Error tracking (Sentry, Bugsnag)
+- Chat widgets (Intercom, Crisp)
+- Social embeds (Twitter, Facebook)
+- A/B testing tools
+
+This pattern reduces initial bundle size and improves Time to Interactive (TTI).
 
 ### 2.4 Dynamic Imports for Heavy Components
 
@@ -775,9 +808,19 @@ export async function getUser(id: string) {
 
 Use when sequential user actions hit multiple endpoints needing the same data within seconds.
 
-**With Vercel's [Fluid Compute](https://vercel.com/docs/fluid-compute):** LRU caching is especially effective because multiple concurrent requests can share the same function instance and cache. This means the cache persists across requests without needing external storage like Redis.
+**Important considerations for serverless environments:**
 
-**In traditional serverless:** Each invocation runs in isolation, so consider Redis for cross-process caching.
+- In-memory LRU caches work well when the server instance persists between requests
+- For Firebase App Hosting or other serverless environments where instances may be recycled, consider:
+  - Using Firebase Realtime Database or Firestore for shared caching
+  - Using Redis (e.g., Upstash) for distributed cross-process caching
+  - Accepting that cold starts will miss the cache
+
+**When in-memory LRU is effective:**
+
+- High-traffic applications where instances stay warm
+- Data that's expensive to compute but acceptable if occasionally re-fetched
+- Short TTLs (seconds to minutes) where cache misses are tolerable
 
 Reference: [https://github.com/isaacs/node-lru-cache](https://github.com/isaacs/node-lru-cache)
 
@@ -2417,7 +2460,7 @@ function onAuthChange() {
 
 Use a Map (not a hook) so it works everywhere: utilities, event handlers, not just React components.
 
-Reference: [https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast)
+Reference: [React Performance Optimization](https://react.dev/learn/render-and-commit)
 
 ### 7.5 Cache Storage API Calls
 
@@ -2930,5 +2973,3 @@ function SearchInput({ onSearch }: { onSearch: (q: string) => void }) {
 3. [https://swr.vercel.app](https://swr.vercel.app)
 4. [https://github.com/shuding/better-all](https://github.com/shuding/better-all)
 5. [https://github.com/isaacs/node-lru-cache](https://github.com/isaacs/node-lru-cache)
-6. [https://vercel.com/blog/how-we-optimized-package-imports-in-next-js](https://vercel.com/blog/how-we-optimized-package-imports-in-next-js)
-7. [https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast)

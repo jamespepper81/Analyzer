@@ -34,8 +34,18 @@ export async function getUser(id: string) {
 
 Use when sequential user actions hit multiple endpoints needing the same data within seconds.
 
-**With Vercel's [Fluid Compute](https://vercel.com/docs/fluid-compute):** LRU caching is especially effective because multiple concurrent requests can share the same function instance and cache. This means the cache persists across requests without needing external storage like Redis.
+**Important considerations for serverless environments:**
 
-**In traditional serverless:** Each invocation runs in isolation, so consider Redis for cross-process caching.
+- In-memory LRU caches work well when the server instance persists between requests
+- For Firebase App Hosting or other serverless environments where instances may be recycled, consider:
+  - Using Firebase Realtime Database or Firestore for shared caching
+  - Using Redis (e.g., Upstash) for distributed cross-process caching
+  - Accepting that cold starts will miss the cache
+
+**When in-memory LRU is effective:**
+
+- High-traffic applications where instances stay warm
+- Data that's expensive to compute but acceptable if occasionally re-fetched
+- Short TTLs (seconds to minutes) where cache misses are tolerable
 
 Reference: [https://github.com/isaacs/node-lru-cache](https://github.com/isaacs/node-lru-cache)
