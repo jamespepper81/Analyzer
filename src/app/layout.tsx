@@ -1,4 +1,3 @@
-import { Inter } from 'next/font/google';
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import './globals.css';
@@ -7,12 +6,6 @@ import { AnalyticsTracker } from '@/components/analytics-tracker';
 import { WalletProviderWrapper } from '@/components/wallet-provider-wrapper';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-body',
-});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.bitsleuth.ai';
 
@@ -102,7 +95,7 @@ export default function RootLayout({
   const testXpub = isTestMode ? process.env.TEST_XPUB : undefined;
 
   return (
-    <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#F7931A" />
