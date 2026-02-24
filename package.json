@@ -63,7 +63,7 @@
     "genkit": "^1.28.0",
     "google-auth-library": "^10.2.0",
     "googleapis": "^171.0.0",
-    "jspdf": "^4.1.0",
+    "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "jszip": "^3.10.1",
     "lucide-react": "^0.563.0",
