@@ -26,6 +26,15 @@ const ALLOWED_PATHS: Record<string, RegExp[]> = {
     'api.alternative.me': [/^\/[a-zA-Z0-9\-._~/]*$/],
 };
 
+function getTrustedOrigin(hostname: string): string | null {
+    if (hostname === 'blockstream.info') return 'https://blockstream.info';
+    if (hostname === 'mempool.space') return 'https://mempool.space';
+    if (hostname === 'api.coingecko.com') return 'https://api.coingecko.com';
+    if (hostname === 'blockchain.info') return 'https://blockchain.info';
+    if (hostname === 'api.alternative.me') return 'https://api.alternative.me';
+    return null;
+}
+
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -47,13 +56,22 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
         throw new Error('Disallowed provider URL path.');
     }
 
+    const trustedOrigin = getTrustedOrigin(parsedUrl.hostname);
+    if (!trustedOrigin) {
+        throw new Error('Disallowed provider URL.');
+    }
+    parsedUrl.username = '';
+    parsedUrl.password = '';
+    parsedUrl.hash = '';
+    const safeUrl = new URL(parsedUrl.pathname + parsedUrl.search, trustedOrigin);
+
     const headers: Record<string, string> = {
         'Accept': 'application/json',
         'User-Agent': 'BitSleuth/1.0',
         ...(options?.headers as Record<string, string> || {}),
     };
 
-    if (parsedUrl.hostname === 'api.coingecko.com') {
+    if (safeUrl.hostname === 'api.coingecko.com') {
         const apiKey = process.env.COINGECKO_API_KEY;
         if (apiKey) {
             headers['x-cg-demo-api-key'] = apiKey;
@@ -61,7 +79,7 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
     }
 
     try {
-        const response = await fetch(parsedUrl.toString(), {
+        const response = await fetch(safeUrl.toString(), {
             ...options,
             signal: AbortSignal.timeout(20000),
             headers,
@@ -78,7 +96,7 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
         }
 
         if (!response.ok) {
-            console.error(`API request to ${parsedUrl.toString()} failed with status ${response.status}:`, textBody);
+            console.error(`API request to ${safeUrl.toString()} failed with status ${response.status}:`, textBody);
             // Handle specific text errors from Blockstream
             if (textBody.toLowerCase().includes('invalid bitcoin address')) {
                 throw new Error('The address you entered is not a valid Bitcoin address.');
@@ -93,7 +111,7 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
             // If the response was OK and not a notice, it should be JSON.
             return JSON.parse(textBody);
         } catch (e) {
-            console.error(`Failed to parse JSON from ${parsedUrl.toString()}:`, e);
+            console.error(`Failed to parse JSON from ${safeUrl.toString()}:`, e);
             throw new Error(`The data provider returned a malformed response.`);
         }
 
