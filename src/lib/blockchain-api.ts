@@ -72,7 +72,20 @@ function sanitizeProviderPathname(pathname: string): string {
         throw new Error('Disallowed provider URL path.');
     }
 
-    return trimmed;
+    const parts = trimmed.split('/');
+    const safeSegments: string[] = [];
+    for (let i = 1; i < parts.length; i++) {
+        const segment = parts[i];
+        if (!segment || segment === '.' || segment === '..') {
+            throw new Error('Disallowed provider URL path.');
+        }
+        if (!/^[a-zA-Z0-9\-._~]+$/.test(segment)) {
+            throw new Error('Disallowed provider URL path.');
+        }
+        safeSegments.push(segment);
+    }
+
+    return '/' + safeSegments.join('/');
 }
 
 export async function fetchJson(
