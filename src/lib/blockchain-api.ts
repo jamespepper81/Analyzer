@@ -51,17 +51,19 @@ export async function fetchJson(
     revalidate?: number,
 ): Promise<any> {
     const origin = TRUSTED_ORIGINS[host];
-
-    const hostPathPolicies = ALLOWED_PATHS[host];
-    if (!hostPathPolicies || !hostPathPolicies.some((rx) => rx.test(pathname))) {
-        throw new Error('Disallowed provider URL path.');
-    }
-
     const url = new URL(pathname, origin);
+
     if (query) {
         for (const [key, value] of Object.entries(query)) {
             url.searchParams.set(key, value);
         }
+    }
+
+    const hostPathPolicies = ALLOWED_PATHS[host];
+    const canonicalPathname = url.pathname;
+    const hasDotSegments = canonicalPathname.split('/').some((segment) => segment === '.' || segment === '..');
+    if (hasDotSegments || !hostPathPolicies || !hostPathPolicies.some((rx) => rx.test(canonicalPathname))) {
+        throw new Error('Disallowed provider URL path.');
     }
 
     if (url.origin !== origin || url.protocol !== 'https:') {
