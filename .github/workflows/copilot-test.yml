@@ -20,6 +20,9 @@ on:
 #    branches:
 #      - main
 
+permissions:
+  contents: read
+
 jobs:
   test-with-environment:
     runs-on: ubuntu-latest
