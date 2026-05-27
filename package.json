@@ -1,8 +1,19 @@
 {
-  "name": "nextn",
+  "name": "bitsleuth-analyzer",
   "version": "0.1.0",
+  "description": "AI-powered Bitcoin wallet analyzer with security insights, transaction analysis, and market data",
   "type": "module",
   "private": true,
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BitSleuthAI/Analyzer.git"
+  },
+  "homepage": "https://app.bitsleuth.ai",
+  "bugs": {
+    "url": "https://github.com/BitSleuthAI/Analyzer/issues"
+  },
+  "author": "BitSleuth",
   "engines": {
     "node": ">=20.19.0"
   },

@@ -43,6 +43,7 @@ next-env.d.ts
 
 .genkit/*
 .env*
+!.env.example
 .env.local
 env.local
 

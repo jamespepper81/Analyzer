@@ -5,7 +5,6 @@ BitSleuth is an AI-powered Bitcoin wallet insights app. Enter a Bitcoin XPUB to 
 ![BitSleuth](public/1200x630.png)
 
 - **🌐 Production:** [https://app.bitsleuth.ai](https://app.bitsleuth.ai)
-- **🧑‍💻 Development:** [https://analyzer-dev--bitsleuth.us-central1.hosted.app](https://analyzer-dev--bitsleuth.us-central1.hosted.app)
 
 ## Features
 
@@ -179,13 +178,9 @@ Exceptions: `README.md`, `LICENSE`, `CONTRIBUTING.md`, `AGENTS.md`, and files in
 
 ## License
 
-**PROPRIETARY SOFTWARE** - Copyright (c) 2025 BitSleuth. All rights reserved.
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-or-later).
 
-This software is the proprietary and confidential information of BitSleuth. 
-It is provided solely for use by BitSleuth and its authorized personnel. 
-This software is not intended for public distribution or open source use.
-
-For licensing inquiries, contact: legal@bitsleuth.ai
+Copyright (c) 2025 BitSleuth.
 
 ---
 

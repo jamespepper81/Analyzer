@@ -468,7 +468,7 @@ Comprehensive component library including:
 - `README.md`: Main project documentation and quick start guide
 - `CONTRIBUTING.md`: Contribution guidelines and documentation standards
 - `AGENTS.md`: Agent overview and project structure
-- `LICENSE`: Proprietary software license
+- `LICENSE`: GNU AGPL v3.0 license
 - `CHANGELOG.md`: This file - comprehensive project history
 
 ---
@@ -602,7 +602,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 - **Issues**: Report via GitHub Issues
 - **Feedback**: Use in-app feedback form
 - **Documentation**: Comprehensive docs in `docs/` folder
-- **License**: Proprietary - see [LICENSE](LICENSE)
+- **License**: AGPL-3.0-or-later - see [LICENSE](LICENSE)
 
 ---
 

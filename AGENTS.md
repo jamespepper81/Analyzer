@@ -582,14 +582,12 @@ For detailed contribution guidelines, including documentation standards and file
 
 ## License
 
-**PROPRIETARY SOFTWARE** - Copyright (c) 2025 BitSleuth. All rights reserved.
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-or-later).
 
-This software is proprietary and confidential information of BitSleuth. It is provided solely for use by BitSleuth and its authorized personnel. This software is not intended for public distribution or open source use.
-
-For licensing inquiries, contact: legal@bitsleuth.ai
+Copyright (c) 2025 BitSleuth.
 
 ---
 
 **Built with ❤️ by BitSleuth**
 
-For questions, issues, or feature requests, please contact the development team.
+For questions, issues, or feature requests, please [open an issue](https://github.com/BitSleuthAI/Analyzer/issues).
