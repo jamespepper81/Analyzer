@@ -14,6 +14,18 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function fetchJson(url: string, options?: RequestInit, revalidate?: number): Promise<any> {
+    let parsedUrl: URL;
+    try {
+        parsedUrl = new URL(url);
+    } catch {
+        throw new Error('Invalid provider URL.');
+    }
+
+    const allowedHosts = new Set(['blockstream.info', 'mempool.space', 'api.coingecko.com']);
+    if (parsedUrl.protocol !== 'https:' || !allowedHosts.has(parsedUrl.hostname)) {
+        throw new Error('Disallowed provider URL.');
+    }
+
     const headers: Record<string, string> = {
         'Accept': 'application/json',
         'User-Agent': 'BitSleuth/1.0',
