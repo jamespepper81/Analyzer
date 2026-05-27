@@ -5,65 +5,48 @@
 import { VALID_CURRENCIES } from '@/lib/types';
 import type { Transaction, AddressInfo, Currency } from '@/lib/types';
 
-const BLOCKSTREAM_API_BASE = 'https://blockstream.info/api';
-const MEMPOOL_SPACE_API_BASE = 'https://mempool.space/api';
+export type AllowedHost = 'blockstream' | 'mempool' | 'coingecko' | 'blockchain_info' | 'alternative_me';
 
-const ESPLORA_BASES = [BLOCKSTREAM_API_BASE, MEMPOOL_SPACE_API_BASE];
-
-const ALLOWED_HOSTS = new Set([
-    'blockstream.info',
-    'mempool.space',
-    'api.coingecko.com',
-    'blockchain.info',
-    'api.alternative.me',
-]);
-
-const ALLOWED_PATHS: Record<string, RegExp[]> = {
-    'blockstream.info': [/^\/api\/[a-zA-Z0-9\-._~/]*$/],
-    'mempool.space': [/^\/api\/[a-zA-Z0-9\-._~/]*$/],
-    'api.coingecko.com': [/^\/api\/v3\/[a-zA-Z0-9\-._~/]*$/],
-    'blockchain.info': [/^\/[a-zA-Z0-9\-._~/]*$/],
-    'api.alternative.me': [/^\/[a-zA-Z0-9\-._~/]*$/],
+const TRUSTED_ORIGINS: Record<AllowedHost, string> = {
+    blockstream: 'https://blockstream.info',
+    mempool: 'https://mempool.space',
+    coingecko: 'https://api.coingecko.com',
+    blockchain_info: 'https://blockchain.info',
+    alternative_me: 'https://api.alternative.me',
 };
 
-function getTrustedOrigin(hostname: string): string | null {
-    if (hostname === 'blockstream.info') return 'https://blockstream.info';
-    if (hostname === 'mempool.space') return 'https://mempool.space';
-    if (hostname === 'api.coingecko.com') return 'https://api.coingecko.com';
-    if (hostname === 'blockchain.info') return 'https://blockchain.info';
-    if (hostname === 'api.alternative.me') return 'https://api.alternative.me';
-    return null;
-}
+const ALLOWED_PATHS: Record<AllowedHost, RegExp[]> = {
+    blockstream: [/^\/api\/[a-zA-Z0-9\-._~/]*$/],
+    mempool: [/^\/api\/[a-zA-Z0-9\-._~/]*$/],
+    coingecko: [/^\/api\/v3\/[a-zA-Z0-9\-._~/]*$/],
+    blockchain_info: [/^\/[a-zA-Z0-9\-._~/]*$/],
+    alternative_me: [/^\/[a-zA-Z0-9\-._~/]*$/],
+};
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function fetchJson(url: string, options?: RequestInit, revalidate?: number): Promise<any> {
-    let parsedUrl: URL;
-    try {
-        parsedUrl = new URL(url);
-    } catch {
-        throw new Error('Invalid provider URL.');
-    }
+export async function fetchJson(
+    host: AllowedHost,
+    pathname: string,
+    query?: Record<string, string>,
+    options?: RequestInit,
+    revalidate?: number,
+): Promise<any> {
+    const origin = TRUSTED_ORIGINS[host];
 
-    if (parsedUrl.protocol !== 'https:' || !ALLOWED_HOSTS.has(parsedUrl.hostname)) {
-        throw new Error('Disallowed provider URL.');
-    }
-
-    const hostPathPolicies = ALLOWED_PATHS[parsedUrl.hostname];
-    if (!hostPathPolicies || !hostPathPolicies.some((rx) => rx.test(parsedUrl.pathname))) {
+    const hostPathPolicies = ALLOWED_PATHS[host];
+    if (!hostPathPolicies || !hostPathPolicies.some((rx) => rx.test(pathname))) {
         throw new Error('Disallowed provider URL path.');
     }
 
-    const trustedOrigin = getTrustedOrigin(parsedUrl.hostname);
-    if (!trustedOrigin) {
-        throw new Error('Disallowed provider URL.');
+    const url = new URL(pathname, origin);
+    if (query) {
+        for (const [key, value] of Object.entries(query)) {
+            url.searchParams.set(key, value);
+        }
     }
-    parsedUrl.username = '';
-    parsedUrl.password = '';
-    parsedUrl.hash = '';
-    const safeUrl = new URL(parsedUrl.pathname + parsedUrl.search, trustedOrigin);
 
     const headers: Record<string, string> = {
         'Accept': 'application/json',
@@ -71,7 +54,7 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
         ...(options?.headers as Record<string, string> || {}),
     };
 
-    if (safeUrl.hostname === 'api.coingecko.com') {
+    if (host === 'coingecko') {
         const apiKey = process.env.COINGECKO_API_KEY;
         if (apiKey) {
             headers['x-cg-demo-api-key'] = apiKey;
@@ -79,25 +62,22 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
     }
 
     try {
-        const response = await fetch(safeUrl.toString(), {
+        const response = await fetch(url.toString(), {
             ...options,
             signal: AbortSignal.timeout(20000),
             headers,
-            next: { revalidate: revalidate ?? 60 } // Default to 1-minute cache
+            next: { revalidate: revalidate ?? 60 },
         });
         const textBody = await response.text();
 
-        // Check for Blockstream's non-JSON notice page FIRST.
         if (textBody.includes("Blockstream Explorer API NOTICE")) {
-            // Signal to callers that this provider is temporarily unusable so they can fallback
             const err: any = new Error('ESPLORA_PROVIDER_NOTICE');
             err.code = 'ESPLORA_PROVIDER_NOTICE';
             throw err;
         }
 
         if (!response.ok) {
-            console.error(`API request to ${safeUrl.toString()} failed with status ${response.status}:`, textBody);
-            // Handle specific text errors from Blockstream
+            console.error(`API request to ${url.toString()} failed with status ${response.status}:`, textBody);
             if (textBody.toLowerCase().includes('invalid bitcoin address')) {
                 throw new Error('The address you entered is not a valid Bitcoin address.');
             }
@@ -108,10 +88,9 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
         }
 
         try {
-            // If the response was OK and not a notice, it should be JSON.
             return JSON.parse(textBody);
         } catch (e) {
-            console.error(`Failed to parse JSON from ${safeUrl.toString()}:`, e);
+            console.error(`Failed to parse JSON from ${url.toString()}:`, e);
             throw new Error(`The data provider returned a malformed response.`);
         }
 
@@ -123,6 +102,8 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
     }
 }
 
+const ESPLORA_HOSTS: AllowedHost[] = ['blockstream', 'mempool'];
+
 /**
  * Fetch an Esplora endpoint with retry and provider fallback (Blockstream -> mempool.space).
  * Path must start with '/'.
@@ -130,27 +111,23 @@ export async function fetchJson(url: string, options?: RequestInit, revalidate?:
 export async function esploraGet(path: string, revalidate?: number): Promise<any> {
     const attemptsPerProvider = 2;
     let lastError: any = null;
-    for (const base of ESPLORA_BASES) {
-        const url = `${base}${path}`;
+    const fullPath = `/api${path}`;
+    for (const host of ESPLORA_HOSTS) {
         for (let attempt = 0; attempt < attemptsPerProvider; attempt++) {
             try {
-                return await fetchJson(url, {}, revalidate);
+                return await fetchJson(host, fullPath, undefined, {}, revalidate);
             } catch (e: any) {
                 lastError = e;
-                // If Blockstream served a notice, immediately break to try next provider
                 if (e?.code === 'ESPLORA_PROVIDER_NOTICE') {
                     break;
                 }
-                // Backoff for network/5xx/timeout
                 if (e?.message?.includes('timed out') || /5\d\d/.test(e?.message || '')) {
                     await sleep(300 * (attempt + 1));
                     continue;
                 }
-                // For other errors, retry once, then move on
                 await sleep(150 * (attempt + 1));
             }
         }
-        // Try next provider
     }
     throw lastError ?? new Error('Failed to fetch from any Esplora provider');
 }
@@ -164,9 +141,12 @@ export async function getHistoricalPrice(date: Date, currency: Currency): Promis
     if (priceCache.has(dateKey)) {
         return priceCache.get(dateKey)!;
     }
-    const url = `https://blockchain.info/toapi?currency=${encodeURIComponent(currency)}&value=1&time=${date.getTime()}`;
     try {
-        const price = await fetchJson(url, {}, 86400);
+        const price = await fetchJson('blockchain_info', '/toapi', {
+            currency,
+            value: '1',
+            time: String(date.getTime()),
+        }, {}, 86400);
         if (typeof price === 'number' && price > 0) {
             priceCache.set(dateKey, price);
         }
@@ -181,9 +161,12 @@ export async function getHistoricalPriceRange(days: number, currency: Currency):
     if (!(VALID_CURRENCIES as readonly string[]).includes(currency)) return [];
     const currencyCode = currency.toLowerCase();
     const safeDays = Math.max(1, Math.trunc(Number(days)) || 1);
-    const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${encodeURIComponent(currencyCode)}&days=${safeDays}&interval=daily`;
     try {
-        const data = await fetchJson(url, {}, 3600); // Cache for 1 hour
+        const data = await fetchJson('coingecko', '/api/v3/coins/bitcoin/market_chart', {
+            vs_currency: currencyCode,
+            days: String(safeDays),
+            interval: 'daily',
+        }, {}, 3600);
         return data.prices || [];
     } catch (error) {
         console.error(`Failed to fetch historical price range for ${days} days:`, error);
@@ -196,12 +179,10 @@ export async function getAddressData(address: string): Promise<{ data: { address
     try {
         const addressUrl = `/address/${address}`;
         const addressTxsUrl = `/address/${address}/txs`;
-        const tickerUrl = 'https://blockchain.info/ticker';
-
         const [addressStats, txsData, btcTicker] = await Promise.all([
-            esploraGet(addressUrl, 300), // Cache address stats for 5 mins
+            esploraGet(addressUrl, 300),
             esploraGet(addressTxsUrl, 300).catch(() => []),
-            fetchJson(tickerUrl, {}, 60), // Cache price for 1 min
+            fetchJson('blockchain_info', '/ticker', undefined, {}, 60),
         ]);
 
         if (!addressStats || !addressStats.chain_stats || addressStats.chain_stats.tx_count === 0) return { data: null, error: 'Could not fetch data for this address. It may not have any transaction history.' };
