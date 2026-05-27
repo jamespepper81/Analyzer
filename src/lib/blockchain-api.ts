@@ -301,7 +301,7 @@ export async function getTransactionData(txid: string): Promise<{ data: Transact
         txData.vin?.forEach((inp: any) => { netAmountSatoshis -= inp.prevout?.value ?? 0; });
 
         const netBtc = netAmountSatoshis / 1e8;
-        console.debug(`[getTransactionData] Computed net BTC for ${txid}:`, netBtc);
+        console.debug('[getTransactionData] Computed net BTC for %s:', txid, netBtc);
 
         const transaction: Transaction = {
             id: txData.txid, date: txDate.toISOString(),
