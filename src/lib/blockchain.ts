@@ -672,7 +672,7 @@ export async function getWalletData(xpub: string, currency: Currency = 'USD'): P
         console.log(`[WalletData] Fetching fresh price data for ${currency}...`);
         let btcPrices: Record<string, BtcPriceInfo>;
         try {
-            const fetchedPrices = await fetchJson('https://blockchain.info/ticker');
+            const fetchedPrices = await fetchJson('blockchain_info', '/ticker');
             btcPrices = normalizeBtcPrices(fetchedPrices);
         } catch (e) {
             console.warn('[WalletData] Failed to fetch BTC price data, continuing with zeroed prices.', e);
@@ -759,14 +759,14 @@ export async function getWalletDataProgressive(
         // Fetch fresh price data early (needed for all updates)
         let btcPrices: Record<string, BtcPriceInfo>;
         try {
-            const fetchedPrices = await fetchJson('https://blockchain.info/ticker');
+            const fetchedPrices = await fetchJson('blockchain_info', '/ticker');
             btcPrices = normalizeBtcPrices(fetchedPrices);
         } catch (e) {
             console.warn('[WalletData] Failed to fetch BTC price data, continuing with zeroed prices.', e);
             btcPrices = { ...DEFAULT_BTC_PRICES };
         }
 
-        
+
         // If we have cached data, show it first
         if (cachedSnapshot && onProgress) {
             const cachedWalletData = await assembleFinalWalletData(cachedSnapshot, btcPrices, currency);

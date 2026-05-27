@@ -156,7 +156,7 @@ async function getDailyPrices(startDate: Date, endDate: Date, currency: Currency
 
     const finalStartDate = startDate < maxAllowedStartDate ? maxAllowedStartDate : startDate;
     let currentStartDate = finalStartDate;
-    const currencyCode = encodeURIComponent(currency.toLowerCase());
+    const currencyCode = currency.toLowerCase();
 
     try {
         while (currentStartDate <= endDate) {
@@ -168,9 +168,11 @@ async function getDailyPrices(startDate: Date, endDate: Date, currency: Currency
             const fromTimestamp = Math.floor(currentStartDate.getTime() / 1000);
             const toTimestamp = Math.floor(currentEndDate.getTime() / 1000) + 3600;
 
-            const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=${currencyCode}&from=${fromTimestamp}&to=${toTimestamp}`;
-
-            const data = await fetchJson(url, {}, 3600);
+            const data = await fetchJson('coingecko', '/api/v3/coins/bitcoin/market_chart/range', {
+                vs_currency: currencyCode,
+                from: String(fromTimestamp),
+                to: String(toTimestamp),
+            }, {}, 3600);
 
             for (const [timestamp, price] of data.prices) {
                 const dateKey = format(startOfDay(new Date(timestamp)), 'yyyy-MM-dd');

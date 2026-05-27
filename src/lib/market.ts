@@ -5,8 +5,6 @@ import { VALID_CURRENCIES } from '@/lib/types';
 import type { MarketPageData, MarketData, MarketChartPoint, Currency, FearAndGreedIndex, CandlestickDataPoint } from '@/lib/types';
 import { fetchJson } from './blockchain-api';
 
-const API_BASE = 'https://api.coingecko.com/api/v3';
-
 export async function getMarketPageData(range: string = '1', currency: Currency = 'USD'): Promise<{ data: MarketPageData | null; error: string | null; }> {
     try {
         if (!(VALID_CURRENCIES as readonly string[]).includes(currency)) {
@@ -14,23 +12,17 @@ export async function getMarketPageData(range: string = '1', currency: Currency 
         }
         const currencyCode = currency.toLowerCase();
         const daysForChart = Math.max(1, parseInt(range, 10) || 1);
-        const marketDataUrl = `${API_BASE}/coins/markets?vs_currency=${encodeURIComponent(currencyCode)}&ids=bitcoin`;
-        const fearAndGreedUrl = 'https://api.alternative.me/fng/?limit=1';
 
         let revalidateInSeconds = 60;
-
         if (daysForChart > 90) {
             revalidateInSeconds = 3600;
         }
 
-        const chartDataUrl = `${API_BASE}/coins/bitcoin/market_chart?vs_currency=${encodeURIComponent(currencyCode)}&days=${daysForChart}`;
-        const candlestickDataUrl = `${API_BASE}/coins/bitcoin/ohlc?vs_currency=${encodeURIComponent(currencyCode)}&days=${daysForChart}`;
-
         const [marketDataResponse, chartDataResponse, candlestickDataResponse, fearAndGreedResponse] = await Promise.all([
-            fetchJson(marketDataUrl, {}, 60),
-            fetchJson(chartDataUrl, {}, revalidateInSeconds),
-            fetchJson(candlestickDataUrl, {}, revalidateInSeconds),
-            fetchJson(fearAndGreedUrl, {}, 3600)
+            fetchJson('coingecko', '/api/v3/coins/markets', { vs_currency: currencyCode, ids: 'bitcoin' }, {}, 60),
+            fetchJson('coingecko', '/api/v3/coins/bitcoin/market_chart', { vs_currency: currencyCode, days: String(daysForChart) }, {}, revalidateInSeconds),
+            fetchJson('coingecko', '/api/v3/coins/bitcoin/ohlc', { vs_currency: currencyCode, days: String(daysForChart) }, {}, revalidateInSeconds),
+            fetchJson('alternative_me', '/fng/', { limit: '1' }, {}, 3600),
         ]);
 
         const marketInfo = marketDataResponse[0];
