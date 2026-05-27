@@ -9,11 +9,30 @@ const MEMPOOL_SPACE_API_BASE = 'https://mempool.space/api';
 
 const ESPLORA_BASES = [BLOCKSTREAM_API_BASE, MEMPOOL_SPACE_API_BASE];
 
+const ALLOWED_HOSTS = new Set([
+    'blockstream.info',
+    'mempool.space',
+    'api.coingecko.com',
+    'blockchain.info',
+    'api.alternative.me',
+]);
+
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function fetchJson(url: string, options?: RequestInit, revalidate?: number): Promise<any> {
+    let parsedUrl: URL;
+    try {
+        parsedUrl = new URL(url);
+    } catch {
+        throw new Error('Invalid provider URL.');
+    }
+
+    if (parsedUrl.protocol !== 'https:' || !ALLOWED_HOSTS.has(parsedUrl.hostname)) {
+        throw new Error('Disallowed provider URL.');
+    }
+
     const headers: Record<string, string> = {
         'Accept': 'application/json',
         'User-Agent': 'BitSleuth/1.0',
