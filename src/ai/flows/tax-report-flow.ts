@@ -9,7 +9,9 @@
  */
 
 import { z } from '@genkit-ai/core';
+import { VALID_CURRENCIES } from '@/lib/types';
 import type { WalletData, Transaction, Currency, Holding } from '@/lib/types';
+import { fetchJson } from '@/lib/blockchain-api';
 import { eachDayOfInterval, startOfDay, isWithinInterval, format, subDays, addDays, differenceInDays } from 'date-fns';
 
 // The input schema for the tax report flow
@@ -17,7 +19,7 @@ const TaxReportInputSchema = z.object({
   walletData: z.string().describe('JSON string of the full WalletData object.'),
   startDate: z.string().describe('Start date for the report in ISO 8601 format.'),
   endDate: z.string().describe('End date for the report in ISO 8601 format.'),
-  currency: z.string().describe('The currency for the report (e.g., "USD").'),
+  currency: z.enum(['USD', 'EUR', 'GBP']).describe('The currency for the report.'),
 });
 export type TaxReportInput = z.infer<typeof TaxReportInputSchema>;
 
@@ -55,65 +57,51 @@ const TaxReportOutputSchema = z.object({
 export type TaxReportOutput = z.infer<typeof TaxReportOutputSchema>;
 
 async function getDailyPrices(startDate: Date, endDate: Date, currency: Currency): Promise<Record<string, number>> {
+    if (!(VALID_CURRENCIES as readonly string[]).includes(currency)) {
+        throw new Error('Invalid currency for price lookup.');
+    }
     const prices: Record<string, number> = {};
-    
-    // Ensure consistent date handling - use startOfDay for all date comparisons
+
     const today = startOfDay(new Date());
-    // Use 364 days instead of 365 to account for inclusive date counting in CoinGecko API
     const maxAllowedStartDate = subDays(today, 364);
-    
-    // Check if the requested range exceeds CoinGecko's 364-day limit
+
     if (startDate < maxAllowedStartDate) {
         const requestedDays = differenceInDays(endDate, startDate);
         const availableDays = differenceInDays(endDate, maxAllowedStartDate);
-        
+
         if (requestedDays > 364) {
             console.warn(`CoinGecko API: Requested ${requestedDays} days of data, but only ${availableDays} days are available due to 364-day limit.`);
             console.warn(`Data will be provided from ${format(maxAllowedStartDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
         }
-        
-        // If both dates are older than 364 days, throw an error
+
         if (endDate < maxAllowedStartDate) {
             throw new Error(`CoinGecko API: Both start date (${format(startDate, 'yyyy-MM-dd')}) and end date (${format(endDate, 'yyyy-MM-dd')}) are older than 364 days. Historical data is not available for this range.`);
         }
     }
-    
-    // Strictly enforce the 364-day limit - never request data older than this
+
     const finalStartDate = startDate < maxAllowedStartDate ? maxAllowedStartDate : startDate;
-    
+
     console.log(`CoinGecko API: Requesting data from ${format(finalStartDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
-    
+
     let currentStartDate = finalStartDate;
+    const currencyCode = currency.toLowerCase();
 
     try {
         while (currentStartDate <= endDate) {
-            
+
             let currentEndDate = addDays(currentStartDate, 90);
             if (currentEndDate > endDate) {
                 currentEndDate = endDate;
             }
 
             const fromTimestamp = Math.floor(currentStartDate.getTime() / 1000);
-            // Add a small buffer to the end timestamp to ensure it's always greater, preventing API errors for single-day ranges.
             const toTimestamp = Math.floor(currentEndDate.getTime() / 1000) + 3600;
 
-            const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=${currency.toLowerCase()}&from=${fromTimestamp}&to=${toTimestamp}`;
-            const headers: HeadersInit = { 'Accept': 'application/json' };
-            const apiKey = process.env.COINGECKO_API_KEY;
-            if (apiKey) {
-                headers['x-cg-demo-api-key'] = apiKey;
-            } else {
-                console.warn("The CoinGecko API key is missing. Public API may have rate limits.");
-            }
-
-            const response = await fetch(url, { headers, next: { revalidate: 3600 } });
-            if (!response.ok) {
-                const errorBody = await response.text();
-                console.error(`CoinGecko request for chunk ${format(currentStartDate, 'yyyy-MM-dd')} failed with status ${response.status}:`, errorBody);
-                throw new Error(`Failed to fetch historical prices from CoinGecko. Status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await fetchJson('coingecko', '/api/v3/coins/bitcoin/market_chart/range', {
+                vs_currency: currencyCode,
+                from: String(fromTimestamp),
+                to: String(toTimestamp),
+            }, {}, 3600);
 
             for (const [timestamp, price] of data.prices) {
                 const dateKey = format(startOfDay(new Date(timestamp)), 'yyyy-MM-dd');

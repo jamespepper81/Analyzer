@@ -6,21 +6,16 @@ import { fetchJson } from './blockchain-api';
 
 export async function getMempoolData(): Promise<{ data: MempoolData | null; error: string | null; }> {
   try {
-    const recommendedFeesUrl = 'https://mempool.space/api/v1/fees/recommended';
-    const mempoolBlocksUrl = 'https://mempool.space/api/v1/fees/mempool-blocks';
-    const mempoolInfoUrl = 'https://mempool.space/api/mempool';
-    const blocksUrl = 'https://mempool.space/api/blocks';
-
     const [
         recommendedFees,
         mempoolBlocks,
         mempoolInfo,
         latestBlocks,
     ] = await Promise.all([
-        fetchJson(recommendedFeesUrl, {}, 60),
-        fetchJson(mempoolBlocksUrl, {}, 60),
-        fetchJson(mempoolInfoUrl, {}, 60),
-        fetchJson(blocksUrl, {}, 60),
+        fetchJson('mempool', '/api/v1/fees/recommended', undefined, {}, 60),
+        fetchJson('mempool', '/api/v1/fees/mempool-blocks', undefined, {}, 60),
+        fetchJson('mempool', '/api/mempool', undefined, {}, 60),
+        fetchJson('mempool', '/api/blocks', undefined, {}, 60),
     ]);
 
     const networkFeeRate = recommendedFees?.fastestFee ?? 0;
@@ -56,15 +51,13 @@ export async function getBlockDetails(hash: string, startIndex: number = 0): Pro
       return { data: null, error: 'The block hash you entered is not valid.' };
     }
 
-    const safeStartIndex = Number.isInteger(startIndex) && startIndex >= 0 ? startIndex : 0;
+    const n = Number(startIndex);
+    const safeStartIndex = Number.isFinite(n) && n >= 0 ? Math.trunc(n) : 0;
     const encodedHash = encodeURIComponent(normalizedHash);
-    const blockUrl = `https://mempool.space/api/block/${encodedHash}`;
-    const txsUrl = `https://mempool.space/api/block/${encodedHash}/txs/${safeStartIndex}`;
-    
-    // Block data is immutable, so we can cache it for a long time.
+
     const [blockData, blockTxsData] = await Promise.all([
-        fetchJson(blockUrl, {}, 86400),
-        fetchJson(txsUrl, {}, 86400).catch(() => [])
+        fetchJson('mempool', `/api/block/${encodedHash}`, undefined, {}, 86400),
+        fetchJson('mempool', `/api/block/${encodedHash}/txs/${safeStartIndex}`, undefined, {}, 86400).catch(() => [])
     ]);
 
     if (!blockData) {

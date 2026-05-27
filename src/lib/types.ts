@@ -230,7 +230,8 @@ export type BlockDetails = LatestBlock & {
   transactions: BlockTransaction[];
 };
 
-export type Currency = 'USD' | 'EUR' | 'GBP';
+export const VALID_CURRENCIES = ['USD', 'EUR', 'GBP'] as const;
+export type Currency = (typeof VALID_CURRENCIES)[number];
 
 // Enhanced Bitcoin-specific types for GPT-4.1 Mini analysis
 export type BitcoinTransactionType = 'send' | 'receive' | 'self-transfer' | 'exchange' | 'unknown';

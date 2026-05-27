@@ -9,7 +9,9 @@
  */
 
 import { z } from '@genkit-ai/core';
+import { VALID_CURRENCIES } from '@/lib/types';
 import type { WalletData, Transaction, Currency } from '@/lib/types';
+import { fetchJson } from '@/lib/blockchain-api';
 import { eachDayOfInterval, startOfDay, isWithinInterval, format, subDays, addDays, differenceInDays } from 'date-fns';
 import { 
   TaxCalculator, 
@@ -26,7 +28,7 @@ const EnhancedTaxReportInputSchema = z.object({
   walletData: z.string().describe('JSON string of the full WalletData object.'),
   startDate: z.string().describe('Start date for the report in ISO 8601 format.'),
   endDate: z.string().describe('End date for the report in ISO 8601 format.'),
-  currency: z.string().describe('The currency for the report (e.g., "USD").'),
+  currency: z.enum(['USD', 'EUR', 'GBP']).describe('The currency for the report.'),
   accountingMethod: z.enum(['FIFO', 'LIFO', 'HIFO', 'SPEC_ID', 'AVG_COST', 'SHARED_POOL']).optional().default('FIFO'),
   jurisdiction: z.enum(['US', 'UK', 'CANADA', 'AUSTRALIA', 'GERMANY', 'OTHER']).optional().default('US'),
 });
@@ -131,26 +133,30 @@ const EnhancedTaxReportOutputSchema = z.object({
 export type EnhancedTaxReportOutput = z.infer<typeof EnhancedTaxReportOutputSchema>;
 
 async function getDailyPrices(startDate: Date, endDate: Date, currency: Currency): Promise<Record<string, number>> {
+    if (!(VALID_CURRENCIES as readonly string[]).includes(currency)) {
+        throw new Error('Invalid currency for price lookup.');
+    }
     const prices: Record<string, number> = {};
-    
+
     const today = startOfDay(new Date());
     const maxAllowedStartDate = subDays(today, 364);
-    
+
     if (startDate < maxAllowedStartDate) {
         const requestedDays = differenceInDays(endDate, startDate);
         const availableDays = differenceInDays(endDate, maxAllowedStartDate);
-        
+
         if (requestedDays > 364) {
             console.warn(`CoinGecko API: Requested ${requestedDays} days of data, but only ${availableDays} days are available due to 364-day limit.`);
         }
-        
+
         if (endDate < maxAllowedStartDate) {
             throw new Error(`CoinGecko API: Both dates are older than 364 days. Historical data is not available.`);
         }
     }
-    
+
     const finalStartDate = startDate < maxAllowedStartDate ? maxAllowedStartDate : startDate;
     let currentStartDate = finalStartDate;
+    const currencyCode = currency.toLowerCase();
 
     try {
         while (currentStartDate <= endDate) {
@@ -162,19 +168,11 @@ async function getDailyPrices(startDate: Date, endDate: Date, currency: Currency
             const fromTimestamp = Math.floor(currentStartDate.getTime() / 1000);
             const toTimestamp = Math.floor(currentEndDate.getTime() / 1000) + 3600;
 
-            const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=${currency.toLowerCase()}&from=${fromTimestamp}&to=${toTimestamp}`;
-            const headers: HeadersInit = { 'Accept': 'application/json' };
-            const apiKey = process.env.COINGECKO_API_KEY;
-            if (apiKey) {
-                headers['x-cg-demo-api-key'] = apiKey;
-            }
-
-            const response = await fetch(url, { headers, next: { revalidate: 3600 } });
-            if (!response.ok) {
-                throw new Error(`Failed to fetch historical prices. Status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await fetchJson('coingecko', '/api/v3/coins/bitcoin/market_chart/range', {
+                vs_currency: currencyCode,
+                from: String(fromTimestamp),
+                to: String(toTimestamp),
+            }, {}, 3600);
 
             for (const [timestamp, price] of data.prices) {
                 const dateKey = format(startOfDay(new Date(timestamp)), 'yyyy-MM-dd');
