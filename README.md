@@ -164,6 +164,13 @@ MCP enables AI coding assistants (GitHub Copilot, Claude, Cursor) to interact di
 
 See [docs/MCP_SETUP.md](docs/MCP_SETUP.md) for configuration details and usage guide.
 
+## Community & Support
+
+- **Discussions**: [GitHub Discussions](https://github.com/BitSleuthAI/Analyzer/discussions) — ask questions, share ideas, and connect with other users
+- **Bug Reports**: [Open an issue](https://github.com/BitSleuthAI/Analyzer/issues/new?template=bug_report.md)
+- **Feature Requests**: [Request a feature](https://github.com/BitSleuthAI/Analyzer/issues/new?template=feature_request.md)
+- **Security**: Report vulnerabilities privately to `security@bitsleuth.ai` (see [SECURITY.md](SECURITY.md))
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to BitSleuth, including documentation standards and file organization.
