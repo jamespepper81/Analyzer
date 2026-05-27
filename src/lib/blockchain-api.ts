@@ -48,6 +48,10 @@ export async function fetchJson(
         }
     }
 
+    if (url.origin !== origin || url.protocol !== 'https:') {
+        throw new Error('URL construction resulted in an unexpected origin.');
+    }
+
     const headers: Record<string, string> = {
         'Accept': 'application/json',
         'User-Agent': 'BitSleuth/1.0',
