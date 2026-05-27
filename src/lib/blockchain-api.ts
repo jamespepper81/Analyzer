@@ -43,6 +43,38 @@ function sanitizeTxid(txid: string): string {
     return encodeURIComponent(trimmed);
 }
 
+function sanitizeProviderPathname(pathname: string): string {
+    const trimmed = pathname.trim();
+    if (!trimmed) {
+        throw new Error('Disallowed provider URL path.');
+    }
+
+    // Block absolute/protocol-relative URLs and backslash path confusion.
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) || trimmed.startsWith('//') || trimmed.includes('\\')) {
+        throw new Error('Disallowed provider URL path.');
+    }
+
+    if (!trimmed.startsWith('/')) {
+        throw new Error('Disallowed provider URL path.');
+    }
+
+    // Block obvious and percent-encoded traversal indicators before URL construction.
+    const lowered = trimmed.toLowerCase();
+    if (
+        lowered.includes('/./') ||
+        lowered.includes('/../') ||
+        lowered.endsWith('/.') ||
+        lowered.endsWith('/..') ||
+        lowered.includes('%2e') ||
+        lowered.includes('%2f') ||
+        lowered.includes('%5c')
+    ) {
+        throw new Error('Disallowed provider URL path.');
+    }
+
+    return trimmed;
+}
+
 export async function fetchJson(
     host: AllowedHost,
     pathname: string,
@@ -51,7 +83,8 @@ export async function fetchJson(
     revalidate?: number,
 ): Promise<any> {
     const origin = TRUSTED_ORIGINS[host];
-    const url = new URL(pathname, origin);
+    const safePathname = sanitizeProviderPathname(pathname);
+    const url = new URL(safePathname, origin);
 
     if (query) {
         for (const [key, value] of Object.entries(query)) {
