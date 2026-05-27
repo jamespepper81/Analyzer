@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "\U0001F4E5 Checkout code"
+        uses: actions/checkout@v6
+
+      - name: "\U0001F4CB Extract release notes"
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if echo "$GITHUB_REF_NAME" | grep -qiE '\-(alpha|beta|rc)'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          NOTES=$(awk -v ver="$VERSION" '
+            BEGIN { found=0 }
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "## [" ver "]") == 1) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md | sed -e '/^---$/d' | sed -e :a -e '/^[[:space:]]*$/{ $d; N; ba; }')
+
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $GITHUB_REF_NAME"
+            echo "::warning::Version $VERSION not found in CHANGELOG.md. Using fallback release body."
+          fi
+
+          echo "$NOTES" > "$RUNNER_TEMP/release_notes.md"
+          echo "notes_file=$RUNNER_TEMP/release_notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: "\U0001F680 Create GitHub Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.notes.outputs.version }}
+          body_path: ${{ steps.notes.outputs.notes_file }}
+          prerelease: ${{ steps.notes.outputs.prerelease }}
+          generate_release_notes: false
