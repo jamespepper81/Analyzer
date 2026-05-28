@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DateRange } from 'react-day-picker';
 import { format, subMonths, startOfYear, endOfYear, getYear } from 'date-fns';
-import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, Bitcoin as BitcoinIcon, AlertTriangle, CheckCircle2, FileText, Download, Package, FileOutput, Edit2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, Bitcoin as BitcoinIcon, AlertTriangle, CircleCheck, FileText, Download, Package, FileOutput, Pen } from 'lucide-react';
 
 import { useWallet } from '@/contexts/wallet-context';
 import { 
@@ -494,7 +494,7 @@ export default function EnhancedReportPage() {
         <CardHeader className="bg-emerald-500/5 border-b">
           <CardTitle className="flex items-center gap-2 text-lg">
             <IconContainer variant="emerald">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <CircleCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </IconContainer>
             Calculation Methodology
           </CardTitle>
@@ -746,7 +746,7 @@ export default function EnhancedReportPage() {
             <CardContent>
               {reportData.disposals.length === 0 ? (
                 <Alert>
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CircleCheck className="h-4 w-4" />
                   <AlertTitle>No Disposals</AlertTitle>
                   <AlertDescription>
                     No taxable disposal events occurred during this reporting period.
@@ -799,7 +799,7 @@ export default function EnhancedReportPage() {
                                 className="hover:bg-primary/10"
                                 onClick={() => handleEditTransactionCategory(disposal.txid, 'disposal', disposal.type)}
                               >
-                                <Edit2 className="h-4 w-4" />
+                                <Pen className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -856,7 +856,7 @@ export default function EnhancedReportPage() {
                                 size="sm"
                                 onClick={() => handleEditTransactionCategory(income.txid, 'income', income.type)}
                               >
-                                <Edit2 className="h-4 w-4" />
+                                <Pen className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -966,7 +966,7 @@ export default function EnhancedReportPage() {
             <CardContent>
               {reportData.lots.filter(lot => lot.unrealizedGain < 0).length === 0 ? (
                 <Alert>
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CircleCheck className="h-4 w-4" />
                   <AlertTitle>No Losses to Harvest</AlertTitle>
                   <AlertDescription>
                     All your tax lots currently have unrealized gains. There are no losses available to harvest.
@@ -1027,7 +1027,7 @@ export default function EnhancedReportPage() {
             <CardHeader className="border-b bg-gradient-to-r from-emerald-500/5 to-transparent">
               <CardTitle className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-emerald-500/10">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <CircleCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 Optimization Strategies
               </CardTitle>

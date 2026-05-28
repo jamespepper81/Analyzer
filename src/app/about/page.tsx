@@ -6,14 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { IconContainer } from '@/components/ui/icon-container';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { 
-  Brain, 
-  Shield, 
-  Eye, 
-  BarChart3, 
+  Brain,
+  Shield,
+  Eye,
+  ChartColumn,
   Lock,
   Zap,
   Bitcoin,
-  CheckCircle,
+  CircleCheckBig,
   ArrowRight,
   Globe,
   Target,
@@ -77,7 +77,7 @@ const capabilities = [
     ]
   },
   {
-    icon: BarChart3,
+    icon: ChartColumn,
     title: 'Advanced Transaction Analytics',
     description: 'Comprehensive transaction analysis with visualizations, performance metrics, and behavioral insights.',
     features: [
@@ -108,7 +108,7 @@ const useCases = [
   {
     title: 'Bitcoin Portfolio Management',
     description: 'Bitcoin holders use BitSleuth to track their portfolio performance, analyze transaction patterns, and optimize their Bitcoin holdings.',
-    icon: BarChart3
+    icon: ChartColumn
   }
 ];
 
@@ -238,7 +238,7 @@ export default function AboutPage() {
                   <ul className="space-y-2">
                     {capability.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <CircleCheckBig className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                         <span className="text-sm text-muted-foreground">{feature}</span>
                       </li>
                     ))}

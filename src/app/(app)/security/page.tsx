@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Wallet, TestTube2, ShieldCheck, AlertTriangle, Lightbulb, ShieldAlert, Share2, Loader2, Search } from 'lucide-react';
+import { Wallet, TestTubeDiagonal, ShieldCheck, AlertTriangle, Lightbulb, ShieldAlert, Share2, LoaderCircle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useWallet } from '@/contexts/wallet-context';
@@ -117,7 +117,7 @@ function AddressScreener() {
                             )}
                         />
                         <Button type="submit" disabled={isLoading} size="default" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                            {isLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                             Check
                         </Button>
                     </form>
@@ -257,7 +257,7 @@ function RecommendationsErrorState({
                 >
                     {isLoading ? (
                         <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                             Retrying...
                         </>
                     ) : (
@@ -383,7 +383,7 @@ export default function SecurityPage() {
         <SecurityMetric
           icon={
             <IconContainer variant="amber">
-              <TestTube2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              <TestTubeDiagonal className="h-4 w-4 sm:h-5 sm:w-5" />
             </IconContainer>
           }
           title="Dust Value"
@@ -451,7 +451,7 @@ export default function SecurityPage() {
                         <AlertDialogAction onClick={handleShare} disabled={isSharing}>
                           {isSharing ? (
                             <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                               Publishing...
                             </>
                           ) : (

@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { SendHorizonal, Bot, User, CircleDashed, Mic, AlertTriangle } from 'lucide-react';
+import { SendHorizontal, Bot, User, CircleDashed, Mic, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { streamFlow } from '@genkit-ai/next/client';
 
@@ -632,7 +632,7 @@ export default function ChatPage() {
                 <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
                 <Button type="submit" size="icon" disabled={isAiLoading} aria-label="Send message" className="h-10 w-10 sm:h-10 sm:w-10 shadow-md hover:shadow-lg transition-shadow">
-                <SendHorizonal className="h-4 w-4 sm:h-5 sm:w-5" />
+                <SendHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
             </form>
             </Form>

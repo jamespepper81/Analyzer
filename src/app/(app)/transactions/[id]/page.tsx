@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { IconContainer } from '@/components/ui/icon-container';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, ArrowDownLeft, ArrowLeft, ArrowLeftRight, ArrowUpRight, CheckCircle, Clock, Copy } from 'lucide-react';
+import { CircleAlert, ArrowDownLeft, ArrowLeft, ArrowLeftRight, ArrowUpRight, CircleCheckBig, Clock, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
@@ -140,7 +140,7 @@ export default function TransactionDetailsPage() {
     if (pageError) {
         return (
             <div className="flex flex-col items-center justify-center gap-4 text-center px-4">
-                <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-destructive" />
+                <CircleAlert className="h-10 w-10 sm:h-12 sm:w-12 text-destructive" />
                 <h1 className="text-xl sm:text-2xl font-bold">Transaction Not Found</h1>
                 <p className="text-muted-foreground text-sm sm:text-base">{pageError}</p>
                 <Button onClick={() => router.back()} size="sm">
@@ -235,7 +235,7 @@ export default function TransactionDetailsPage() {
                             <Badge variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'} className="text-xs">{tx.status}</Badge>
                         </CardHeader>
                         <CardContent className="flex items-start gap-3 sm:gap-4">
-                            {tx.status === 'Confirmed' ? <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-500 mt-1 flex-shrink-0" /> : <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 mt-1 flex-shrink-0" />}
+                            {tx.status === 'Confirmed' ? <CircleCheckBig className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-500 mt-1 flex-shrink-0" /> : <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 mt-1 flex-shrink-0" />}
                             <div className="min-w-0">
                                 <p className="font-semibold text-sm sm:text-base">This transaction has {tx.confirmations.toLocaleString()} confirmations.</p>
                                 <p className="text-xs sm:text-sm text-muted-foreground">
@@ -250,7 +250,7 @@ export default function TransactionDetailsPage() {
                         <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
                             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                                 <IconContainer variant="purple">
-                                    <AlertCircle className="h-5 w-5" />
+                                    <CircleAlert className="h-5 w-5" />
                                 </IconContainer>
                                 Advanced Details
                             </CardTitle>

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { SendHorizonal, ThumbsUp, CircleDashed, Copy, Zap } from 'lucide-react';
+import { SendHorizontal, ThumbsUp, CircleDashed, Copy, Zap } from 'lucide-react';
 import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
@@ -173,7 +173,7 @@ export default function FeedbackPage() {
                 </>
             ) : (
                 <>
-                    <SendHorizonal className="mr-2" />
+                    <SendHorizontal className="mr-2" />
                     Send Feedback
                 </>
             )}

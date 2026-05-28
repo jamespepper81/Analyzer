@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { OrbitalLoader } from './orbital-loader';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export type ConnectionType = 'xpub' | 'nostr';
@@ -143,7 +143,7 @@ export function WalletConnectionProgress({
                 {isCompleted ? (
                   <Check className="w-3.5 h-3.5" />
                 ) : isCurrent ? (
-                  <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                  <LoaderCircle className="w-3.5 h-3.5 text-primary animate-spin" />
                 ) : (
                   <span className="text-xs text-muted-foreground">{index + 1}</span>
                 )}

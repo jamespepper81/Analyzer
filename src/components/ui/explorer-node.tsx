@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Button } from '@/components/ui/button';
 import { getAddressData, getTransactionData, getAddressStats } from '@/lib/blockchain-api';
 import type { AddressInfo, Transaction } from '@/lib/types';
-import { ChevronsRight, Loader2, AlertCircle, Bitcoin, ArrowLeftRight } from 'lucide-react';
+import { ChevronsRight, LoaderCircle, CircleAlert, Bitcoin, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './badge';
 import { useWallet } from '@/contexts/wallet-context';
@@ -187,7 +187,7 @@ export const ExplorerNode: React.FC<ExplorerNodeProps> = ({ type, identifier, de
     if (isLoading) {
       return (
         <div className="flex items-center gap-2 p-4 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <LoaderCircle className="h-4 w-4 animate-spin" />
           <span>Loading...</span>
         </div>
       );
@@ -196,7 +196,7 @@ export const ExplorerNode: React.FC<ExplorerNodeProps> = ({ type, identifier, de
     if (error) {
       return (
         <div className="flex items-center gap-2 p-4 text-destructive">
-          <AlertCircle className="h-4 w-4" />
+          <CircleAlert className="h-4 w-4" />
           <span>{error}</span>
         </div>
       );
