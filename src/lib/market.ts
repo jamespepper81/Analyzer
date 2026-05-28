@@ -22,7 +22,7 @@ export async function getMarketPageData(range: string = '1', currency: Currency 
             fetchJson('coingecko', '/api/v3/coins/markets', { vs_currency: currencyCode, ids: 'bitcoin' }, {}, 60),
             fetchJson('coingecko', '/api/v3/coins/bitcoin/market_chart', { vs_currency: currencyCode, days: String(daysForChart) }, {}, revalidateInSeconds),
             fetchJson('coingecko', '/api/v3/coins/bitcoin/ohlc', { vs_currency: currencyCode, days: String(daysForChart) }, {}, revalidateInSeconds),
-            fetchJson('alternative_me', '/fng/', { limit: '1' }, {}, 3600),
+            fetchJson('alternative_me', '/fng', { limit: '1' }, {}, 3600),
         ]);
 
         const marketInfo = marketDataResponse[0];
