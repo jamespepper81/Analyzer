@@ -114,6 +114,6 @@
     "tiny-secp256k1": "npm:@bitcoinerlab/secp256k1@^1.1.1",
     "google-auth-library": "^10.2.0",
     "zod": "^3.25.76",
-    "valibot": "^1.2.0"
+    "valibot": "^1.4.1"
   }
 }
