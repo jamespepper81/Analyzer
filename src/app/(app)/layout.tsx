@@ -4,7 +4,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeftRight, LayoutDashboard, MessageCircle, Shield, Bitcoin, LineChart, Star, Terminal, Pencil, ChevronsUpDown, PlusCircle, Check, X, Loader2, Compass, Layers, CandlestickChart, FileSpreadsheet, Coins } from 'lucide-react';
+import { ArrowLeftRight, LayoutDashboard, MessageCircle, Shield, Bitcoin, ChartLine, Star, Terminal, Pencil, ChevronsUpDown, CirclePlus, Check, X, LoaderCircle, Compass, Layers, ChartCandlestick, FileSpreadsheet, Coins } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -46,13 +46,13 @@ import { logger } from '@/lib/logger';
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', description: "Get a high-level overview of your wallet's balance, security, and recent activity." },
   { href: '/transactions', icon: ArrowLeftRight, label: 'Transactions', description: "View a complete list of all your incoming and outgoing transactions." },
-  { href: '/analysis', icon: LineChart, label: 'Analysis', description: "Visualize your wallet's data with charts for balance history, transaction volume, and more." },
+  { href: '/analysis', icon: ChartLine, label: 'Analysis', description: "Visualize your wallet's data with charts for balance history, transaction volume, and more." },
   { href: '/security', icon: Shield, label: 'Security', description: "Analyze your wallet's privacy practices, see security recommendations, and check for address reuse." },
   { href: '/report', icon: FileSpreadsheet, label: 'Report', description: "Generate financial reports for tax summary, profit & loss, and performance analysis." },
   { href: '/coin-control', icon: Coins, label: 'Coin Control', description: "Manage your UTXOs to optimize transaction fees and privacy." },
   { href: '/discover', icon: Compass, label: 'Discover', description: "Explore any Bitcoin address or transaction on the blockchain with an interactive graph." },
   { href: '/mempool', icon: Layers, label: 'Mempool', description: "See real-time data from the Bitcoin mempool, including fees and pending blocks." },
-  { href: '/market', icon: CandlestickChart, label: 'Market', description: "Track the latest Bitcoin price, market stats, and the Fear & Greed Index." },
+  { href: '/market', icon: ChartCandlestick, label: 'Market', description: "Track the latest Bitcoin price, market stats, and the Fear & Greed Index." },
   { href: '/chat', icon: MessageCircle, label: 'AI Chat', description: "Ask our AI assistant anything about your wallet or Bitcoin in general." },
   { href: '/feedback', icon: Star, label: 'Feedback', description: "Share your thoughts and suggestions to help us improve BitSleuth." },
 ];
@@ -135,7 +135,7 @@ function AddAccountDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                         />
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                 {isSubmitting ? 'Connecting...' : 'Add XPUB Key'}
                             </Button>
                         </DialogFooter>
@@ -266,7 +266,7 @@ function AccountSwitcher() {
                                 className="w-full"
                                 onClick={handleAddWalletClick}
                             >
-                                <PlusCircle className="mr-2 h-4 w-4" />
+                                <CirclePlus className="mr-2 h-4 w-4" />
                                 Add XPUB Key
                             </Button>
                         </div>
@@ -648,7 +648,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                             onClick={() => setNostrDialogOpen(true)}
                             disabled={!isNostrReady}
                           >
-                            {isNostrReady ? 'Connect Account' : <Loader2 className="h-3 w-3 animate-spin"/>}
+                            {isNostrReady ? 'Connect Account' : <LoaderCircle className="h-3 w-3 animate-spin"/>}
                           </Button>
                       </div>
                     )}

@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, ArrowUpRight, ArrowDownLeft, Activity, RefreshCw } from 'lucide-react';
+import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, CircleArrowUp, CircleArrowDown, ArrowUpRight, ArrowDownLeft, Activity, RefreshCw } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -260,14 +260,14 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2 sm:space-y-3 pt-1">
               <div className="flex items-center gap-2 sm:gap-3">
-                  <ArrowUpCircle className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500 shrink-0" />
+                  <CircleArrowUp className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500 shrink-0" />
                   <div>
                       <p className="text-xs text-muted-foreground font-normal">Inflow</p>
                       <p className="font-bold text-sm">{data.inflowOutflow.inflowBTC.toFixed(6)} BTC</p>
                   </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                  <ArrowDownCircle className="h-5 w-5 sm:h-6 sm:w-6 text-rose-500 shrink-0" />
+                  <CircleArrowDown className="h-5 w-5 sm:h-6 sm:w-6 text-rose-500 shrink-0" />
                   <div>
                       <p className="text-xs text-muted-foreground font-normal">Outflow</p>
                       <p className="font-bold text-sm">{Math.abs(data.inflowOutflow.outflowBTC).toFixed(6)} BTC</p>

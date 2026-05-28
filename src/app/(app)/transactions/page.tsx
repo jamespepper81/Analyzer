@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Transaction } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownLeft, Download, Building, Loader2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Download, Building, LoaderCircle } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { useState } from 'react';
@@ -188,7 +188,7 @@ export default function TransactionsPage() {
       {isDiscovering && discoveryProgress && (
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 shadow-md">
           <div className="flex items-start gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <LoaderCircle className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">

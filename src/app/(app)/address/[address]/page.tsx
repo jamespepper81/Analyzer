@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bitcoin, AlertCircle, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
+import { ArrowLeft, Bitcoin, CircleAlert, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
@@ -165,7 +165,7 @@ export default function AddressDetailsPage() {
   if (pageError) {
       return (
         <div className="flex flex-col items-center justify-center gap-4 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive" />
+            <CircleAlert className="h-12 w-12 text-destructive" />
             <h1 className="text-2xl font-bold">Address Not Found</h1>
             <p className="text-muted-foreground">{pageError}</p>
             <Button asChild onClick={() => router.back()}>

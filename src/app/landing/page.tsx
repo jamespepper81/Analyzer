@@ -11,8 +11,8 @@ import {
   Eye,
   TrendingUp,
   Lock,
-  BarChart3,
-  CheckCircle,
+  ChartColumn,
+  CircleCheckBig,
   ArrowRight,
   Bitcoin,
   Zap,
@@ -59,7 +59,7 @@ const features = [
     description: 'Detailed privacy analysis to identify potential leaks and recommend best practices for Bitcoin privacy.',
   },
   {
-    icon: BarChart3,
+    icon: ChartColumn,
     title: 'Transaction Insights',
     description: 'Deep dive into your transaction history with visualizations, patterns, and performance analysis.',
   },
@@ -123,7 +123,7 @@ export default function LandingPage() {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
-            <CheckCircle className="w-4 h-4 inline mr-1" />
+            <CircleCheckBig className="w-4 h-4 inline mr-1" />
             Free to use • No registration required • Your keys stay private
           </p>
         </div>
@@ -173,7 +173,7 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 {benefits.map((benefit, index) => (
                   <li key={index} className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <CircleCheckBig className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                     <span>{benefit}</span>
                   </li>
                 ))}

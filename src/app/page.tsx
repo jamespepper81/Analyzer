@@ -23,10 +23,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   SearchX,
-  Loader2,
+  LoaderCircle,
   ShieldCheck,
   Activity,
-  BarChart3,
+  ChartColumn,
   Search,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -213,7 +213,7 @@ export default function ConnectWalletPage() {
   if (isWalletLoading && !activeXpub) {
     return (
       <main className="flex min-h-screen items-center justify-center p-8">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
       </main>
     );
   }
@@ -365,7 +365,7 @@ export default function ConnectWalletPage() {
                   >
                     {isSubmitting ? (
                       <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
                         Connecting...
                       </>
                     ) : (
@@ -438,7 +438,7 @@ export default function ConnectWalletPage() {
                             />
                             <DialogFooter>
                               <Button type="submit" disabled={isNostrSubmitting}>
-                                {isNostrSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isNostrSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                 {isNostrSubmitting ? 'Connecting...' : 'Login'}
                               </Button>
                             </DialogFooter>
@@ -526,7 +526,7 @@ export default function ConnectWalletPage() {
 
             <div className="flex gap-4 items-start group">
               <div className="mt-1 h-10 w-10 shrink-0 rounded-lg bg-primary/20 flex items-center justify-center text-primary border border-primary/20 group-hover:bg-primary/30 transition-colors">
-                <BarChart3 className="h-5 w-5" />
+                <ChartColumn className="h-5 w-5" />
               </div>
               <div>
                 <h4 className="font-semibold text-white text-lg">Market Data</h4>

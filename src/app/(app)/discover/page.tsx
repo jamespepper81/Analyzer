@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ExplorerNode } from '@/components/ui/explorer-node';
 import { IconContainer } from '@/components/ui/icon-container';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Network, Loader2, AlertCircle, GitGraph, ListTree } from 'lucide-react';
+import { Network, LoaderCircle, CircleAlert, GitGraph, ListTree } from 'lucide-react';
 import { getAddressData, getTransactionData, getAddressStats } from '@/lib/blockchain-api';
 import type { AddressInfo, Transaction } from '@/lib/types';
 import dynamic from 'next/dynamic';
@@ -366,7 +366,7 @@ export default function DiscoverPage() {
                     <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
                         <CardTitle className="flex items-center gap-2">
                           <IconContainer variant="blue">
-                            <AlertCircle className="h-5 w-5" />
+                            <CircleAlert className="h-5 w-5" />
                           </IconContainer>
                           Forensic Legend
                         </CardTitle>
@@ -432,7 +432,7 @@ export default function DiscoverPage() {
                     <CardContent className="relative h-[600px] rounded-lg border bg-card-foreground/5 p-0 overflow-hidden">
                         {graphError ? (
                            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                              <AlertCircle className="h-12 w-12 text-destructive" />
+                              <CircleAlert className="h-12 w-12 text-destructive" />
                               <h1 className="text-2xl font-bold">Graph Error</h1>
                               <p className="text-muted-foreground">{graphError}</p>
                            </div>
@@ -467,7 +467,7 @@ export default function DiscoverPage() {
                             />
                             {isLoadingGraph && (
                                 <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-background/80 p-2 pr-3 text-sm text-muted-foreground backdrop-blur-sm">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <LoaderCircle className="h-4 w-4 animate-spin" />
                                     <span>Loading graph data...</span>
                                 </div>
                             )}

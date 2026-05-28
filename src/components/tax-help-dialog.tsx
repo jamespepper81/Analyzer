@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { HelpCircle, Book, Calculator, Globe, TrendingDown, FileText } from 'lucide-react';
+import { CircleQuestionMark, Book, Calculator, Globe, TrendingDown, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -21,7 +21,7 @@ export function TaxHelpDialog() {
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <HelpCircle className="mr-2 h-4 w-4" />
+          <CircleQuestionMark className="mr-2 h-4 w-4" />
           Tax Guide
         </Button>
       </DialogTrigger>

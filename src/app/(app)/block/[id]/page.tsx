@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { IconContainer } from '@/components/ui/icon-container';
-import { ArrowLeft, AlertCircle, Copy, Box, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, CircleAlert, Copy, Box, Download, LoaderCircle } from 'lucide-react';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import type { BlockDetails, BlockTransaction } from '@/lib/types';
@@ -111,7 +111,7 @@ export default function BlockDetailsPage() {
   if (pageError) {
       return (
         <div className="flex flex-col items-center justify-center gap-4 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive" />
+            <CircleAlert className="h-12 w-12 text-destructive" />
             <h1 className="text-2xl font-bold">Block Not Found</h1>
             <p className="text-muted-foreground">{pageError}</p>
             <Button onClick={() => router.back()}>
@@ -161,7 +161,7 @@ export default function BlockDetailsPage() {
             <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant="blue">
-                        <AlertCircle className="h-5 w-5" />
+                        <CircleAlert className="h-5 w-5" />
                     </IconContainer>
                     Block Details
                 </CardTitle>
@@ -223,7 +223,7 @@ export default function BlockDetailsPage() {
                 {hasMoreTxs && (
                     <div className="mt-6 flex justify-center">
                         <Button onClick={loadMoreTxs} variant="outline" disabled={isLoadingMore}>
-                            {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                            {isLoadingMore ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Load More Transactions
                         </Button>
                     </div>
