@@ -105,7 +105,7 @@
     "eslint": "^10.4.0",
     "eslint-config-next": "^16.2.6",
     "genkit-cli": "1.36.0",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.10",
     "tailwindcss": "^4.1.18",
     "typescript": "5.9.3",
     "vitest": "^4.1.7"
@@ -114,6 +114,8 @@
     "tiny-secp256k1": "npm:@bitcoinerlab/secp256k1@^1.1.1",
     "google-auth-library": "^10.2.0",
     "zod": "^3.25.76",
-    "valibot": "^1.4.1"
+    "valibot": "^1.4.1",
+    "uuid": "^11.1.1",
+    "postcss": "^8.5.10"
   }
 }
