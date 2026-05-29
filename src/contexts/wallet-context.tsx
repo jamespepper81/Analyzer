@@ -768,11 +768,22 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
 
         // Update discovery progress
         setDiscoveryProgress(partialData.discoveryProgress);
-        
+
         // Update wallet data with partial results
         // Convert PartialWalletData to WalletData by removing progressive fields
         const { discoveryProgress, isComplete, ...walletData } = partialData;
-        setData(walletData as WalletData);
+        // During the discovery phase we receive progress-only updates with no
+        // wallet data yet. Don't clobber the loading skeleton with an empty
+        // snapshot - only surface data once there's something to show (or when
+        // discovery has completed, which also covers the empty-wallet case).
+        const hasContent =
+          isComplete ||
+          walletData.transactions.length > 0 ||
+          walletData.balanceBTC > 0 ||
+          walletData.usedAddressCount > 0;
+        if (hasContent) {
+          setData(walletData as WalletData);
+        }
 
         // If complete, mark as no longer discovering
         if (partialData.isComplete) {

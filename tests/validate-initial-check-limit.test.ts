@@ -99,10 +99,10 @@ describe('Performance Optimization Validation', () => {
         expect(match?.[1]).toBe('20');
     });
 
-    it('PARALLEL_BATCH_SIZE is reasonable (10)', () => {
+    it('PARALLEL_BATCH_SIZE matches the gap window so a full window resolves in one round-trip (20)', () => {
         const match = blockchainContent.match(/const\s+PARALLEL_BATCH_SIZE\s*=\s*(\d+)/);
         expect(match).toBeTruthy();
-        expect(match?.[1]).toBe('10');
+        expect(match?.[1]).toBe('20');
     });
 
     it('All optimization constants are defined', () => {

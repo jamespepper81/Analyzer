@@ -143,3 +143,39 @@ describe('Address Discovery Optimization', () => {
         expect(content).toContain('Using cached snapshot');
     });
 });
+
+describe('Progressive connect performance regression guards', () => {
+    const blockchainPath = path.join(__dirname, '../src/lib/blockchain.ts');
+    const content = fs.readFileSync(blockchainPath, 'utf-8');
+
+    it('Both the progressive and snapshot paths use the shared bounded fetcher', () => {
+        // The bounded worker-pool helper exists and is reused, not duplicated.
+        expect(content).toContain('fetchAddressDataConcurrent');
+        expect(content).toContain('ADDRESS_DATA_CONCURRENCY');
+        const usages = content.match(/fetchAddressDataConcurrent\(/g) ?? [];
+        // One definition + at least two call sites (fetchWalletSnapshot + progressive).
+        expect(usages.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('getWalletDataProgressive does not fetch per-address data inside onAddressFound', () => {
+        // The discovery callback must only COLLECT addresses; fetching there is
+        // exactly the unbounded-flood regression we removed.
+        const start = content.indexOf('getWalletDataProgressive');
+        const slice = content.slice(start);
+        const callbackStart = slice.indexOf('onAddressFound:');
+        const callbackEnd = slice.indexOf('onBatchComplete:');
+        expect(callbackStart).toBeGreaterThan(-1);
+        expect(callbackEnd).toBeGreaterThan(callbackStart);
+        const callbackBody = slice.slice(callbackStart, callbackEnd);
+        expect(callbackBody).not.toContain('esploraGet');
+    });
+
+    it('Progressive discovery is wrapped in the discovery timeout for parity', () => {
+        expect(content).toContain('DISCOVERY_TIMEOUT_MS');
+        // The progressive path should race discovery against the timeout.
+        const start = content.indexOf('getWalletDataProgressive');
+        const slice = content.slice(start);
+        expect(slice).toContain('Promise.race');
+        expect(slice).toContain('DISCOVERY_TIMEOUT_MS');
+    });
+});

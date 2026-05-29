@@ -16,9 +16,10 @@ type AddressType = 'native' | 'legacy' | 'nested';
 
 // Performance-optimized address discovery constants
 // The discovery process is the main bottleneck during wallet login/connection
-const GAP_LIMIT = 20; // Standard gap limit for address discovery
+const GAP_LIMIT = 20; // Standard BIP44 gap limit for address discovery
 const INITIAL_CHECK_LIMIT = 5; // Number of addresses to check per type for detection (5 provides better accuracy than 3)
-const PARALLEL_BATCH_SIZE = 10; // How many addresses to check in parallel
+const PARALLEL_BATCH_SIZE = 20; // How many addresses to check in parallel (matches GAP_LIMIT so a full gap window resolves in one round-trip)
+const ADDRESS_DATA_CONCURRENCY = 6; // Bounded concurrency for per-address data fetches (avoids provider throttling)
 const ADDRESS_DISCOVERY_CACHE_TTL_MS = 10 * 60 * 1000; // Cache discovered addresses for 10 minutes
 const XPUB_LOG_PREFIX_LENGTH = 12; // How many characters of XPUB to show in logs (balance of readability vs privacy)
 
@@ -155,7 +156,9 @@ export interface DiscoveryProgress {
 }
 
 export interface ProgressiveDiscoveryCallbacks {
-    onAddressFound?: (address: string, txCount: number) => void;
+    // `stats` is the raw esplora /address response already fetched during discovery,
+    // passed through so callers can reuse it instead of re-fetching /address/{addr}.
+    onAddressFound?: (address: string, txCount: number, stats?: any) => void;
     onBatchComplete?: (progress: DiscoveryProgress) => void;
 }
 
@@ -217,9 +220,10 @@ async function performDiscoveryForTypesProgressive(
                         gap = 0;
                         foundInBatch = true;
                         
-                        // Notify callback about found address
+                        // Notify callback about found address, passing the stats we
+                        // already fetched so the caller can avoid a redundant /address call.
                         if (callbacks?.onAddressFound) {
-                            callbacks.onAddressFound(batch[i], totalTxCount);
+                            callbacks.onAddressFound(batch[i], totalTxCount, stats);
                         }
                     } else {
                         gap++;
@@ -480,6 +484,74 @@ function createEmptySnapshot(xpub: string): WalletSnapshot {
     };
 }
 
+/**
+ * Fetch txs/utxos/info for a set of addresses using a bounded worker pool.
+ *
+ * Concurrency is capped (default {@link ADDRESS_DATA_CONCURRENCY}) to avoid
+ * flooding the Esplora provider, which otherwise responds with 429/5xx and
+ * triggers retry-backoff that stretches wallet loading into minutes.
+ *
+ * When `statsByAddress` already contains the `/address` response for an address
+ * (e.g. fetched during discovery), it is reused as `info` and the redundant
+ * `/address/{addr}` call is skipped.
+ */
+export async function fetchAddressDataConcurrent(
+    addresses: string[],
+    statsByAddress?: Map<string, any>,
+    concurrency: number = ADDRESS_DATA_CONCURRENCY,
+    onAddressProcessed?: (processed: number, soFar: Map<string, { txs: any[]; utxos: any[]; info: any }>) => void
+): Promise<Map<string, { txs: any[]; utxos: any[]; info: any }>> {
+    const result = new Map<string, { txs: any[]; utxos: any[]; info: any }>();
+    if (addresses.length === 0) return result;
+
+    let idx = 0;
+    let processed = 0;
+    async function worker() {
+        while (idx < addresses.length) {
+            const address = addresses[idx++];
+            try {
+                const cachedInfo = statsByAddress?.get(address);
+                const [txs, initialAddressUtxos, fetchedInfo] = await Promise.all([
+                    esploraGet(`/address/${address}/txs`).catch(() => []),
+                    esploraGet(`/address/${address}/utxo`).catch(() => []),
+                    cachedInfo !== undefined
+                        ? Promise.resolve(cachedInfo)
+                        : esploraGet(`/address/${address}`).catch(() => null),
+                ]);
+                const addressInfo = fetchedInfo;
+
+                // If the address shows a positive balance but the first UTXO call failed,
+                // try a dedicated retry to avoid silently undercounting UTXOs.
+                const addressBalanceSats =
+                    (addressInfo?.chain_stats?.funded_txo_sum || 0) -
+                    (addressInfo?.chain_stats?.spent_txo_sum || 0);
+                const addressUtxos =
+                    Array.isArray(initialAddressUtxos) && initialAddressUtxos.length > 0
+                        ? initialAddressUtxos
+                        : addressBalanceSats > 0
+                            ? await esploraGet(`/address/${address}/utxo`).catch(() => [])
+                            : [];
+
+                result.set(address, {
+                    txs: Array.isArray(txs) ? txs : [],
+                    utxos: Array.isArray(addressUtxos) ? addressUtxos : [],
+                    info: addressInfo,
+                });
+            } catch {
+                // Skip this address on failure
+            } finally {
+                processed++;
+                onAddressProcessed?.(processed, result);
+            }
+        }
+    }
+    await Promise.all(
+        Array.from({ length: Math.min(concurrency, addresses.length) }, () => worker())
+    );
+
+    return result;
+}
+
 async function fetchWalletSnapshot(xpub: string, currency: Currency): Promise<WalletSnapshot | null> {
     const usedAddresses = await getCachedUsedAddresses(xpub);
 
@@ -494,51 +566,25 @@ async function fetchWalletSnapshot(xpub: string, currency: Currency): Promise<Wa
     const utxos: UTXO[] = [];
     const addressInfos: AddressInfo[] = [];
 
-    // Fetch all data for used addresses with limited concurrency to avoid provider throttling
-    const concurrency = 6;
-    let idx = 0;
-    async function worker() {
-        while (idx < usedAddresses.length) {
-            const address = usedAddresses[idx++];
-            try {
-                const [txs, initialAddressUtxos, addressInfo] = await Promise.all([
-                    esploraGet(`/address/${address}/txs`).catch(() => []),
-                    esploraGet(`/address/${address}/utxo`).catch(() => []),
-                    esploraGet(`/address/${address}`).catch(() => null)
-                ]);
-
-                // If the address shows a positive balance but the first UTXO call failed,
-                // try a dedicated retry to avoid silently undercounting UTXOs.
-                const addressBalanceSats =
-                    (addressInfo?.chain_stats?.funded_txo_sum || 0) -
-                    (addressInfo?.chain_stats?.spent_txo_sum || 0);
-                const addressUtxos =
-                    Array.isArray(initialAddressUtxos) && initialAddressUtxos.length > 0
-                        ? initialAddressUtxos
-                        : addressBalanceSats > 0
-                            ? await esploraGet(`/address/${address}/utxo`).catch(() => [])
-                            : [];
-                if (Array.isArray(txs)) {
-                    txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
-                }
-                if (Array.isArray(addressUtxos)) {
-                    addressUtxos.forEach((utxo: any) => {
-                        utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
-                    });
-                }
-                if (addressInfo && addressInfo.chain_stats?.tx_count > 0) {
-                    addressInfos.push({
-                        address,
-                        n_tx: addressInfo.chain_stats.tx_count,
-                        balance: addressInfo.chain_stats.funded_txo_sum - addressInfo.chain_stats.spent_txo_sum,
-                    });
-                }
-            } catch {
-                // Skip this address on failure
-            }
+    // Fetch all data for used addresses with bounded concurrency to avoid provider throttling
+    const addressData = await fetchAddressDataConcurrent(usedAddresses);
+    for (const [address, data] of addressData) {
+        if (Array.isArray(data.txs)) {
+            data.txs.forEach((tx: any) => allTxs.set(tx.txid, tx));
+        }
+        if (Array.isArray(data.utxos)) {
+            data.utxos.forEach((utxo: any) => {
+                utxos.push({ txid: utxo.txid, vout: utxo.vout, address, value: utxo.value });
+            });
+        }
+        if (data.info && data.info.chain_stats?.tx_count > 0) {
+            addressInfos.push({
+                address,
+                n_tx: data.info.chain_stats.tx_count,
+                balance: data.info.chain_stats.funded_txo_sum - data.info.chain_stats.spent_txo_sum,
+            });
         }
     }
-    await Promise.all(Array.from({ length: Math.min(concurrency, usedAddresses.length) }, () => worker()));
 
     const transactionDates = Array.from(allTxs.values())
         .map(tx => new Date(tx.status.confirmed ? tx.status.block_time * 1000 : Date.now()));
@@ -785,40 +831,64 @@ export async function getWalletDataProgressive(
             }
         }
         
-        // Progressive address discovery with real-time updates
+        // Progressive address discovery with real-time updates.
+        // Discovery only COLLECTS addresses (cheap); the heavy /txs + /utxo
+        // fetching happens afterwards via a bounded worker pool. This avoids the
+        // previous behaviour where an un-awaited per-address fetch fired 3 calls
+        // per address with unbounded concurrency, flooding the provider (429/5xx
+        // → retry-backoff) and racing the snapshot build.
         const discoveredAddresses: string[] = [];
-        const addressDataMap = new Map<string, { txs: any[]; utxos: any[]; info: any }>();
-        
+        const statsByAddress = new Map<string, any>();
+
         const latestBlockHeight = await esploraGet(`/blocks/tip/height`, 60).catch(() => null);
-        
-        await discoverUsedAddressesProgressive(xpub, {
-            onAddressFound: async (address, txCount) => {
-                console.log(`[Progressive] Found address ${address} with ${txCount} transactions`);
-                discoveredAddresses.push(address);
-                
-                // Fetch data for this address immediately for final assembly
-                // Note: Not calling onProgress here to avoid server/client boundary issues
-                try {
-                    const [txs, utxos, info] = await Promise.all([
-                        esploraGet(`/address/${address}/txs`).catch(() => []),
-                        esploraGet(`/address/${address}/utxo`).catch(() => []),
-                        esploraGet(`/address/${address}`).catch(() => null)
-                    ]);
-                    
-                    addressDataMap.set(address, { txs, utxos, info });
-                } catch (err) {
-                    console.error(`[Progressive] Failed to fetch data for address ${address}:`, err);
-                }
-            },
-            onBatchComplete: (progress) => {
-                console.log(`[Progressive] Batch complete - checked: ${progress.addressesChecked}, found: ${progress.addressesWithActivity}`);
-            }
-        });
-        
+
+        // Emit a lightweight discovery-phase progress update. It carries no wallet
+        // data yet (only the running counts), so the dashboard keeps its skeleton
+        // and shows a live "Found N addresses" counter while discovery runs.
+        const emitDiscoveryProgress = (progress: DiscoveryProgress) => {
+            if (!onProgress) return;
+            void buildPartialWalletData(xpub, [], btcPrices, currency, latestBlockHeight, progress)
+                .then((partial) => onProgress(partial))
+                .catch(() => { /* progress emission is best-effort */ });
+        };
+
+        // Wrap discovery in the same timeout the cached path uses so a stuck
+        // provider fails gracefully instead of hanging the connect flow.
+        let discoveryTimeoutId: ReturnType<typeof setTimeout> | undefined;
+        let discoveryReturned: string[] = [];
+        try {
+            discoveryReturned = await Promise.race([
+                discoverUsedAddressesProgressive(xpub, {
+                    onAddressFound: (address, _txCount, stats) => {
+                        discoveredAddresses.push(address);
+                        if (stats !== undefined) statsByAddress.set(address, stats);
+                    },
+                    onBatchComplete: (progress) => {
+                        console.log(`[Progressive] Batch complete - checked: ${progress.addressesChecked}, found: ${progress.addressesWithActivity}`);
+                        emitDiscoveryProgress(progress);
+                    },
+                }),
+                new Promise<string[]>((_, reject) => {
+                    discoveryTimeoutId = setTimeout(
+                        () => reject(new Error(`Address discovery timed out after ${DISCOVERY_TIMEOUT_MINUTES} minutes. The blockchain provider may be slow or unavailable. Please try again.`)),
+                        DISCOVERY_TIMEOUT_MS
+                    );
+                }),
+            ]);
+        } finally {
+            if (discoveryTimeoutId) clearTimeout(discoveryTimeoutId);
+        }
+
+        // Prefer the deduped list returned by discovery (it merges addresses found
+        // under multiple types during the ambiguous-xpub fallback).
+        const uniqueAddresses = discoveryReturned.length > 0
+            ? discoveryReturned
+            : Array.from(new Set(discoveredAddresses));
+
         // Discovery complete - build final wallet data
-        console.log(`[Progressive] Discovery complete - ${discoveredAddresses.length} addresses found`);
-        
-        if (discoveredAddresses.length === 0) {
+        console.log(`[Progressive] Discovery complete - ${uniqueAddresses.length} addresses found`);
+
+        if (uniqueAddresses.length === 0) {
             const emptySnapshot = createEmptySnapshot(xpub);
             setCachedSnapshot(emptySnapshot);
             const emptyWalletData = await assembleFinalWalletData(emptySnapshot, btcPrices, currency);
@@ -841,6 +911,36 @@ export async function getWalletDataProgressive(
             return { data: emptyWalletData, error: null };
         }
         
+        // Fetch per-address data with bounded concurrency, reusing the /address
+        // stats already gathered during discovery (so we don't re-fetch them).
+        // Real wallet data is streamed to the UI as addresses are processed.
+        const totalToFetch = uniqueAddresses.length;
+        const addressDataMap = await fetchAddressDataConcurrent(
+            uniqueAddresses,
+            statsByAddress,
+            ADDRESS_DATA_CONCURRENCY,
+            (processed, soFar) => {
+                if (!onProgress) return;
+                // Throttle re-renders: emit every few addresses (and never on the
+                // last one, which the final isComplete update below covers).
+                if (processed % 5 === 0 && processed < totalToFetch) {
+                    void buildPartialWalletData(
+                        xpub,
+                        Array.from(soFar.entries()),
+                        btcPrices,
+                        currency,
+                        latestBlockHeight,
+                        {
+                            addressesChecked: totalToFetch,
+                            addressesWithActivity: totalToFetch,
+                            currentBatch: Math.ceil(processed / GAP_LIMIT),
+                            isComplete: false,
+                        }
+                    ).then((partial) => onProgress(partial)).catch(() => { /* best-effort */ });
+                }
+            }
+        );
+
         // Build final snapshot and cache it
         const finalSnapshot = await buildSnapshotFromAddressData(
             xpub,
@@ -848,22 +948,22 @@ export async function getWalletDataProgressive(
             currency,
             latestBlockHeight
         );
-        
+
         if (finalSnapshot) {
             setCachedSnapshot(finalSnapshot);
         }
-        
+
         // Assemble final wallet data
         const finalWalletData = await assembleFinalWalletData(finalSnapshot!, btcPrices, currency);
-        
+
         // Send final update with isComplete = true
         if (onProgress && finalWalletData) {
             const finalPartialData: PartialWalletData = {
                 ...finalWalletData,
                 discoveryProgress: {
-                    addressesChecked: discoveredAddresses.length,
-                    addressesWithActivity: discoveredAddresses.length,
-                    currentBatch: Math.ceil(discoveredAddresses.length / 20),
+                    addressesChecked: uniqueAddresses.length,
+                    addressesWithActivity: uniqueAddresses.length,
+                    currentBatch: Math.ceil(uniqueAddresses.length / GAP_LIMIT),
                     isComplete: true,
                 },
                 isComplete: true,
