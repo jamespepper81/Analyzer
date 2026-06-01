@@ -144,11 +144,15 @@ export default function MarketPage() {
     }, [loadData]);
 
     useEffect(() => {
+        // Each refresh is a Server Action call to the App Hosting origin
+        // (Cloud Run). The underlying CoinGecko data revalidates on a 60s+
+        // window, so a 5-minute client poll keeps the page fresh without
+        // hammering the origin.
         const interval = setInterval(() => {
             if (document.visibilityState === 'visible') {
                 loadData(false);
             }
-        }, 60000);
+        }, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, [loadData]);
 

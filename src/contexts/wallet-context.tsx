@@ -908,14 +908,27 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
 
     errorToastId.current = toastResult.id;
 
-    if (errorRetryTimeout.current) {
-      clearTimeout(errorRetryTimeout.current);
-    }
-    errorRetryTimeout.current = setTimeout(triggerRetry, 3000);
+    // Exponential backoff (3s, 6s, 12s ... capped at 60s) so a failing origin
+    // — wallet data is fetched via Server Actions on Cloud Run — is not hammered
+    // by retries. `immediate` is used when the user returns to the tab.
+    const scheduleRetry = (immediate = false) => {
+      if (errorRetryCount.current >= 3) return;
+      if (errorRetryTimeout.current) {
+        clearTimeout(errorRetryTimeout.current);
+      }
+      const delay = immediate
+        ? 1000
+        : Math.min(3000 * 2 ** errorRetryCount.current, 60000);
+      errorRetryTimeout.current = setTimeout(triggerRetry, delay);
+    };
 
+    scheduleRetry();
+
+    // Retry when the user returns to the tab, but route it through the same
+    // debounced timer so a focus storm can't fire back-to-back origin calls.
     const handleVisibility = () => {
       if (!document.hidden) {
-        triggerRetry();
+        scheduleRetry(true);
       }
     };
 
@@ -958,7 +971,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
           logger.warn("Could not refresh BTC price:", e);
         }
         scheduleNext(); // Schedule the next execution
-      }, 60000); // every 60 seconds
+      }, 5 * 60 * 1000); // every 5 minutes
     };
     
     scheduleNext();

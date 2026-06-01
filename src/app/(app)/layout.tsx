@@ -383,14 +383,37 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     if (process.env.NODE_ENV === 'production' && window.__NEXT_DATA__) {
         const currentBuildId = window.__NEXT_DATA__.buildId;
 
-        const intervalId = setInterval(async () => {
+        // This fetch hits the App Hosting origin (Cloud Run) with `no-store`,
+        // so it is both a CDN miss and an origin request. Keep it infrequent,
+        // skip it while the tab is hidden, and add jitter so clients don't all
+        // poll in lockstep.
+        const BASE_INTERVAL = 15 * 60 * 1000; // 15 minutes
+        const JITTER = 60 * 1000; // up to 60s of spread
+        let timeoutId: ReturnType<typeof setTimeout>;
+        let stopped = false;
+
+        const scheduleNext = () => {
+          const delay = BASE_INTERVAL + Math.floor(Math.random() * JITTER);
+          timeoutId = setTimeout(check, delay);
+        };
+
+        const check = async () => {
+          if (stopped) return;
+
+          // Don't poll the origin while the tab is in the background.
+          if (document.visibilityState !== 'visible') {
+            scheduleNext();
+            return;
+          }
+
           try {
             const res = await fetch(window.location.href, {
               cache: 'no-store',
             });
-            
+
             if (!res.ok) {
                 console.warn(`Update check failed with status: ${res.status}`);
+                scheduleNext();
                 return;
             }
 
@@ -403,15 +426,23 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
               if (serverBuildId && currentBuildId && serverBuildId !== currentBuildId) {
                 setIsUpdateAvailable(true);
-                clearInterval(intervalId); // Stop checking once an update is found.
+                stopped = true; // Stop checking once an update is found.
+                return;
               }
             }
           } catch (err) {
             console.warn('Failed to check for app update:', err);
           }
-        }, 60000); // Check every 60 seconds.
 
-        return () => clearInterval(intervalId);
+          scheduleNext();
+        };
+
+        scheduleNext();
+
+        return () => {
+          stopped = true;
+          clearTimeout(timeoutId);
+        };
     }
 
   }, []);
