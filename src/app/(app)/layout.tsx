@@ -425,6 +425,10 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
               const serverBuildId = serverData.buildId;
 
               if (serverBuildId && currentBuildId && serverBuildId !== currentBuildId) {
+                // If the effect was cleaned up (unmounted) while this fetch was
+                // in flight, `stopped` is already true — skip the state update
+                // to avoid setting state on an unmounted component.
+                if (stopped) return;
                 setIsUpdateAvailable(true);
                 stopped = true; // Stop checking once an update is found.
                 return;
