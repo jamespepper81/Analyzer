@@ -5,6 +5,64 @@ All notable changes to BitSleuth - AI Bitcoin Wallet Analyzer will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-06-12
+
+### Added
+
+#### AI Chat Experience
+- Real-time streaming display for AI chat responses with smart JSON extraction
+- Clickable follow-up suggestions appended to AI chat responses
+- Fixed chatbot displaying raw JSON and duplicate bubbles during streaming
+
+#### Wallet Connection & Login Flow
+- Dual-login fast dashboard flow with premium loading UX
+- Enhanced wallet connection loading screen with step-by-step progress display
+- Friendly UI for empty wallets with graceful handling of price fetch failures
+- Playwright E2E tests for the login flow with timing assertions
+
+#### Open-Source Release
+- Repository prepared for open-source release under the GNU AGPL v3 license
+- Rewritten `SECURITY.md` with project-specific security policy
+- Community & Support section in README, expanded docs index, and status/tech-stack badges
+- Automated GitHub Release workflow that publishes releases from changelog entries on tag push
+- Comprehensive `CLAUDE.md` and React best practices guide for AI assistants
+
+### Performance
+
+- Public pages, static assets and app shells are now edge-cacheable
+- Reduced self-inflicted Cloud Run request volume
+- Faster XPUB connect: per-address fetch concurrency is now bounded, with hardened progress reporting
+
+### Fixed
+
+- Market page error caused by a trailing slash in the Fear & Greed API path
+- Update-checker state update guarded against running after component unmount
+- Server/client boundary error: removed `'use server'` directive from `blockchain.ts`
+- Logger initialization now uses runtime environment checks instead of module-level setup
+- Null safety bugs across multiple services and BTC price typing in wallet data
+- Warning alert text readability in light mode
+- Mobile sidebar height, landscape layout, and navigation improvements
+- Build error from `next/font/google` resolved by switching to a CSS font stack
+- Migrated lucide-react icon usages to canonical 1.x names
+
+### Security
+
+- Hardened SSRF protections: all external fetches routed through `fetchJson` with trusted-origin allowlists and sanitized address/txid/currency inputs (resolves CodeQL alerts)
+- Fixed externally-controlled format string findings
+- Added explicit permissions to GitHub Actions workflows
+- Patched uuid bounds-check and PostCSS XSS advisories via npm overrides
+
+### Changed
+
+#### Dependency Updates
+- **lucide-react**: 0.563.0 → 1.17.0
+- **eslint**: 9 → 10 with Next.js 16 compatibility
+- **Next.js**: bumped within the 16.1.x line alongside the nextjs dependency group
+- **Genkit**: dependency group updated (8 packages)
+- **recharts**: 3.7.0 → 3.8.1, **firebase**: 12.9.0 → 12.13.0, **jspdf**: 4.0.0 → 4.2.1
+- Tailwind, Bitcoin, forms, and development dependency groups updated
+- Dependabot switched to a monthly cadence for npm updates
+
 ## [0.2.0] - 2026-01-16
 
 ### Major Framework Upgrades
