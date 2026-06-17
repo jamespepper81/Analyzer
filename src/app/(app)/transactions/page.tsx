@@ -30,88 +30,142 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
-const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transaction, fiatPrice: number, currency: string }) => {
+// Shared per-transaction derived values, computed once per renderer.
+function getTxDerived(tx: Transaction, fiatPrice: number, currency: string) {
   const isReceived = tx.type === 'Received';
-  const addressToShow = isReceived 
-    ? tx.fromAddress[0] 
-    : tx.toAddress[0];
+  const addressToShow = isReceived ? tx.fromAddress[0] : tx.toAddress[0];
   const fiatAmount = Math.abs(tx.btc * fiatPrice);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
     }).format(value);
-  }
 
   // Ensure unique labels are displayed (e.g., if multiple addresses belong to the same exchange)
   const uniqueLabels = tx.labels ? [...new Map(tx.labels.map(item => [item.label, item])).values()] : [];
 
+  const shortAddress =
+    addressToShow && addressToShow.length > 10
+      ? `${addressToShow.substring(0, 10)}...`
+      : addressToShow;
+
+  return { isReceived, addressToShow, shortAddress, fiatAmount, formatCurrency, uniqueLabels };
+}
+
+type TxDerived = ReturnType<typeof getTxDerived>;
+
+// Status pill, shared by the desktop table row and the mobile card.
+function StatusBadge({ status }: { status: Transaction['status'] }) {
+  return (
+    <Badge
+      variant={status === 'Confirmed' ? 'outline' : 'secondary'}
+      className={cn(
+        'text-xs sm:text-sm',
+        status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
+        status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
+      )}
+    >
+      {status}
+    </Badge>
+  );
+}
+
+// Icon + "Sent to/Received from" + truncated address + labels + date.
+// Truncation uses min-w-0 + truncate so the address yields width gracefully
+// instead of overlapping adjacent content on small screens.
+function TxIdentity({ tx, d }: { tx: Transaction; d: TxDerived }) {
+  return (
+    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <span
+        className={cn(
+          "flex items-center justify-center rounded-full p-1.5 sm:p-2 w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0",
+          d.isReceived
+            ? "bg-chart-positive/10 text-chart-positive"
+            : "bg-chart-negative/10 text-chart-negative"
+        )}
+      >
+        {d.isReceived ? <ArrowDownLeft className="h-3 w-3 sm:h-4 sm:w-4" /> : <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4" />}
+      </span>
+      <div className="min-w-0">
+        <div className="font-medium flex items-center gap-1.5 text-sm sm:text-base min-w-0">
+          <span className="whitespace-nowrap">{d.isReceived ? 'Received from' : 'Sent to'}</span>
+          <span className="font-mono text-sm truncate min-w-0" title={d.addressToShow ?? undefined}>{d.shortAddress}</span>
+          {d.uniqueLabels.map(label => (
+            <Badge key={label.address} variant="secondary" className="font-sans text-xs flex-shrink-0">
+              <Building className="mr-1 h-3 w-3 text-muted-foreground"/>
+              {label.label}
+            </Badge>
+          ))}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {new Date(tx.date).toLocaleString()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Desktop layout (sm+): a table row.
+const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transaction, fiatPrice: number, currency: string }) => {
+  const d = getTxDerived(tx, fiatPrice, currency);
+
   return (
     <TableRow className="hover:bg-muted/50 transition-colors">
-      <TableCell className="pl-4 sm:pl-0">
+      <TableCell>
         <Link href={`/transactions/${tx.id}`} className="hover:underline cursor-pointer">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span
-              className={cn(
-                "flex items-center justify-center rounded-full p-1.5 sm:p-2 w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0",
-                isReceived
-                  ? "bg-chart-positive/10 text-chart-positive"
-                  : "bg-chart-negative/10 text-chart-negative"
-              )}
-            >
-              {isReceived ? <ArrowDownLeft className="h-3 w-3 sm:h-4 sm:w-4" /> : <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4" />}
-            </span>
-            <div className="min-w-0">
-              <div className="font-medium flex items-center gap-1.5 flex-wrap text-sm sm:text-base">
-                <span className="whitespace-nowrap">{isReceived ? 'Received from' : 'Sent to'}</span>
-                <span className="font-mono text-sm truncate max-w-[80px] sm:max-w-none">{addressToShow && addressToShow.length > 10 ? `${addressToShow.substring(0, 10)}...` : addressToShow}</span>
-                {uniqueLabels.map(label => (
-                  <Badge key={label.address} variant="secondary" className="font-sans text-xs">
-                    <Building className="mr-1 h-3 w-3 text-muted-foreground"/>
-                    {label.label}
-                  </Badge>
-                ))}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {new Date(tx.date).toLocaleString()}
-              </div>
-            </div>
-          </div>
+          <TxIdentity tx={tx} d={d} />
         </Link>
       </TableCell>
       <TableCell
         className={cn(
           'text-right font-mono text-sm whitespace-nowrap',
-          isReceived ? 'text-chart-positive' : 'text-chart-negative'
+          d.isReceived ? 'text-chart-positive' : 'text-chart-negative'
         )}
       >
         {tx.btc > 0 ? '+' : ''}{tx.btc.toFixed(6)} BTC
       </TableCell>
-      <TableCell 
+      <TableCell
         className={cn(
           'hidden text-right md:table-cell whitespace-nowrap',
-          isReceived ? 'text-chart-positive' : 'text-chart-negative'
+          d.isReceived ? 'text-chart-positive' : 'text-chart-negative'
         )}
       >
-        {isReceived ? '+' : '-'}{formatCurrency(fiatAmount)}
+        {d.isReceived ? '+' : '-'}{d.formatCurrency(d.fiatAmount)}
       </TableCell>
-      <TableCell className="text-right pr-4 sm:pr-0">
-        <Badge
-          variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'}
-          className={cn(
-            'text-xs sm:text-sm',
-            tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
-            tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
-          )}
-        >
-          {tx.status}
-        </Badge>
+      <TableCell className="text-right">
+        <StatusBadge status={tx.status} />
       </TableCell>
     </TableRow>
   );
 });
 TransactionRow.displayName = 'TransactionRow';
+
+// Mobile layout (below sm): a stacked card so columns never overlap.
+const TransactionCard = React.memo(({ tx, fiatPrice, currency }: { tx: Transaction, fiatPrice: number, currency: string }) => {
+  const d = getTxDerived(tx, fiatPrice, currency);
+
+  return (
+    <Link
+      href={`/transactions/${tx.id}`}
+      className="flex flex-col gap-2 border-b px-2 py-3 last:border-0 transition-colors active:bg-muted/50"
+    >
+      <TxIdentity tx={tx} d={d} />
+      <div className="flex items-center justify-between gap-2 pl-9">
+        <span
+          className={cn(
+            'font-mono text-sm whitespace-nowrap',
+            d.isReceived ? 'text-chart-positive' : 'text-chart-negative'
+          )}
+        >
+          {tx.btc > 0 ? '+' : ''}{tx.btc.toFixed(6)} BTC
+        </span>
+        <StatusBadge status={tx.status} />
+      </div>
+    </Link>
+  );
+});
+TransactionCard.displayName = 'TransactionCard';
 
 
 const TRANSACTIONS_PER_PAGE = 20;
@@ -229,15 +283,31 @@ export default function TransactionsPage() {
             </Button>
         </div>
       </CardHeader>
-      <CardContent className="px-0 sm:px-6">
-        <div className="overflow-x-auto">
+      <CardContent className="px-2 sm:px-6">
+        {/* Mobile: stacked cards so columns never overlap on small screens */}
+        <div className="sm:hidden" role="list">
+          {transactionsToShow.length > 0 ? (
+            transactionsToShow.map((tx) => (
+              <div role="listitem" key={tx.id}>
+                <TransactionCard tx={tx} fiatPrice={fiatPrice} currency={currency} />
+              </div>
+            ))
+          ) : (
+            <p className="flex h-24 items-center justify-center text-center text-muted-foreground">
+              No transactions found.
+            </p>
+          )}
+        </div>
+
+        {/* Desktop (sm+): table layout */}
+        <div className="hidden sm:block">
           <Table>
           <TableHeader>
             <TableRow className="border-b-2 hover:bg-transparent">
-              <TableHead className="pl-4 sm:pl-0">Details</TableHead>
+              <TableHead>Details</TableHead>
               <TableHead className="text-right">Amount (BTC)</TableHead>
               <TableHead className="hidden text-right md:table-cell">Amount (Fiat)</TableHead>
-              <TableHead className="text-right pr-4 sm:pr-0">Status</TableHead>
+              <TableHead className="text-right">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
