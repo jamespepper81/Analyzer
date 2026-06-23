@@ -58,7 +58,7 @@ npm run dev:clean        # Clean .next cache and start dev
 | **Styling** | Tailwind CSS 4, shadcn/ui, Radix UI, Lucide Icons |
 | **AI** | Genkit 1.24+, OpenAI GPT-4.1 Mini |
 | **Bitcoin** | bitcoinjs-lib, bip32, secp256k1 |
-| **Data APIs** | Blockstream, mempool.space, CoinGecko, Firebase (analytics only) |
+| **Data APIs** | Blockstream, mempool.space, CoinGecko, Google Analytics (GA4) |
 | **Testing** | Vitest (unit), Playwright (E2E) |
 | **Build** | Turbopack |
 
@@ -114,7 +114,7 @@ src/
 │   └── wallet-context.tsx       # Global wallet state
 │
 ├── hooks/
-│   ├── use-analytics.ts         # Firebase analytics
+│   ├── use-analytics.ts         # Google Analytics (GA4) event tracking
 │   ├── use-chunk-retry.ts       # Chunked data fetching
 │   ├── use-mobile.tsx           # Mobile detection
 │   └── use-toast.ts             # Toast notifications
@@ -125,7 +125,6 @@ src/
 │   ├── market.ts                # Market data service (CoinGecko)
 │   ├── mempool.ts               # Mempool data service
 │   ├── newsService.ts           # News API (CryptoCompare)
-│   ├── firebase.ts              # Firebase initialization
 │   ├── bitcoin-init.ts          # Bitcoin library setup
 │   ├── cache-utils.ts           # Client-side caching
 │   ├── chunk-retry-service.ts   # Chunked retry logic
@@ -288,13 +287,7 @@ Required variables in `.env`:
 # Site
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-# Firebase (required for analytics)
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
+# Google Analytics (GA4 measurement ID, required for analytics)
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...
 
 # OpenAI (required for AI features)
@@ -309,7 +302,7 @@ GOOGLE_SHEETS_PRIVATE_KEY=...
 ```
 
 **Notes:**
-- Firebase keys are public client config (safe for browser)
+- The GA4 measurement ID is public client config (safe for browser)
 - Missing optional keys show non-blocking warnings
 - Copy `.env.example` as starting point
 
@@ -410,7 +403,7 @@ The codebase implements several performance optimizations:
 | Issue | Solution |
 |-------|----------|
 | AI features not working | Ensure `npm run genkit:dev` is running and `OPENAI_API_KEY` is set |
-| Analytics warning | Set Firebase environment variables |
+| Analytics warning | Set `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` |
 | Build errors | Run `npm run dev:clean` or delete `node_modules` and reinstall |
 | Type errors | Run `npm run typecheck` for details |
 | News not loading | Set `CRYPTOCOMPARE_API_KEY` |

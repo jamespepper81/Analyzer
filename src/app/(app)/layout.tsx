@@ -62,7 +62,7 @@ function AnalyticsWarning() {
 
   // We check on mount to avoid hydration errors
   React.useEffect(() => {
-    setIsConfigured(!!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && !!process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID);
+    setIsConfigured(!!process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID);
   }, []);
 
   if (isConfigured) {
@@ -74,7 +74,7 @@ function AnalyticsWarning() {
         <Terminal className="h-4 w-4" />
         <AlertTitle>Analytics Not Configured</AlertTitle>
         <AlertDescription className="font-normal">
-            Your Firebase environment variables are missing. To enable analytics, add <code>NEXT_PUBLIC_FIREBASE_API_KEY</code> and <code>NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID</code> to the <code>.env</code> file, then restart the development server.
+            Your Google Analytics measurement ID is missing. To enable analytics, add <code>NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID</code> to the <code>.env</code> file, then restart the development server.
         </AlertDescription>
     </Alert>
   )

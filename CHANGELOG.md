@@ -5,6 +5,18 @@ All notable changes to BitSleuth - AI Bitcoin Wallet Analyzer will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+#### Analytics
+- Migrated analytics from the Firebase SDK to native Google Analytics (GA4) via
+  `@next/third-parties/google`. Analytics now requires only
+  `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`; the other `NEXT_PUBLIC_FIREBASE_*`
+  variables (API key, app ID, auth domain, project ID, storage bucket, messaging
+  sender ID) are no longer needed and have been removed from config and docs.
+- Removed the `firebase` npm dependency (`@genkit-ai/firebase` is unaffected).
+
 ## [1.2.1] - 2026-06-12
 
 ### Added

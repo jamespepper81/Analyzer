@@ -79,19 +79,13 @@ For VS Code users, install the recommended "Tailwind CSS IntelliSense" extension
 
 ## Environment variables
 
-Create a `.env` file in the project root. Only the public Firebase keys are required for analytics; other keys enable additional features.
+Create a `.env` file in the project root. Only the GA4 measurement ID is required for analytics; other keys enable additional features.
 
 ```env
 # Site
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-# Firebase (analytics; all are public client config)
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
+# Google Analytics (GA4 measurement ID, e.g. G-XXXXXXXXXX)
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
 
 # OpenAI / Genkit (required for AI features)
@@ -111,7 +105,7 @@ GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KE
 ```
 
 Notes:
-- Without `NEXT_PUBLIC_FIREBASE_API_KEY` and `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`, analytics will be disabled and a non-blocking warning will appear in-app.
+- Without `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`, analytics will be disabled and a non-blocking warning will appear in-app.
 - `COINGECKO_API_KEY` is optional and, when present, is added to CoinGecko requests.
 - `CRYPTOCOMPARE_API_KEY` enables the News panel with live data; otherwise a helpful message is shown.
 - Google Sheets export is optional; if unset, feedback stays local and the app continues to work.
@@ -157,7 +151,7 @@ Notes:
 
 ## Troubleshooting
 
-- Missing analytics warning: set `NEXT_PUBLIC_FIREBASE_API_KEY` and `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` and restart dev server.
+- Missing analytics warning: set `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` and restart dev server.
 - News panel shows configuration message: set `CRYPTOCOMPARE_API_KEY`.
 - Google Sheets export fails: verify sheet ID, service account email access, and private key formatting (preserve newlines).
 

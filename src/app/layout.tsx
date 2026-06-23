@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics-tracker';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { WalletProviderWrapper } from '@/components/wallet-provider-wrapper';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -93,6 +94,7 @@ export default function RootLayout({
 }>) {
   const isTestMode = process.env.NODE_ENV === 'test';
   const testXpub = isTestMode ? process.env.TEST_XPUB : undefined;
+  const gaId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -168,6 +170,7 @@ export default function RootLayout({
             <AnalyticsTracker />
           </Suspense>
         </ErrorBoundary>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );

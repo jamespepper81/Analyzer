@@ -53,7 +53,7 @@ Send an email to **security@bitsleuth.ai** with the following information:
 ### Server-Side API Key Isolation
 
 - Sensitive API keys (`OPENAI_API_KEY`, `GOOGLE_SHEETS_PRIVATE_KEY`, `COINGECKO_API_KEY`, `CRYPTOCOMPARE_API_KEY`) are server-side only, accessed via `process.env` (never prefixed with `NEXT_PUBLIC_`)
-- Firebase configuration keys (`NEXT_PUBLIC_FIREBASE_*`) are public client config designed by Google to be safe for browser exposure — they only enable anonymous analytics collection
+- The Google Analytics measurement ID (`NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`) is public client config designed to be safe for browser exposure — it only enables anonymous analytics collection
 
 ### Security Headers
 
@@ -119,7 +119,7 @@ All blockchain data is fetched from public, read-only APIs:
 ## Environment Variables
 
 **Public client configuration (safe for browser):**
-- `NEXT_PUBLIC_FIREBASE_*` — Firebase Analytics client config
+- `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` — Google Analytics (GA4) measurement ID
 - `NEXT_PUBLIC_SITE_URL` — Application URL
 
 **Server-side secrets (must not be exposed to client):**

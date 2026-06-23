@@ -1,45 +1,40 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { getFirebaseAnalytics } from '@/lib/firebase';
-import { logEvent } from 'firebase/analytics';
+import { sendGAEvent } from '@next/third-parties/google';
 
 /**
- * A component that tracks page views for Firebase Analytics.
- * It uses Next.js navigation events to log a 'page_view' whenever the route changes.
+ * A component that tracks page views for Google Analytics (GA4) on client-side
+ * route changes. The initial page view is emitted automatically by the
+ * <GoogleAnalytics> component on load, so we skip the first render here to
+ * avoid double-counting.
  */
 export function AnalyticsTracker() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const isInitialRender = useRef(true);
 
-    // Track Page Views for Analytics
     useEffect(() => {
-        const logPageView = async () => {
-            const analytics = await getFirebaseAnalytics();
-            
-            if (analytics) {
-                try {
-                    const search = searchParams.toString();
-                    const url = `${pathname}${search ? `?${search}` : ''}`;
-                    
-                    const eventParams = {
-                        page_location: window.location.href,
-                        page_path: url,
-                        page_title: document.title,
-                    };
+        // The <GoogleAnalytics> component already sends the initial page_view.
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            return;
+        }
 
-                    logEvent(analytics, 'page_view', eventParams);
+        try {
+            const search = searchParams.toString();
+            const url = `${pathname}${search ? `?${search}` : ''}`;
 
-                } catch (error) {
-                    console.error("ANALYTICS_TRACKER: Error logging page_view event:", error);
-                }
-            }
-        };
-        
-        logPageView();
-
+            sendGAEvent('event', 'page_view', {
+                page_location: window.location.href,
+                page_path: url,
+                page_title: document.title,
+            });
+        } catch (error) {
+            console.error("ANALYTICS_TRACKER: Error logging page_view event:", error);
+        }
     }, [pathname, searchParams]);
 
     // This component does not render anything to the DOM.
