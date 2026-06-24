@@ -35,7 +35,6 @@
   "dependencies": {
     "@bitcoinerlab/secp256k1": "^1.1.1",
     "@genkit-ai/compat-oai": "^1.36.0",
-    "@genkit-ai/firebase": "^1.36.0",
     "@genkit-ai/next": "^1.36.0",
     "@hookform/resolvers": "^5.4.0",
     "@next/third-parties": "^16.2.6",
