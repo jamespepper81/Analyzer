@@ -7,6 +7,8 @@ import { GoogleAnalytics } from '@next/third-parties/google';
 import { WalletProviderWrapper } from '@/components/wallet-provider-wrapper';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/next';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.bitsleuth.ai';
 
@@ -170,6 +172,8 @@ export default function RootLayout({
             <AnalyticsTracker />
           </Suspense>
         </ErrorBoundary>
+        <SpeedInsights />
+        <Analytics />
         {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
