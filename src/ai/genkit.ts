@@ -1,16 +1,6 @@
 // src/ai/genkit.ts
 import { genkit } from 'genkit';
 import openAI from '@genkit-ai/compat-oai';
-import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
-
-// Initialize Firebase telemetry only in production
-if (process.env.NODE_ENV === 'production') {
-  try {
-    enableFirebaseTelemetry();
-  } catch (error) {
-    console.warn('Firebase telemetry initialization failed:', error);
-  }
-}
 
 // Check for API key and warn if missing (don't throw to avoid build/import failures)
 const apiKey = process.env.OPENAI_API_KEY;
