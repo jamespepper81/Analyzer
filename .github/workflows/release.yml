@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: "\U0001F4E5 Checkout code"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: "\U0001F4CB Extract release notes"
         id: notes
