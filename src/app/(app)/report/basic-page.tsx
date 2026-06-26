@@ -519,7 +519,7 @@ export default function BasicReportPage() {
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="end">
                                 <Calendar
-                                    initialFocus
+                                    autoFocus
                                     mode="range"
                                     defaultMonth={date?.from}
                                     selected={date}
@@ -678,7 +678,7 @@ export default function BasicReportPage() {
                                             setIsHoldingsPopoverOpen(false);
                                         }}
                                         disabled={{ after: new Date() }}
-                                        initialFocus
+                                        autoFocus
                                     />
                                     <div className="p-2 border-t border-border flex items-center gap-2">
                                         <Button
