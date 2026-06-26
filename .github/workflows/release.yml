@@ -46,7 +46,7 @@ jobs:
           echo "notes_file=$RUNNER_TEMP/release_notes.md" >> "$GITHUB_OUTPUT"
 
       - name: "\U0001F680 Create GitHub Release"
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: v${{ steps.notes.outputs.version }}
           body_path: ${{ steps.notes.outputs.notes_file }}
