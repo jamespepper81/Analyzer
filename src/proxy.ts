@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Edge middleware to protect the dynamic blockchain-explorer routes
+ * Edge proxy to protect the dynamic blockchain-explorer routes
  * (`/transactions/[id]`, `/address/[address]`, `/block/[id]`) from crawler
  * traffic.
  *
@@ -13,7 +13,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  * even with zero human users.
  *
  * robots.txt (see `src/app/robots.ts`) tells well-behaved bots to stay out.
- * This middleware is the enforcement layer for bots that ignore it: it matches
+ * This proxy is the enforcement layer for bots that ignore it: it matches
  * the path (catching both the GET page request and the Server Action POST that
  * posts back to the same path) and short-circuits known crawler User-Agents at
  * the edge with a tiny `403` before the expensive Node function ever runs.
@@ -60,7 +60,7 @@ const BOT_UA_REGEX = new RegExp(
   'i'
 );
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || '';
 
   if (BOT_UA_REGEX.test(userAgent)) {
