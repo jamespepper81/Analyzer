@@ -14,9 +14,6 @@
     "url": "https://github.com/BitSleuthAI/Analyzer/issues"
   },
   "author": "BitSleuth",
-  "engines": {
-    "node": "22.x"
-  },
   "scripts": {
     "dev": "next dev",
     "dev:clean": "rm -rf .next && next dev",
@@ -60,7 +57,6 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toast": "^1.2.15",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@types/jszip": "^3.4.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "bip32": "^5.0.1",
