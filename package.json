@@ -108,6 +108,7 @@
     "vitest": "^4.1.9"
   },
   "overrides": {
+    "glob": "^13.0.0",
     "tiny-secp256k1": "npm:@bitcoinerlab/secp256k1@^1.1.1",
     "google-auth-library": "^10.2.0",
     "zod": "^3.25.76",
