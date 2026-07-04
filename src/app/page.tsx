@@ -384,6 +384,7 @@ export default function ConnectWalletPage() {
                       onPointerDownOutside={(e) => e.preventDefault()}
                       onEscapeKeyDown={(e) => e.preventDefault()}
                     >
+                      <DialogTitle className="sr-only">Connecting wallet</DialogTitle>
                       <WalletConnectionProgress type="xpub" isOpen={isSubmitting} />
                     </DialogContent>
                   </Dialog>
@@ -456,6 +457,7 @@ export default function ConnectWalletPage() {
                       onPointerDownOutside={(e) => e.preventDefault()}
                       onEscapeKeyDown={(e) => e.preventDefault()}
                     >
+                      <DialogTitle className="sr-only">Connecting via Nostr</DialogTitle>
                       <WalletConnectionProgress type="nostr" isOpen={isNostrSubmitting && !isNostrLoginOpen} />
                     </DialogContent>
                   </Dialog>
