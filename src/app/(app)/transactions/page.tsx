@@ -63,7 +63,7 @@ function StatusBadge({ status }: { status: Transaction['status'] }) {
       className={cn(
         'text-xs sm:text-sm',
         status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
-        status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
+        status === 'Pending' && 'border-warning/40 text-warning'
       )}
     >
       {status}
@@ -240,21 +240,21 @@ export default function TransactionsPage() {
     <div className="flex flex-col gap-4 sm:gap-6">
       {/* Progressive Discovery Status */}
       {isDiscovering && discoveryProgress && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 shadow-md">
+        <div className="bg-gradient-to-r from-info/10 to-chart-purple/10 dark:from-info/30 dark:to-chart-purple/30 border-2 border-info/30 dark:border-info/40 rounded-lg px-4 py-3 shadow-md">
           <div className="flex items-start gap-3">
-            <LoaderCircle className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <LoaderCircle className="h-5 w-5 animate-spin text-info mt-0.5 flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                <p className="text-sm font-semibold text-info">
                   🔍 Discovering addresses... Transactions updating in real-time
                 </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">
+                <p className="text-xs text-info font-mono">
                   {discoveryProgress.addressesWithActivity} addresses
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Progress value={(discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100} className="h-1.5" />
-                <span className="text-xs text-blue-700 dark:text-blue-300 whitespace-nowrap">
+                <span className="text-xs text-info whitespace-nowrap">
                   {discoveryProgress.addressesChecked} checked
                 </span>
               </div>

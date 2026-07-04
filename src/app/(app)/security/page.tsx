@@ -89,7 +89,7 @@ function AddressScreener() {
     
     return (
         <Card className="border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-amber-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-warning/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant="amber">
                         <Search className="h-5 w-5" />
@@ -124,7 +124,7 @@ function AddressScreener() {
                 </Form>
 
                 {error && (
-                    <div className="mt-4 text-center text-red-500 bg-red-500/10 p-4 rounded-md" role="alert">
+                    <div className="mt-4 text-center text-destructive bg-destructive/10 p-4 rounded-md" role="alert">
                         <p className="font-bold">Screening Failed</p>
                         <p className="text-sm font-normal">{error}</p>
                     </div>
@@ -138,7 +138,7 @@ function AddressScreener() {
                                 <p className="text-sm font-normal">This address is on a sanctions list. Interacting with it is high risk.</p>
                             </div>
                         ) : (
-                             <div className="text-center text-emerald-500 bg-emerald-500/10 p-4 rounded-md">
+                             <div className="text-center text-success bg-success/10 p-4 rounded-md">
                                 <p className="font-bold">Clean</p>
                                 <p className="text-sm font-normal">This address was not found on any sanctions lists screened by TRM Labs.</p>
                             </div>
@@ -152,10 +152,10 @@ function AddressScreener() {
 
 function SecurityMetric({ icon, title, value, description, level, levelText, tooltipText }: SecurityMetricProps) {
   const levelClasses = {
-    Good: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
-    Low: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
-    Medium: 'border-amber-500/40 bg-amber-500/10 text-amber-400',
-    High: 'border-rose-500/40 bg-rose-500/10 text-rose-400',
+    Good: 'border-success/40 bg-success/10 text-success',
+    Low: 'border-success/40 bg-success/10 text-success',
+    Medium: 'border-warning/40 bg-warning/10 text-warning',
+    High: 'border-chart-negative/40 bg-chart-negative/10 text-chart-negative',
   };
 
   const card = (
@@ -199,9 +199,9 @@ function RecommendationItem({ recommendation }: { recommendation: SecurityRecomm
     const { title, description, level } = recommendation;
   
     const ICONS = {
-      'Good': <ShieldCheck className="h-5 w-5 text-emerald-500" />,
-      'Warning': <AlertTriangle className="h-5 w-5 text-amber-500" />,
-      'Info': <Lightbulb className="h-5 w-5 text-blue-500" />,
+      'Good': <ShieldCheck className="h-5 w-5 text-success" />,
+      'Warning': <AlertTriangle className="h-5 w-5 text-warning" />,
+      'Info': <Lightbulb className="h-5 w-5 text-info" />,
       'Critical': <ShieldAlert className="h-5 w-5 text-destructive" />,
     };
   
@@ -393,7 +393,7 @@ export default function SecurityPage() {
           tooltipText='"Dust" refers to tiny, unspent amounts of Bitcoin in your wallet. While not a direct security risk, a large number of dust UTXOs can impact privacy and may lead to higher transaction fees in the future.'
         />
         <Card className="h-full border-2 shadow-sm hover:shadow-md transition-all duration-200">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-info/5 via-transparent to-transparent">
                 <CardTitle className="text-sm font-medium">Spread the Word</CardTitle>
                 <IconContainer variant="blue">
                   <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -462,7 +462,7 @@ export default function SecurityPage() {
                     </AlertDialogContent>
                   </AlertDialog>
                   {!nostrNpub && (
-                    <div className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-600">
+                    <div className="mt-2 flex items-center gap-1 text-xs font-medium text-warning">
                       <AlertTriangle className="h-3.5 w-3.5" />
                       Connect Nostr to share.
                     </div>
@@ -503,7 +503,7 @@ export default function SecurityPage() {
       </Card>
       
        <Card className="border-2 shadow-md">
-          <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+          <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <IconContainer variant="emerald">
                 <ShieldCheck className="h-5 w-5" />

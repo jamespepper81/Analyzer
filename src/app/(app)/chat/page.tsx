@@ -468,10 +468,10 @@ export default function ChatPage() {
         <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6 pt-4">
           {/* AI Insights Loading Indicator */}
           {isLoadingAiContent && (
-            <Alert className="shadow-md bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-              <CircleDashed className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
-              <AlertTitle className="text-blue-900 dark:text-blue-100">Generating AI insights...</AlertTitle>
-              <AlertDescription className="text-blue-800 dark:text-blue-200">
+            <Alert className="shadow-md bg-info/15 dark:bg-info/30 border-info/30 dark:border-info/40">
+              <CircleDashed className="h-5 w-5 animate-spin text-info" />
+              <AlertTitle className="text-info">Generating AI insights...</AlertTitle>
+              <AlertDescription className="text-info">
                 Your wallet is loaded. AI is analyzing your transactions and will provide personalized insights momentarily.
               </AlertDescription>
             </Alert>

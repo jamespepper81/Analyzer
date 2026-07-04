@@ -483,7 +483,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         collapsible="icon"
         variant="sidebar"
         data-debug={showLayoutDebug}
-        className={cn(showLayoutDebug && 'border-r border-dashed border-emerald-400')}
+        className={cn(showLayoutDebug && 'border-r border-dashed border-success')}
       >
         <SidebarHeader className="px-0 pb-3">
           <div className="grid grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)] items-center">
@@ -603,7 +603,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset data-debug={showLayoutDebug} className={cn(showLayoutDebug && 'border-l border-dashed border-emerald-400')}>
+      <SidebarInset data-debug={showLayoutDebug} className={cn(showLayoutDebug && 'border-l border-dashed border-success')}>
         <header className={cn(
           "sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-sm gap-2",
           layoutHeaderPadding,

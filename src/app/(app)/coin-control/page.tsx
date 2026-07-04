@@ -332,7 +332,7 @@ export default function CoinControlPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0 w-full max-w-full">
                 <Card className="lg:col-span-2 min-w-0 w-full border-2 shadow-md">
-                    <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                    <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                             <IconContainer variant="emerald">
                                 <Coins className="h-4 w-4 sm:h-5 sm:w-5" />

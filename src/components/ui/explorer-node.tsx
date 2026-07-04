@@ -64,9 +64,9 @@ const NodeDisplay = ({ type, identifier, value, fiatPrice, currency, label, inte
           text: 'text-card-foreground',
         },
         medium: {
-          container: 'bg-amber-500/10 border-amber-500/20',
-          iconContainer: 'bg-amber-500/10',
-          icon: 'text-amber-600 dark:text-amber-500',
+          container: 'bg-warning/10 border-warning/20',
+          iconContainer: 'bg-warning/10',
+          icon: 'text-warning',
           badge: 'outline',
           text: 'text-card-foreground',
         },
@@ -92,7 +92,7 @@ const NodeDisplay = ({ type, identifier, value, fiatPrice, currency, label, inte
                         variant={styles.badge as any}
                         className={cn(
                             "capitalize",
-                            interestLevel === 'medium' && "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20"
+                            interestLevel === 'medium' && "bg-warning/10 text-warning border-warning/20"
                         )}
                     >
                         {type}

@@ -158,7 +158,7 @@ export default function BlockDetailsPage() {
         </Card>
 
         <Card className="border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant="blue">
                         <CircleAlert className="h-5 w-5" />
@@ -184,7 +184,7 @@ export default function BlockDetailsPage() {
         </Card>
         
         <Card className="border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant="emerald">
                         <Download className="h-5 w-5" />

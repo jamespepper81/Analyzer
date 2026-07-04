@@ -113,7 +113,7 @@ export function LoadingProgress({
 
           {/* Long wait message */}
           {longWaitMessage && (
-            <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+            <p className="text-sm text-warning font-medium">
               {longWaitMessage}
             </p>
           )}
@@ -125,7 +125,7 @@ export function LoadingProgress({
                 className={cn(
                   'h-full rounded-full transition-all duration-700 ease-out',
                   stage === 'COMPLETE'
-                    ? 'bg-emerald-500'
+                    ? 'bg-success'
                     : 'bg-gradient-to-r from-primary to-primary/70'
                 )}
                 style={{ width: `${(stageNumber / 4) * 100}%` }}
@@ -174,8 +174,8 @@ export function CompactProgress({
   return (
     <div
       className={cn(
-        'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30',
-        'border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3',
+        'bg-gradient-to-r from-info/10 to-chart-purple/10 dark:from-info/30 dark:to-chart-purple/30',
+        'border-2 border-info/30 dark:border-info/40 rounded-lg px-4 py-3',
         'flex items-center gap-3',
         className
       )}
@@ -183,7 +183,7 @@ export function CompactProgress({
       {/* Inline spinner */}
       <div className="flex-shrink-0">
         {isRefreshing ? (
-          <RefreshCw className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin" />
+          <RefreshCw className="h-5 w-5 text-info animate-spin" />
         ) : (
           <OrbitalLoader stage={stage} size="sm" />
         )}
@@ -191,11 +191,11 @@ export function CompactProgress({
 
       {/* Message */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+        <p className="text-sm font-semibold text-info">
           {message}
         </p>
         {(addressesFound !== undefined || transactionsLoaded !== undefined) && (
-          <p className="text-xs text-blue-700 dark:text-blue-300 truncate">
+          <p className="text-xs text-info truncate">
             {addressesFound !== undefined && `${addressesFound} addresses`}
             {addressesFound !== undefined && transactionsLoaded !== undefined && ' · '}
             {transactionsLoaded !== undefined && `${transactionsLoaded} transactions`}
@@ -204,7 +204,7 @@ export function CompactProgress({
       </div>
 
       {/* Stage indicator */}
-      <div className="text-xs text-blue-600 dark:text-blue-400 font-mono whitespace-nowrap">
+      <div className="text-xs text-info font-mono whitespace-nowrap">
         {stage === 'COMPLETE' ? '✓' : '...'}
       </div>
     </div>

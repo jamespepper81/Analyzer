@@ -80,7 +80,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
           className={cn(
             'text-sm',
             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
-            tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
+            tx.status === 'Pending' && 'border-warning/40 text-warning'
           )}
         >
           {tx.status}
@@ -209,7 +209,7 @@ export default function AddressDetailsPage() {
           </CardHeader>
           <CardContent>
               <Card className="border-2 shadow-sm">
-                  <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+                  <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent">
                       <CardTitle className="text-base font-medium">Address Balance</CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -225,7 +225,7 @@ export default function AddressDetailsPage() {
       </Card>
 
       <Card className="border-2 shadow-md">
-        <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+        <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
           <CardTitle className="flex items-center gap-2">
             <IconContainer variant="emerald">
               <ArrowLeftRight className="h-5 w-5" />

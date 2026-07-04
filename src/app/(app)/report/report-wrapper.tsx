@@ -12,8 +12,8 @@ export default function ReportWrapper() {
 
   return (
     <div className="space-y-6">
-      <Alert className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border-amber-500/30 shadow-md">
-        <Sparkles className="h-5 w-5 text-amber-500" />
+      <Alert className="bg-gradient-to-r from-warning/10 via-primary/10 to-warning/5 border-warning/30 shadow-md">
+        <Sparkles className="h-5 w-5 text-warning" />
         <AlertTitle className="text-lg font-bold">Enhanced Tax Reporting</AlertTitle>
         <AlertDescription className="leading-relaxed">
           Professional-grade Bitcoin tax reporting with multiple accounting methods and jurisdiction-specific rules.
@@ -21,7 +21,7 @@ export default function ReportWrapper() {
         </AlertDescription>
       </Alert>
 
-      <Alert variant="default" className="border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-cyan-500/5 shadow-sm">
+      <Alert variant="default" className="border-info/30 bg-gradient-to-r from-info/10 to-cyan-500/5 shadow-sm">
         <AlertTitle className="text-sm font-semibold flex items-center gap-2">
           <Info className="h-4 w-4" />
           Tax Professional Disclaimer

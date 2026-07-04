@@ -363,7 +363,7 @@ export default function DiscoverPage() {
 
               <TabsContent value="list" className="mt-4 space-y-4">
                  <Card className="border-2 shadow-md">
-                    <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                    <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                         <CardTitle className="flex items-center gap-2">
                           <IconContainer variant="blue">
                             <CircleAlert className="h-5 w-5" />
@@ -386,7 +386,7 @@ export default function DiscoverPage() {
                             </div>
                         </div>
                         <div className="flex items-start gap-4">
-                            <div className="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-amber-500" />
+                            <div className="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-warning" />
                             <div>
                                 <p className="font-bold text-card-foreground">Medium Interest (Amber):</p>
                                 <ul className="list-disc pl-5 text-muted-foreground">
@@ -407,7 +407,7 @@ export default function DiscoverPage() {
                     </CardContent>
                 </Card>
                  <Card className="border-2 shadow-md">
-                    <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                    <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
                         <CardTitle className="flex items-center gap-2">
                           <IconContainer variant="emerald">
                             <ListTree className="h-5 w-5" />

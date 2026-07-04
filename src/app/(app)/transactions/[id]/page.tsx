@@ -44,7 +44,7 @@ function AddressCard({ title, items, btcPrice, currency, type }: { title: string
 
     return (
         <Card className="border-2 shadow-md">
-            <CardHeader className={`bg-gradient-to-br ${isInput ? 'from-rose-500/5' : 'from-emerald-500/5'} via-transparent to-transparent border-b`}>
+            <CardHeader className={`bg-gradient-to-br ${isInput ? 'from-chart-negative/5' : 'from-success/5'} via-transparent to-transparent border-b`}>
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant={isInput ? 'rose' : 'emerald'}>
                         {isInput ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownLeft className="h-5 w-5" />}
@@ -202,7 +202,7 @@ export default function TransactionDetailsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="lg:col-span-1 space-y-4 sm:space-y-6">
                     <Card className="border-2 shadow-md">
-                        <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                        <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                                 <IconContainer variant="blue">
                                     <ArrowLeftRight className="h-5 w-5" />
@@ -230,12 +230,12 @@ export default function TransactionDetailsPage() {
                         </CardContent>
                     </Card>
                     <Card className="border-2 shadow-md">
-                        <CardHeader className="flex flex-row items-center justify-between pb-4 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                        <CardHeader className="flex flex-row items-center justify-between pb-4 bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
                             <CardTitle className="text-base sm:text-lg">Status</CardTitle>
                             <Badge variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'} className="text-xs">{tx.status}</Badge>
                         </CardHeader>
                         <CardContent className="flex items-start gap-3 sm:gap-4">
-                            {tx.status === 'Confirmed' ? <CircleCheckBig className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-500 mt-1 flex-shrink-0" /> : <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 mt-1 flex-shrink-0" />}
+                            {tx.status === 'Confirmed' ? <CircleCheckBig className="h-6 w-6 sm:h-8 sm:w-8 text-success mt-1 flex-shrink-0" /> : <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning mt-1 flex-shrink-0" />}
                             <div className="min-w-0">
                                 <p className="font-semibold text-sm sm:text-base">This transaction has {tx.confirmations.toLocaleString()} confirmations.</p>
                                 <p className="text-xs sm:text-sm text-muted-foreground">
@@ -247,7 +247,7 @@ export default function TransactionDetailsPage() {
                 </div>
                 <div className="lg:col-span-2">
                     <Card className="border-2 shadow-md">
-                        <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
+                        <CardHeader className="bg-gradient-to-br from-chart-purple/5 via-transparent to-transparent border-b">
                             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                                 <IconContainer variant="purple">
                                     <CircleAlert className="h-5 w-5" />

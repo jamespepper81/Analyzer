@@ -127,9 +127,9 @@ export default function MempoolPage() {
             return 'bg-muted-foreground'; // Neutral color if no user data
         }
         const difference = walletData.averageFeeRate - data.networkFeeRate;
-        if (difference > 10) return 'bg-rose-500'; // User paying much more
-        if (difference > 2) return 'bg-amber-500'; // User paying more
-        return 'bg-emerald-500'; // User paying less or similar
+        if (difference > 10) return 'bg-chart-negative'; // User paying much more
+        if (difference > 2) return 'bg-warning'; // User paying more
+        return 'bg-success'; // User paying less or similar
     }, [walletData, data]);
 
     if (isLoading) return <FullPageLoader />;
@@ -160,7 +160,7 @@ export default function MempoolPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <Card className="border-2 shadow-md">
-                    <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                    <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                             <IconContainer variant="blue">
                                 <Layers className="h-5 w-5" />
@@ -186,7 +186,7 @@ export default function MempoolPage() {
                 </Card>
 
                 <Card className="border-2 shadow-md">
-                    <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                    <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
                         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                             <IconContainer variant="emerald">
                                 <Zap className="h-5 w-5" />
@@ -201,9 +201,9 @@ export default function MempoolPage() {
                         <div className="flex items-center gap-4">
                             <Badge
                                 className={cn(
-                                    networkFeeLevel === 'Low' && 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
-                                    networkFeeLevel === 'Medium' && 'border-amber-500/40 bg-amber-500/10 text-amber-400',
-                                    networkFeeLevel === 'High' && 'border-rose-500/40 bg-rose-500/10 text-rose-400'
+                                    networkFeeLevel === 'Low' && 'border-success/40 bg-success/10 text-success',
+                                    networkFeeLevel === 'Medium' && 'border-warning/40 bg-warning/10 text-warning',
+                                    networkFeeLevel === 'High' && 'border-chart-negative/40 bg-chart-negative/10 text-chart-negative'
                                 )}
                                 variant="outline"
                             >
@@ -222,11 +222,11 @@ export default function MempoolPage() {
                                             <p className="max-w-xs text-xs">
                                                 This compares your wallet's average fee rate for sent transactions to the current high-priority network fee.
                                                 <br />
-                                                <span className="font-bold text-emerald-500">Green:</span> Your average fee is lower.
+                                                <span className="font-bold text-success">Green:</span> Your average fee is lower.
                                                 <br />
-                                                <span className="font-bold text-amber-500">Yellow:</span> Your average fee is slightly higher.
+                                                <span className="font-bold text-warning">Yellow:</span> Your average fee is slightly higher.
                                                 <br />
-                                                <span className="font-bold text-rose-500">Red:</span> Your average fee is much higher.
+                                                <span className="font-bold text-chart-negative">Red:</span> Your average fee is much higher.
                                             </p>
                                         </TooltipContent>
                                     </Tooltip>
@@ -237,7 +237,7 @@ export default function MempoolPage() {
                 </Card>
 
                 <Card className="border-2 shadow-md">
-                    <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
+                    <CardHeader className="bg-gradient-to-br from-chart-purple/5 via-transparent to-transparent border-b">
                         <CardTitle className="flex items-center gap-2">
                             <IconContainer variant="purple">
                                 <Hourglass className="h-5 w-5" />
@@ -253,7 +253,7 @@ export default function MempoolPage() {
             </div>
 
             <Card className="border-2 shadow-md">
-                <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
                     <CardTitle className="flex items-center gap-2">
                         <IconContainer variant="orange">
                             <Cpu className="h-5 w-5" />

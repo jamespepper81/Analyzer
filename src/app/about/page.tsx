@@ -166,7 +166,7 @@ export default function AboutPage() {
           </p>
           <div className="grid md:grid-cols-3 gap-6 mt-12">
             <Card className="border-2 shadow-md">
-              <CardHeader className="text-center bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+              <CardHeader className="text-center bg-gradient-to-br from-info/5 via-transparent to-transparent">
                 <div className="flex justify-center mb-2">
                   <IconContainer variant="blue">
                     <Globe className="h-5 w-5" />
@@ -181,7 +181,7 @@ export default function AboutPage() {
               </CardContent>
             </Card>
             <Card className="border-2 shadow-md">
-              <CardHeader className="text-center bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
+              <CardHeader className="text-center bg-gradient-to-br from-success/5 via-transparent to-transparent">
                 <div className="flex justify-center mb-2">
                   <IconContainer variant="emerald">
                     <Lock className="h-5 w-5" />
@@ -196,7 +196,7 @@ export default function AboutPage() {
               </CardContent>
             </Card>
             <Card className="border-2 shadow-md">
-              <CardHeader className="text-center bg-gradient-to-br from-amber-500/5 via-transparent to-transparent">
+              <CardHeader className="text-center bg-gradient-to-br from-warning/5 via-transparent to-transparent">
                 <div className="flex justify-center mb-2">
                   <IconContainer variant="amber">
                     <Zap className="h-5 w-5" />
@@ -310,7 +310,7 @@ export default function AboutPage() {
               </CardContent>
             </Card>
             <Card className="border-2 shadow-md">
-              <CardHeader className="text-center bg-gradient-to-br from-orange-500/5 via-transparent to-transparent">
+              <CardHeader className="text-center bg-gradient-to-br from-primary/5 via-transparent to-transparent">
                 <div className="flex justify-center mb-2">
                   <IconContainer variant="orange">
                     <Bitcoin className="h-5 w-5" />
@@ -325,7 +325,7 @@ export default function AboutPage() {
               </CardContent>
             </Card>
             <Card className="border-2 shadow-md">
-              <CardHeader className="text-center bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+              <CardHeader className="text-center bg-gradient-to-br from-info/5 via-transparent to-transparent">
                 <div className="flex justify-center mb-2">
                   <IconContainer variant="blue">
                     <Globe className="h-5 w-5" />
@@ -340,7 +340,7 @@ export default function AboutPage() {
               </CardContent>
             </Card>
             <Card className="border-2 shadow-md">
-              <CardHeader className="text-center bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
+              <CardHeader className="text-center bg-gradient-to-br from-success/5 via-transparent to-transparent">
                 <div className="flex justify-center mb-2">
                   <IconContainer variant="emerald">
                     <Shield className="h-5 w-5" />

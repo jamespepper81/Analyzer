@@ -182,7 +182,7 @@ export default function FeedbackPage() {
       </Form>
       
       <Card className="border-2 shadow-md">
-          <CardHeader className="bg-gradient-to-br from-amber-500/5 via-transparent to-transparent border-b">
+          <CardHeader className="bg-gradient-to-br from-warning/5 via-transparent to-transparent border-b">
             <CardTitle className='flex items-center gap-2 text-base sm:text-lg md:text-xl font-bold'>
               <IconContainer variant="amber">
                 <Zap className='h-5 w-5 sm:h-6 sm:w-6'/>

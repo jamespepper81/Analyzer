@@ -88,7 +88,7 @@ const CustomPortfolioTooltip = ({ active, payload, label, formatCurrencyFull }: 
                 <p className="font-medium mb-1">{format(new Date(data.date), 'dd MMM yyyy')}</p>
                 <p>Worth: <span className="font-bold">{formatCurrencyFull(data.totalValue)}</span></p>
                 <p>Cost basis: <span className="font-bold">{formatCurrencyFull(data.costBasis)}</span></p>
-                <p>Unrealized: <span className={cn("font-bold", unrealizedGains >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatCurrencyFull(unrealizedGains)} ({unrealizedPercent.toFixed(1)}%)</span></p>
+                <p>Unrealized: <span className={cn("font-bold", unrealizedGains >= 0 ? "text-success" : "text-chart-negative")}>{formatCurrencyFull(unrealizedGains)} ({unrealizedPercent.toFixed(1)}%)</span></p>
             </div>
         );
     }
@@ -128,9 +128,9 @@ const ValueCostBar = ({ marketValue, cost }: { marketValue: number, cost: number
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div className="w-full h-2 bg-rose-500/30 rounded-full flex cursor-help">
-                        <div style={{ width: `${costPercent}%` }} className="h-full bg-rose-500/80 rounded-l-full" />
-                        <div style={{ width: `${marketValuePercent}%` }} className="h-full bg-emerald-500/80 rounded-r-full" />
+                    <div className="w-full h-2 bg-chart-negative/30 rounded-full flex cursor-help">
+                        <div style={{ width: `${costPercent}%` }} className="h-full bg-chart-negative/80 rounded-l-full" />
+                        <div style={{ width: `${marketValuePercent}%` }} className="h-full bg-success/80 rounded-r-full" />
                     </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -549,12 +549,12 @@ export default function BasicReportPage() {
                 <TabsContent value="overview" className="mt-6 space-y-6">
                         <Card className="border-2 shadow-lg">
                             {isHistoricalView && (
-                                <div className="p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm flex items-center justify-between">
+                                <div className="p-3 bg-gradient-to-r from-warning/10 to-primary/5 border-b border-warning/20 text-foreground/80 text-sm flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Info className="h-4 w-4" />
                                         You are viewing a historical snapshot of your portfolio as at {format(holdingsDate, 'dd MMM yyyy')}.
                                     </div>
-                                    <Button variant="ghost" size="sm" className="h-auto p-1 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20" onClick={() => setHoldingsDate(date?.to || new Date())}>
+                                    <Button variant="ghost" size="sm" className="h-auto p-1 text-warning hover:bg-warning/20" onClick={() => setHoldingsDate(date?.to || new Date())}>
                                         <X className="mr-1 h-3 w-3" />
                                         Reset
                                     </Button>
@@ -567,7 +567,7 @@ export default function BasicReportPage() {
                                         title={activeChartDataPoint ? format(new Date(activeChartDataPoint.date), 'dd MMM yyyy') : "Total Value"} 
                                         value={formatCurrencyFull(displayStats.endValue)} 
                                         change={`${isGain ? '▲' : '▼'} ${summary.totalValueChangePercentage.toFixed(2)}%`}
-                                        changeColor={isGain ? 'text-emerald-500' : 'text-rose-500'}
+                                        changeColor={isGain ? 'text-success' : 'text-chart-negative'}
                                         tooltip="The total market value of your Bitcoin balance."
                                     />
                                     <div className="col-span-1 md:col-span-1" />
@@ -579,7 +579,7 @@ export default function BasicReportPage() {
                                     <StatCard 
                                         title="Unrealized Gains" 
                                         value={formatCurrencyFull(displayStats.unrealizedGains)}
-                                        changeColor={(displayStats.unrealizedGains || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}
+                                        changeColor={(displayStats.unrealizedGains || 0) >= 0 ? 'text-success' : 'text-chart-negative'}
                                         tooltip="The potential profit or loss if you sold all your Bitcoin holdings today. This is not taxed until you sell."
                                     />
                                 </div>
@@ -659,7 +659,7 @@ export default function BasicReportPage() {
                         <Card className="border-2 shadow-md">
                         <CardHeader className="flex flex-row items-center gap-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
                             <CardTitle className="flex items-center gap-2">
-                                <BitcoinIcon className="h-5 w-5 text-amber-500" />
+                                <BitcoinIcon className="h-5 w-5 text-warning" />
                                 Holdings
                             </CardTitle>
                             <Popover open={isHoldingsPopoverOpen} onOpenChange={setIsHoldingsPopoverOpen}>
@@ -758,7 +758,7 @@ export default function BasicReportPage() {
                                         <TableRow key={asset.address} className="hover:bg-muted/50 transition-colors">
                                             <TableCell className="pl-4 sm:pl-0">
                                                 <div className="flex items-center gap-2 font-mono text-xs min-w-[120px] max-w-[200px]">
-                                                    <BitcoinIcon className="h-4 w-4 text-amber-500 shrink-0" />
+                                                    <BitcoinIcon className="h-4 w-4 text-warning shrink-0" />
                                                     <span className="truncate">{asset.address}</span>
                                                 </div>
                                             </TableCell>
@@ -773,10 +773,10 @@ export default function BasicReportPage() {
                                                 <p className="font-normal">{formatCurrencyFull(asset.cost)}</p>
                                                 <p className="text-xs text-muted-foreground font-normal">{asset.balance > 0 ? formatCurrencyFull(asset.cost / asset.balance) : formatCurrencyFull(0)} / unit</p>
                                             </TableCell>
-                                            <TableCell className={cn("font-bold whitespace-nowrap text-xs sm:text-sm", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                            <TableCell className={cn("font-bold whitespace-nowrap text-xs sm:text-sm", (asset.potentialGain || 0) >= 0 ? "text-success" : "text-chart-negative")}>
                                                 {formatCurrencyFull(asset.potentialGain)}
                                             </TableCell>
-                                            <TableCell className={cn("hidden lg:table-cell font-bold whitespace-nowrap", asset.roi >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                            <TableCell className={cn("hidden lg:table-cell font-bold whitespace-nowrap", asset.roi >= 0 ? "text-success" : "text-chart-negative")}>
                                                 {asset.roi.toFixed(2)}%
                                             </TableCell>
                                             <TableCell className="hidden lg:table-cell text-right pr-4 sm:pr-0">
@@ -838,7 +838,7 @@ export default function BasicReportPage() {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <p className={cn("text-4xl font-bold tracking-tighter", summary.realizedGains >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{formatCurrencyFull(summary.realizedGains)}</p>
+                                <p className={cn("text-4xl font-bold tracking-tighter", summary.realizedGains >= 0 ? 'text-success' : 'text-chart-negative')}>{formatCurrencyFull(summary.realizedGains)}</p>
                             </CardContent>
                         </Card>
                         <Card className="border-2 shadow-md hover:shadow-lg transition-shadow">
@@ -879,7 +879,7 @@ export default function BasicReportPage() {
                                 )}
                             </CardHeader>
                             <CardContent>
-                                    {afterSummary && <p className={cn("text-4xl font-bold tracking-tighter", afterSummary.netGains >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{formatCurrencyFull(afterSummary.netGains)}</p>}
+                                    {afterSummary && <p className={cn("text-4xl font-bold tracking-tighter", afterSummary.netGains >= 0 ? 'text-success' : 'text-chart-negative')}>{formatCurrencyFull(afterSummary.netGains)}</p>}
                             </CardContent>
                         </Card>
                     </div>
@@ -1023,7 +1023,7 @@ export default function BasicReportPage() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2 min-w-[120px] max-w-[200px]">
-                                                        <BitcoinIcon className="h-4 w-4 text-amber-500 shrink-0" />
+                                                        <BitcoinIcon className="h-4 w-4 text-warning shrink-0" />
                                                         <div className="flex-1 overflow-hidden">
                                                             <p className="font-mono text-xs truncate" title={asset.address}>{asset.address}</p>
                                                         </div>
@@ -1033,7 +1033,7 @@ export default function BasicReportPage() {
                                                 <TableCell className="hidden md:table-cell font-normal whitespace-nowrap">{asset.balance > 0 ? formatCurrencyFull(asset.marketValue / asset.balance) : '-'}</TableCell>
                                                 <TableCell className="hidden sm:table-cell font-normal whitespace-nowrap text-xs sm:text-sm">{formatCurrencyFull(asset.marketValue)}</TableCell>
                                                 <TableCell className="hidden lg:table-cell font-normal whitespace-nowrap">{formatCurrencyFull(asset.cost)}</TableCell>
-                                                <TableCell className={cn("font-bold whitespace-nowrap text-xs sm:text-sm", (asset.potentialGain || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                <TableCell className={cn("font-bold whitespace-nowrap text-xs sm:text-sm", (asset.potentialGain || 0) >= 0 ? "text-success" : "text-chart-negative")}>
                                                     {formatCurrencyFull(asset.potentialGain)}
                                                 </TableCell>
                                                 <TableCell className="hidden xl:table-cell font-normal whitespace-nowrap pr-4 sm:pr-0">
