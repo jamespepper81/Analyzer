@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AnalyticsTracker } from '@/components/analytics-tracker';
@@ -9,6 +10,12 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.bitsleuth.ai';
 
@@ -99,7 +106,7 @@ export default function RootLayout({
   const gaId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#F7931A" />
@@ -154,12 +161,19 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ErrorBoundary>
-          <Suspense fallback={<div>Loading...</div>}>
-            <ThemeProvider 
-              attribute="class" 
-              defaultTheme="system" 
+          <Suspense
+            fallback={
+              <div className="flex min-h-screen items-center justify-center bg-background">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+                <span className="sr-only">Loading BitSleuth…</span>
+              </div>
+            }
+          >
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
               enableSystem
-              disableTransitionOnChange={false}
+              disableTransitionOnChange
               storageKey="bitsleuth-theme"
             >
               <WalletProviderWrapper testXpub={testXpub}>
