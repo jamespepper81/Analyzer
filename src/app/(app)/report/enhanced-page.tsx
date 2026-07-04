@@ -53,7 +53,6 @@ import { Badge } from '@/components/ui/badge';
 import { TaxHelpDialog } from '@/components/tax-help-dialog';
 import { TransactionCategoryDialog } from '@/components/transaction-category-dialog';
 import { UTXOLotTracking } from '@/components/utxo-lot-tracking';
-import { generateTaxReportPDF, generateForm8949PDF, downloadPDF } from '@/lib/pdf-export';
 import { useToast } from '@/hooks/use-toast';
 
 const ACCOUNTING_METHODS: { value: AccountingMethod; label: string; description: string }[] = [
@@ -290,17 +289,21 @@ export default function EnhancedReportPage() {
     // For now, we just store it in state
   };
 
-  const handleGeneratePDF = () => {
+  // jspdf is heavy, so the PDF module is loaded on demand when a user
+  // actually exports rather than being bundled with the page
+  const handleGeneratePDF = async () => {
     if (!reportData) return;
-    
+
+    const { generateTaxReportPDF, downloadPDF } = await import('@/lib/pdf-export');
     const pdf = generateTaxReportPDF(reportData, currency, currencySymbol);
     const timestamp = format(new Date(), 'yyyy-MM-dd');
     downloadPDF(pdf, `bitcoin-tax-report-${timestamp}.pdf`);
   };
 
-  const handleGenerateForm8949PDF = () => {
+  const handleGenerateForm8949PDF = async () => {
     if (!reportData) return;
-    
+
+    const { generateForm8949PDF, downloadPDF } = await import('@/lib/pdf-export');
     const taxYear = getYear(new Date(reportData.summary.endDate));
     const pdf = generateForm8949PDF(reportData.disposals, currency, currencySymbol, taxYear);
     const timestamp = format(new Date(), 'yyyy-MM-dd');

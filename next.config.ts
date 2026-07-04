@@ -150,7 +150,7 @@ const nextConfig: NextConfig = {
   // Updated experimental flags for Next.js 16
   experimental: {
     webVitalsAttribution: ['CLS', 'LCP'],
-    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
+    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react', 'recharts'],
   },
   // Turbopack configuration (replaces webpack)
   // Turbopack has native WASM support - no custom config needed

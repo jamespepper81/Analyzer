@@ -4,7 +4,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from 'react';
 import { getPublicKey, nip19, nip04, finalizeEvent, SimplePool } from 'nostr-tools';
 import type { Event as NostrEvent } from 'nostr-tools';
-import { getWalletData as fetchWalletData, getWalletDataProgressive, type DiscoveryProgress, type PartialWalletData } from '@/lib/blockchain';
+// Type-only import: the blockchain module (and the bitcoinjs/bip32/secp256k1
+// crypto stack it pulls in) is loaded on demand inside getWalletData so it
+// stays out of the shared client bundle. Derivation must stay client-side —
+// xpubs never leave the browser.
+import type { DiscoveryProgress, PartialWalletData } from '@/lib/blockchain';
 import type { WalletData, Message, SecurityRecommendation, NostrProfile, Currency } from '@/lib/types';
 import { getProactiveInsight } from '@/ai/flows/proactive-insights';
 import { getProactiveSuggestions } from '@/ai/flows/proactive-suggestions';
@@ -714,6 +718,8 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
         return;
     }
 
+    const { getWalletData: fetchWalletData, getWalletDataProgressive } = await import('@/lib/blockchain');
+
     // INSTANT CACHED DATA LOADING
     // Check cache FIRST and show immediately if available
     let hasCachedData = false;
@@ -1150,25 +1156,19 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     refreshAiContent();
   }, [data, isInitialAiContentLoaded, messages.length, refreshAiContent]);
 
-  // Derived currency values
-  const fiatPrice = data?.btcPrices?.[currency]?.last || 0;
-  
-  // Map currency codes to actual symbols
-  const getCurrencySymbol = (currencyCode: Currency): string => {
-    const symbols: Record<Currency, string> = {
+  // Memoized so consumers only re-render when state they read actually
+  // changes — the provider holds frequently-ticking state (price poll,
+  // discovery progress) that would otherwise re-render every useWallet()
+  // consumer app-wide on each tick.
+  const value = useMemo<WalletState>(() => {
+    const CURRENCY_SYMBOLS: Record<Currency, string> = {
       USD: '$',
       EUR: '€',
       GBP: '£',
     };
-    return symbols[currencyCode] || '$';
-  };
-  
-  const currencySymbol = getCurrencySymbol(currency);
-  const fiatBalance = (data?.balanceBTC || 0) * fiatPrice;
+    const fiatPrice = data?.btcPrices?.[currency]?.last || 0;
 
-
-  return (
-    <WalletContext.Provider value={{
+    return {
       activeXpub,
       xpubs,
       data,
@@ -1190,10 +1190,63 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
       disconnect,
       refreshRecommendations,
       refreshAiContent,
-      currency, setCurrency, supportedCurrencies: SUPPORTED_CURRENCIES, fiatPrice, fiatBalance, currencySymbol,
-      discoveryProgress, isDiscovering,
-      nostrNpub, nostrProfile, isNostrReady, connectNostr, loginWithNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr, publishNostrNote
-      }}>
+      currency,
+      setCurrency,
+      supportedCurrencies: SUPPORTED_CURRENCIES,
+      fiatPrice,
+      fiatBalance: (data?.balanceBTC || 0) * fiatPrice,
+      currencySymbol: CURRENCY_SYMBOLS[currency] || '$',
+      discoveryProgress,
+      isDiscovering,
+      nostrNpub,
+      nostrProfile,
+      isNostrReady,
+      connectNostr,
+      loginWithNostr,
+      updateNostrProfile,
+      showSaveXpubsPrompt,
+      setShowSaveXpubsPrompt,
+      saveXpubsToNostr,
+      publishNostrNote,
+    };
+  }, [
+    activeXpub,
+    xpubs,
+    data,
+    isLoading,
+    isLoadingAiContent,
+    isRecommendationsLoading,
+    aiContentError,
+    error,
+    messages,
+    suggestions,
+    recommendations,
+    recommendationsError,
+    testXpubValue,
+    setActiveXpubAndPersist,
+    addXpub,
+    removeXpub,
+    getWalletData,
+    disconnect,
+    refreshRecommendations,
+    refreshAiContent,
+    currency,
+    setCurrency,
+    discoveryProgress,
+    isDiscovering,
+    nostrNpub,
+    nostrProfile,
+    isNostrReady,
+    connectNostr,
+    loginWithNostr,
+    updateNostrProfile,
+    showSaveXpubsPrompt,
+    saveXpubsToNostr,
+    publishNostrNote,
+  ]);
+
+  return (
+    <WalletContext.Provider value={value}>
       {children}
     </WalletContext.Provider>
   );

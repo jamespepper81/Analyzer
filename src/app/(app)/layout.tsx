@@ -310,8 +310,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [isNostrDialogOpen, setNostrDialogOpen] = React.useState(false);
   const [isEditProfileOpen, setEditProfileOpen] = React.useState(false);
-  const [isUpdateAvailable, setIsUpdateAvailable] = React.useState(false);
-  const [isUpdateDismissed, setIsUpdateDismissed] = React.useState(false);
 
   // Define public paths that do not require a wallet to be connected.
   const publicPaths = ['/market', '/mempool', '/discover', '/block/', '/transactions/', '/address/'];
@@ -363,93 +361,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       lud16: "",
     }
   });
-
-  // Effect for checking for new version
-  React.useEffect(() => {
-    // This check should only run on the client.
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    // For development: pop up the alert after 1 minute to make it testable.
-    if (process.env.NODE_ENV === 'development') {
-      const devTimeout = setTimeout(() => {
-        setIsUpdateAvailable(true);
-      }, 60000); // 1 minute
-      return () => clearTimeout(devTimeout);
-    }
-
-    // For production: check against the build ID.
-    if (process.env.NODE_ENV === 'production' && window.__NEXT_DATA__) {
-        const currentBuildId = window.__NEXT_DATA__.buildId;
-
-        // This fetch hits the App Hosting origin (Cloud Run) with `no-store`,
-        // so it is both a CDN miss and an origin request. Keep it infrequent,
-        // skip it while the tab is hidden, and add jitter so clients don't all
-        // poll in lockstep.
-        const BASE_INTERVAL = 15 * 60 * 1000; // 15 minutes
-        const JITTER = 60 * 1000; // up to 60s of spread
-        let timeoutId: ReturnType<typeof setTimeout>;
-        let stopped = false;
-
-        const scheduleNext = () => {
-          const delay = BASE_INTERVAL + Math.floor(Math.random() * JITTER);
-          timeoutId = setTimeout(check, delay);
-        };
-
-        const check = async () => {
-          if (stopped) return;
-
-          // Don't poll the origin while the tab is in the background.
-          if (document.visibilityState !== 'visible') {
-            scheduleNext();
-            return;
-          }
-
-          try {
-            const res = await fetch(window.location.href, {
-              cache: 'no-store',
-            });
-
-            if (!res.ok) {
-                console.warn(`Update check failed with status: ${res.status}`);
-                scheduleNext();
-                return;
-            }
-
-            const html = await res.text();
-            const match = html.match(/<script id="__NEXT_DATA__"[^>]*>({.*?})<\/script>/);
-
-            if (match && match[1]) {
-              const serverData = JSON.parse(match[1]);
-              const serverBuildId = serverData.buildId;
-
-              if (serverBuildId && currentBuildId && serverBuildId !== currentBuildId) {
-                // If the effect was cleaned up (unmounted) while this fetch was
-                // in flight, `stopped` is already true — skip the state update
-                // to avoid setting state on an unmounted component.
-                if (stopped) return;
-                setIsUpdateAvailable(true);
-                stopped = true; // Stop checking once an update is found.
-                return;
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to check for app update:', err);
-          }
-
-          scheduleNext();
-        };
-
-        scheduleNext();
-
-        return () => {
-          stopped = true;
-          clearTimeout(timeoutId);
-        };
-    }
-
-  }, []);
 
   // Effect for showing the support toast
   React.useEffect(() => {
@@ -730,25 +641,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </SidebarInset>
-
-      <AlertDialog open={isUpdateAvailable && !isUpdateDismissed}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>A New Version is Available</AlertDialogTitle>
-            <AlertDialogDescription className="font-normal">
-              Please refresh the page to get the latest features and fixes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsUpdateDismissed(true)}>
-              Dismiss
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => window.location.reload()}>
-              Refresh Now
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <Dialog open={isNostrDialogOpen} onOpenChange={setNostrDialogOpen}>
 
