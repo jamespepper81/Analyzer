@@ -22,7 +22,8 @@ import { Wallet, TestTubeDiagonal, ShieldCheck, AlertTriangle, Lightbulb, Shield
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useWallet } from '@/contexts/wallet-context';
-import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
+import { useWalletDataGuard } from '@/components/wallet-data-guard';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import type { SecurityRecommendation } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
@@ -285,6 +286,7 @@ export default function SecurityPage() {
         fiatPrice,
         currencySymbol,
     } = useWallet();
+    const walletGuard = useWalletDataGuard();
     const { toast } = useToast();
     const [isSharing, setIsSharing] = useState(false);
     
@@ -300,13 +302,9 @@ export default function SecurityPage() {
             refreshRecommendations();
         }
     }, [data, refreshRecommendations]);
-    
-    const hasBlockingError = !!error && !data;
 
-    if (!xpub) return <FullPageLoader />;
-    if (isLoading && !data) return <FullPageLoader />;
-    if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
-    if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
+    if (walletGuard) return walletGuard;
+    if (!data) return null;
 
     const usedAddressCount = data.usedAddressCount ?? 0;
     
@@ -324,12 +322,7 @@ export default function SecurityPage() {
         activityLevel = 'Medium';
     }
     
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(value);
-    };
+    const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
     
     const dustAmountFiat = data.dustAmountBTC * fiatPrice;
 

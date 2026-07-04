@@ -185,9 +185,16 @@ function AccountSwitcher() {
                     <div
                         role="button"
                         aria-label="Switch wallet"
+                        tabIndex={0}
                         onClick={handleTriggerClick}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setPopoverOpen((v) => !v);
+                            }
+                        }}
                         className={cn(
-                            "grid w-full cursor-pointer items-center rounded-md py-2 transition-colors hover:bg-primary/20",
+                            "grid w-full cursor-pointer items-center rounded-md py-2 transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             isMobile
                                 ? "grid-cols-1 justify-items-center text-center gap-1 py-3"
                                 : "grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)]"
@@ -233,11 +240,18 @@ function AccountSwitcher() {
                             <div
                                 key={xpub}
                                 onClick={() => handleSelectWallet(xpub)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        handleSelectWallet(xpub);
+                                    }
+                                }}
                                 className={cn(
-                                    "group flex w-full cursor-pointer items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-accent/50",
+                                    "group flex w-full cursor-pointer items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                     activeXpub === xpub && "bg-primary text-primary-foreground"
                                 )}
                                 role="button"
+                                tabIndex={0}
                             >
                                 <Check className={cn("h-4 w-4 shrink-0", activeXpub === xpub ? "opacity-100" : "opacity-0")} />
                                 <span className="flex-1 truncate font-mono text-xs">{xpub}</span>
@@ -453,28 +467,14 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     setShowSaveXpubsPrompt(false);
   };
 
-  let pageTitle = 'BitSleuth';
   const currentPage = navItems.find(item => pathname.startsWith(item.href));
   const showLayoutDebug = process.env.NEXT_PUBLIC_LAYOUT_DEBUG === 'true';
   const layoutHeaderPadding = 'px-4 md:px-6 lg:px-8';
   const layoutContentPadding = 'p-4 md:p-6 lg:p-8';
-  
-  if (currentPage) {
-      const titles: { [key: string]: string } = {
-          '/dashboard': 'BitTracker',
-          '/transactions': 'BitTracker',
-          '/analysis': 'BitInsight',
-          '/security': 'BitWatch',
-          '/report': 'BitTally',
-          '/discover': 'BitSeek',
-          '/mempool': 'BitQueue',
-          '/market': 'BitSignal',
-          '/chat': 'BitAI',
-          '/feedback': 'BitVoice',
-          '/coin-control': 'BitCompose',
-      };
-      pageTitle = titles[currentPage.href] || 'BitSleuth';
-  }
+  // Plain section titles under the single BitSleuth brand (the previous
+  // per-page sub-brands — BitTracker, BitInsight, … — read as different
+  // products and never matched the sidebar labels).
+  const pageTitle = currentPage?.label ?? 'BitSleuth';
 
 
   return (

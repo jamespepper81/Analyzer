@@ -25,7 +25,8 @@ import type { Transaction } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownLeft, Download, Building, LoaderCircle } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
-import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
+import { useWalletDataGuard } from '@/components/wallet-data-guard';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
@@ -36,11 +37,7 @@ function getTxDerived(tx: Transaction, fiatPrice: number, currency: string) {
   const addressToShow = isReceived ? tx.fromAddress[0] : tx.toAddress[0];
   const fiatAmount = Math.abs(tx.btc * fiatPrice);
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(value);
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   // Ensure unique labels are displayed (e.g., if multiple addresses belong to the same exchange)
   const uniqueLabels = tx.labels ? [...new Map(tx.labels.map(item => [item.label, item])).values()] : [];
@@ -172,14 +169,12 @@ const TRANSACTIONS_PER_PAGE = 20;
 
 export default function TransactionsPage() {
   const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
+  const walletGuard = useWalletDataGuard();
   const [visibleCount, setVisibleCount] = useState(TRANSACTIONS_PER_PAGE);
   const { toast } = useToast();
-  const hasBlockingError = !!error && !data;
 
-  if (!xpub) return <FullPageLoader />;
-  if (isLoading && !data) return <FullPageLoader />;
-  if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
-  if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
+  if (walletGuard) return walletGuard;
+  if (!data) return null;
 
   const handleExportCSV = () => {
     if (!data || data.transactions.length === 0) {

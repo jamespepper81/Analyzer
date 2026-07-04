@@ -62,8 +62,8 @@ test.describe('Login / Connect Wallet Flow', () => {
     // Assert the connect page is no longer visible
     await expect(page.locator('h1:has-text("BitSleuth Analyzer")')).not.toBeVisible();
     
-    // Wait for dashboard content to load
-    await expect(page.locator('text=BitTracker')).toBeVisible({ timeout: 10000 });
+    // Wait for dashboard content to load (header shows the section title)
+    await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible({ timeout: 10000 });
     
     // Take a screenshot of the dashboard for verification
     await page.screenshot({ 

@@ -22,6 +22,7 @@ import { format, startOfYear, endOfYear, getYear, isSameDay, subDays, subMonths,
 import { Calendar as CalendarIcon, Info, ChevronsUpDown, Bitcoin as BitcoinIcon, X, ArrowUp, ArrowDown } from 'lucide-react';
 
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -176,15 +177,9 @@ export default function BasicReportPage() {
         return Array.from(years).sort((a, b) => b - a);
     }, [walletData]);
 
-    const formatCurrency = useCallback((value: number | undefined) => {
-        if (value === undefined) return `${currencySymbol}0.00`;
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(value);
-    }, [currency, currencySymbol]);
+    const formatCurrency = useCallback((value: number | undefined) => formatCurrencyValue(value, currency, { compact: true }), [currency]);
 
-    const formatCurrencyFull = useCallback((value: number | undefined) => {
-        if (value === undefined) return `${currencySymbol}0.00`;
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
-    }, [currency, currencySymbol]);
+    const formatCurrencyFull = useCallback((value: number | undefined) => formatCurrencyValue(value, currency), [currency]);
 
     const generateReport = useCallback(async () => {
         if (!walletData || !date?.from || !date?.to) {

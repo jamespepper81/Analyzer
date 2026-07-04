@@ -19,6 +19,7 @@ import { useWallet } from '@/contexts/wallet-context';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Separator } from '@/components/ui/separator';
 import { logger } from '@/lib/logger';
 
@@ -47,13 +48,8 @@ export default function FeedbackPage() {
   const { data: walletData } = useWallet();
   const { track } = useAnalytics();
 
-  const handleCopy = (textToCopy: string, type: string) => {
-    navigator.clipboard.writeText(textToCopy);
-    toast({
-      title: 'Copied to clipboard',
-      description: `${type}: ${textToCopy}`,
-    });
-  };
+  const copyToClipboard = useCopyToClipboard();
+  const handleCopy = (textToCopy: string, type: string) => copyToClipboard(textToCopy, `${type}: ${textToCopy}`);
 
   async function onSubmit(data: z.infer<typeof feedbackSchema>) {
     setIsLoading(true);

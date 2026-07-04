@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -128,12 +129,7 @@ export default function DashboardPage() {
 
   const recentTransactions = data.transactions.slice(0, 3);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">

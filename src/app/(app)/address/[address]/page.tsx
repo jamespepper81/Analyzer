@@ -21,8 +21,10 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bitcoin, CircleAlert, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ArrowLeft, Bitcoin, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 import type { Transaction, AddressInfo } from '@/lib/types';
@@ -32,12 +34,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
   const isReceived = tx.type === 'Received';
   const fiatAmount = Math.abs(tx.btc * fiatPrice);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   return (
     <TableRow className="hover:bg-muted/50 transition-colors">
@@ -152,29 +149,25 @@ export default function AddressDetailsPage() {
     loadData();
   }, [address, loadData]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   if (isWalletLoading || pageIsLoading) return <FullPageLoader />;
   if (walletError && !pageData) return <ErrorDisplay message={walletError} />;
   
   if (pageError) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-            <CircleAlert className="h-12 w-12 text-destructive" />
-            <h1 className="text-2xl font-bold">Address Not Found</h1>
-            <p className="text-muted-foreground">{pageError}</p>
-            <Button asChild onClick={() => router.back()}>
+        <EmptyState
+          title="Address Not Found"
+          message={pageError}
+          action={
+            <Button asChild>
               <Link href="/security">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Link>
             </Button>
-        </div>
+          }
+        />
       );
   }
 

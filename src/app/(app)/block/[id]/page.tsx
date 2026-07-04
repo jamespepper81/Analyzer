@@ -19,10 +19,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconContainer } from '@/components/ui/icon-container';
 import { ArrowLeft, CircleAlert, Copy, Box, Download, LoaderCircle } from 'lucide-react';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import type { BlockDetails, BlockTransaction } from '@/lib/types';
 import { getBlockDetails } from '@/lib/mempool';
 
@@ -98,27 +100,13 @@ export default function BlockDetailsPage() {
   };
 
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: 'Copied to clipboard',
-      description: text,
-    });
-  };
+  const handleCopy = useCopyToClipboard();
 
   if (pageIsLoading) return <FullPageLoader />;
   
   if (pageError) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-            <CircleAlert className="h-12 w-12 text-destructive" />
-            <h1 className="text-2xl font-bold">Block Not Found</h1>
-            <p className="text-muted-foreground">{pageError}</p>
-            <Button onClick={() => router.back()}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
-        </div>
+        <EmptyState title="Block Not Found" message={pageError} onBack={() => router.back()} />
       );
   }
 

@@ -326,7 +326,7 @@ export default function DiscoverPage() {
               <IconContainer variant="primary">
                 <Network className="h-5 w-5" />
               </IconContainer>
-              BitSeek Transaction Explorer
+              Transaction Explorer
             </CardTitle>
             <CardDescription className="mt-2">
                 Enter a Bitcoin address or transaction ID to begin exploring its history. You can switch between a simple list view and an interactive graph view.

@@ -3,11 +3,12 @@
 
 import React, { useMemo, useState } from 'react';
 import { useWallet } from '@/contexts/wallet-context';
+import { useWalletDataGuard } from '@/components/wallet-data-guard';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { IconContainer } from '@/components/ui/icon-container';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { AlertTriangle, Coins, Info, Link as LinkIcon, Puzzle } from 'lucide-react';
 import { Treemap, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import {
@@ -154,6 +155,7 @@ const CustomTreemapContent = (props: any, selectedUtxos: Record<string, boolean>
 
 export default function CoinControlPage() {
     const { data, isLoading, error, activeXpub, fiatPrice, currency, recommendations } = useWallet();
+    const walletGuard = useWalletDataGuard();
     const { state: sidebarState } = useSidebar(); // Force responsive widgets to remount when the sidebar width changes
     const [selectedUtxos, setSelectedUtxos] = useState<Record<string, boolean>>({});
 
@@ -232,24 +234,15 @@ export default function CoinControlPage() {
 
     }, [selectedUtxos, data?.utxos, recommendedFeeRate]);
 
-    const hasBlockingError = !!error && !data;
-
-    if (!activeXpub) return <FullPageLoader />;
-    if (isLoading && !data) return <FullPageLoader />;
-    if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
-    if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
+    if (walletGuard) return walletGuard;
+    if (!data) return null;
 
     const { utxos } = data;
     const numSelected = Object.values(selectedUtxos).filter(Boolean).length;
     const selectAllCheckedState = utxos.length > 0 && numSelected === utxos.length ? true : numSelected > 0 ? 'indeterminate' : false;
     const dustCount = utxos.filter(u => u.value < DUST_THRESHOLD).length;
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(value);
-    };
+    const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
     return (
         <div className="flex flex-col gap-4 sm:gap-6 w-full max-w-full overflow-hidden">

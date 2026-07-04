@@ -13,11 +13,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { IconContainer } from '@/components/ui/icon-container';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { CircleAlert, ArrowDownLeft, ArrowLeft, ArrowLeftRight, ArrowUpRight, CircleCheckBig, Clock, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import type { Transaction, TransactionInput, TransactionOutput } from '@/lib/types';
 import { getTransactionData } from '@/lib/blockchain-api';
 
@@ -33,12 +36,7 @@ function DetailItem({ label, value, children }: { label: string; value?: React.R
 }
 
 function AddressCard({ title, items, btcPrice, currency, type }: { title: string; items: Array<{ address: string | null, value: number }>; btcPrice: number, currency: string, type: 'input' | 'output' }) {
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(value);
-    }
+    const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
     const isInput = type === 'input';
 
@@ -126,28 +124,14 @@ export default function TransactionDetailsPage() {
         loadData();
     }, [txid, loadData]);
 
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({
-            title: 'Copied to clipboard',
-            description: text,
-        });
-    };
+    const handleCopy = useCopyToClipboard();
 
     if (isWalletLoading || pageIsLoading) return <FullPageLoader />;
     if (walletError && !pageData) return <ErrorDisplay message={walletError} />;
 
     if (pageError) {
         return (
-            <div className="flex flex-col items-center justify-center gap-4 text-center px-4">
-                <CircleAlert className="h-10 w-10 sm:h-12 sm:w-12 text-destructive" />
-                <h1 className="text-xl sm:text-2xl font-bold">Transaction Not Found</h1>
-                <p className="text-muted-foreground text-sm sm:text-base">{pageError}</p>
-                <Button onClick={() => router.back()} size="sm">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
-                </Button>
-            </div>
+            <EmptyState title="Transaction Not Found" message={pageError} onBack={() => router.back()} />
         );
     }
 
@@ -161,12 +145,7 @@ export default function TransactionDetailsPage() {
     const inputValue = tx.inputs.reduce((sum, i) => sum + (i.value || 0), 0) / 1e8;
     const outputValue = tx.outputs.reduce((sum, o) => sum + o.value, 0) / 1e8;
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(value);
-    };
+    const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
     return (
         <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6 px-2 sm:px-0">

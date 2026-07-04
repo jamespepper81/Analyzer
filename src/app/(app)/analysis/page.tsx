@@ -23,7 +23,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useWallet } from '@/contexts/wallet-context';
-import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
+import { useWalletDataGuard } from '@/components/wallet-data-guard';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Scatter, ScatterChart, XAxis, YAxis, Tooltip, ZAxis } from 'recharts';
 import { useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
@@ -67,6 +67,7 @@ const btcToSatsFormatter = (value: any) => {
 
 export default function AnalysisPage() {
   const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
+  const walletGuard = useWalletDataGuard();
 
   const balanceChartData = useMemo(() => {
     if (!data || !data.transactions || data.transactions.length === 0) {
@@ -187,12 +188,8 @@ export default function AnalysisPage() {
     return Object.values(feesByMonth).sort((a,b) => a.key.localeCompare(b.key));
   }, [data]);
 
-  const hasBlockingError = !!error && !data;
-
-  if (!xpub) return <FullPageLoader />;
-  if (isLoading && !data) return <FullPageLoader />;
-  if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
-  if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
+  if (walletGuard) return walletGuard;
+  if (!data) return null;
     
   if (balanceChartData.length <= 2) { // only has start and end points
     return (
