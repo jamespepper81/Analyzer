@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { OrbitalLoader, type LoadStage } from '@/components/ui/orbital-loader';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { Check, RefreshCw } from 'lucide-react';
 
 interface LoadingProgressProps {
   stage: LoadStage;
@@ -79,9 +80,12 @@ export function LoadingProgress({
     }
   }
 
-  const longWaitMessage = isLongWait
-    ? LONG_WAIT_MESSAGES[Math.floor(Math.random() * LONG_WAIT_MESSAGES.length)]
-    : null;
+  // Picked once per mount — a per-render pick made the message flicker
+  // between strings every time progress updated.
+  const [longWaitPick] = useState(
+    () => LONG_WAIT_MESSAGES[Math.floor(Math.random() * LONG_WAIT_MESSAGES.length)]
+  );
+  const longWaitMessage = isLongWait ? longWaitPick : null;
 
   return (
     <div
@@ -205,7 +209,7 @@ export function CompactProgress({
 
       {/* Stage indicator */}
       <div className="text-xs text-info font-mono whitespace-nowrap">
-        {stage === 'COMPLETE' ? '✓' : '...'}
+        {stage === 'COMPLETE' ? <Check className="h-3.5 w-3.5" aria-label="Complete" /> : '...'}
       </div>
     </div>
   );
