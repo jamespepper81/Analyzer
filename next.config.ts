@@ -1,9 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   // Development-specific optimizations
   ...(process.env.NODE_ENV === 'development' && {
     onDemandEntries: {
