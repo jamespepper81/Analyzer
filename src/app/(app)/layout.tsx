@@ -4,10 +4,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeftRight, LayoutDashboard, MessageCircle, Shield, Bitcoin, ChartLine, Star, Terminal, Pencil, ChevronsUpDown, CirclePlus, Check, X, LoaderCircle, Compass, Layers, ChartCandlestick, FileSpreadsheet, Coins } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { ArrowLeftRight, LayoutDashboard, MessageCircle, Shield, ChartLine, Star, Compass, Layers, ChartCandlestick, FileSpreadsheet, Coins } from 'lucide-react';
 
 import {
   SidebarProvider,
@@ -23,25 +20,18 @@ import {
   useSidebar,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { Logo, OstrichIcon } from '@/components/icons';
+import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useWallet } from '@/contexts/wallet-context';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverPortal, PopoverTrigger } from '@/components/ui/popover';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Currency } from '@/lib/types';
 import { ToastAction } from '@/components/ui/toast';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { logger } from '@/lib/logger';
+import { AnalyticsWarning } from '@/components/layout/analytics-warning';
+import { AccountSwitcher } from '@/components/layout/account-switcher';
+import { CurrencySwitcher } from '@/components/layout/currency-switcher';
+import { NostrAccount } from '@/components/layout/nostr-account';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', description: "Get a high-level overview of your wallet's balance, security, and recent activity." },
@@ -57,278 +47,17 @@ const navItems = [
   { href: '/feedback', icon: Star, label: 'Feedback', description: "Share your thoughts and suggestions to help us improve BitSleuth." },
 ];
 
-function AnalyticsWarning() {
-  const [isConfigured, setIsConfigured] = React.useState(true);
-
-  // We check on mount to avoid hydration errors
-  React.useEffect(() => {
-    setIsConfigured(!!process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID);
-  }, []);
-
-  if (isConfigured) {
-    return null;
-  }
-
-  return (
-    <Alert variant="destructive" className="mb-6">
-        <Terminal className="h-4 w-4" />
-        <AlertTitle>Analytics Not Configured</AlertTitle>
-        <AlertDescription className="font-normal">
-            Your Google Analytics measurement ID is missing. To enable analytics, add <code>NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID</code> to the <code>.env</code> file, then restart the development server.
-        </AlertDescription>
-    </Alert>
-  )
-}
-
-const AddAccountFormSchema = z.object({
-    xpub: z.string().min(1, { message: "XPUB key is required." }),
-});
-
-function AddAccountDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
-    const { addXpub } = useWallet();
-    const { toast } = useToast();
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
-    
-    const form = useForm<z.infer<typeof AddAccountFormSchema>>({
-        resolver: zodResolver(AddAccountFormSchema),
-        defaultValues: { xpub: "" },
-    });
-
-    async function onSubmit(values: z.infer<typeof AddAccountFormSchema>) {
-        setIsSubmitting(true);
-        form.clearErrors('xpub');
-        const result = await addXpub(values.xpub);
-        if (result.error) {
-            form.setError("xpub", { type: "manual", message: result.error });
-        } else {
-            toast({ title: "XPUB Key Added", description: "Successfully connected the new xpub." });
-            onOpenChange(false);
-            form.reset();
-        }
-        setIsSubmitting(false);
-    }
-    
-    return (
-        <Dialog open={open} onOpenChange={(isOpen) => { onOpenChange(isOpen); if (!isOpen) form.reset(); }}>
-
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add New XPUB Key</DialogTitle>
-                    <DialogDescription className="font-normal">
-                        Enter a Bitcoin xpub key to add it to your list of wallets.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="xpub"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>XPUB Key</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Enter your xpub key..." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                {isSubmitting ? 'Connecting...' : 'Add XPUB Key'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-function AccountSwitcher() {
-    const { activeXpub, xpubs, setActiveXpub, removeXpub, refetch } = useWallet();
-    const { isMobile, setOpenMobile } = useSidebar();
-    const [isAddAccountDialogOpen, setAddAccountDialogOpen] = React.useState(false);
-    const [isPopoverOpen, setPopoverOpen] = React.useState(false);
-
-    if (!activeXpub) return null;
-
-    const handleSelectWallet = (xpub: string) => {
-        if (xpub === activeXpub) {
-            refetch();
-        } else {
-            setActiveXpub(xpub);
-        }
-        setPopoverOpen(false);
-        if (isMobile) {
-            setOpenMobile(false);
-        }
-    }
-
-    const handleAddWalletClick = () => {
-        setPopoverOpen(false);
-        setAddAccountDialogOpen(true);
-    }
-
-    const handleTriggerClick = (e: React.MouseEvent) => {
-        if (isMobile) {
-            e.stopPropagation();
-        }
-        setPopoverOpen((v) => !v);
-    }
-
-    return (
-        <>
-            <Popover open={isPopoverOpen} onOpenChange={setPopoverOpen}>
-                <PopoverTrigger asChild>
-                    <div
-                        role="button"
-                        aria-label="Switch wallet"
-                        tabIndex={0}
-                        onClick={handleTriggerClick}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                setPopoverOpen((v) => !v);
-                            }
-                        }}
-                        className={cn(
-                            "grid w-full cursor-pointer items-center rounded-md py-2 transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                            isMobile
-                                ? "grid-cols-1 justify-items-center text-center gap-1 py-3"
-                                : "grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)]"
-                        )}
-                    >
-                        <div className="flex h-10 w-full items-center justify-center">
-                            <Avatar className="h-8 w-8">
-                                <AvatarFallback className='flex items-center justify-center bg-transparent'>
-                                    <Bitcoin className="h-5 w-5 text-primary" />
-                                </AvatarFallback>
-                            </Avatar>
-                        </div>
-                        <div
-                            className={cn(
-                                "min-w-0 overflow-hidden pr-2 transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0",
-                                isMobile && "pr-0 text-center"
-                            )}
-                        >
-                            <div className={cn("flex items-center gap-2", isMobile && "flex-col gap-1")}>
-                                <div className={cn("min-w-0 flex-1 text-left", isMobile && "text-center")}>
-                                    <span className='block truncate font-semibold text-sm'>Active XPUB Key</span>
-                                    <span className='block truncate font-mono text-xs text-muted-foreground'>{`${activeXpub.substring(0, 12)}...`}</span>
-                                </div>
-                                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-                            </div>
-                        </div>
-                    </div>
-                </PopoverTrigger>
-                <PopoverPortal>
-                    <PopoverContent
-                        className="w-[250px] p-0 mb-1"
-                        side="top"
-                        align="start"
-                        sideOffset={8}
-                        onOpenAutoFocus={(e) => {
-                             if (isMobile) {
-                                e.preventDefault();
-                             }
-                        }}
-                    >
-                        <div className="space-y-1 p-2">
-                            {xpubs.map((xpub) => (
-                            <div
-                                key={xpub}
-                                onClick={() => handleSelectWallet(xpub)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        handleSelectWallet(xpub);
-                                    }
-                                }}
-                                className={cn(
-                                    "group flex w-full cursor-pointer items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                    activeXpub === xpub && "bg-primary text-primary-foreground"
-                                )}
-                                role="button"
-                                tabIndex={0}
-                            >
-                                <Check className={cn("h-4 w-4 shrink-0", activeXpub === xpub ? "opacity-100" : "opacity-0")} />
-                                <span className="flex-1 truncate font-mono text-xs">{xpub}</span>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className={cn(
-                                        "h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100",
-                                        activeXpub === xpub ? "hover:bg-primary/80" : "hover:bg-accent"
-                                    )}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeXpub(xpub);
-                                    }}
-                                    disabled={xpubs.length <= 1}
-                                >
-                                    <X className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                            </div>
-                            ))}
-                        </div>
-                        <Separator />
-                        <div className="p-2">
-                            <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={handleAddWalletClick}
-                            >
-                                <CirclePlus className="mr-2 h-4 w-4" />
-                                Add XPUB Key
-                            </Button>
-                        </div>
-                    </PopoverContent>
-                </PopoverPortal>
-            </Popover>
-            <AddAccountDialog open={isAddAccountDialogOpen} onOpenChange={setAddAccountDialogOpen} />
-        </>
-    )
-}
-
-function CurrencySwitcher() {
-    const { currency, setCurrency, supportedCurrencies } = useWallet();
-
-    if (!currency) return null;
-
-    return (
-        <Select value={currency} onValueChange={(value) => setCurrency(value as Currency)}>
-            <SelectTrigger className="w-[80px] h-10">
-                <SelectValue placeholder="Currency" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectContent>
-                    {supportedCurrencies.map((c) => (
-                        <SelectItem key={c} value={c}>
-                            {c}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </SelectContent>
-        </Select>
-    );
-}
-
-
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeXpub, isLoading, disconnect, nostrNpub, nostrProfile, isNostrReady, connectNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr } = useWallet();
+  const { activeXpub, isLoading, disconnect } = useWallet();
   const { setOpenMobile, isMobile } = useSidebar();
   const { toast } = useToast();
-  const [isNostrDialogOpen, setNostrDialogOpen] = React.useState(false);
-  const [isEditProfileOpen, setEditProfileOpen] = React.useState(false);
 
   // Define public paths that do not require a wallet to be connected.
   const publicPaths = ['/market', '/mempool', '/discover', '/block/', '/transactions/', '/address/'];
   const isPublicPage = publicPaths.some(p => pathname.startsWith(p));
-  
+
   // The root '/transactions' page (the list) is always protected.
   const isTransactionsListPage = pathname === '/transactions';
 
@@ -341,40 +70,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       router.push('/');
     }
   }, [activeXpub, isLoading, router, isProtectedRoute, pathname]);
-
-  const NostrFormSchema = z.object({
-    nsec: z.string().startsWith('nsec1', { message: 'Nostr private key must start with "nsec1"' }),
-  });
-
-  const nostrForm = useForm<z.infer<typeof NostrFormSchema>>({
-      resolver: zodResolver(NostrFormSchema),
-      defaultValues: { nsec: "" },
-  });
-
-  const EditProfileSchema = z.object({
-    display_name: z.string().max(50).optional(),
-    name: z.string().max(50).optional(),
-    about: z.string().max(1024).optional(),
-    website: z.string().url({ message: 'Please enter a valid website URL.' }).optional().or(z.literal('')),
-    picture: z.string().url({ message: 'Please enter a valid avatar URL.' }).optional().or(z.literal('')),
-    banner: z.string().url({ message: 'Please enter a valid banner URL.' }).optional().or(z.literal('')),
-    nip05: z.string().optional(),
-    lud16: z.string().optional(),
-  });
-
-  const editProfileForm = useForm<z.infer<typeof EditProfileSchema>>({
-    resolver: zodResolver(EditProfileSchema),
-    defaultValues: {
-      display_name: "",
-      name: "",
-      about: "",
-      website: "",
-      picture: "",
-      banner: "",
-      nip05: "",
-      lud16: "",
-    }
-  });
 
   // Effect for showing the support toast
   React.useEffect(() => {
@@ -409,44 +104,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     }
   }, [toast]);
 
-
-  React.useEffect(() => {
-    if (isEditProfileOpen && nostrProfile) {
-      editProfileForm.reset({
-        display_name: nostrProfile.display_name || '',
-        name: nostrProfile.name || '',
-        about: nostrProfile.about || '',
-        website: nostrProfile.website || '',
-        picture: nostrProfile.picture || '',
-        banner: nostrProfile.banner || '',
-        nip05: nostrProfile.nip05 || '',
-        lud16: nostrProfile.lud16 || '',
-      });
-    }
-  }, [isEditProfileOpen, nostrProfile, editProfileForm]);
-
-
-  async function onNostrSubmit(values: z.infer<typeof NostrFormSchema>) {
-      const result = await connectNostr(values.nsec);
-      if (result.success) {
-          toast({ title: 'Nostr Connected', description: 'Your Nostr account has been associated.' });
-          setNostrDialogOpen(false);
-          nostrForm.reset();
-      } else {
-          nostrForm.setError('nsec', { type: 'manual', message: result.error });
-      }
-  }
-
-  async function onEditProfileSubmit(values: z.infer<typeof EditProfileSchema>) {
-      const result = await updateNostrProfile(values);
-      if (result.success) {
-          toast({ title: 'Profile Updated', description: 'Your Nostr profile has been published.' });
-          setEditProfileOpen(false);
-      } else {
-          toast({ variant: 'destructive', title: 'Update Failed', description: result.error });
-      }
-  }
-
   const handleLinkClick = () => {
     setOpenMobile(false);
   };
@@ -455,16 +112,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       disconnect();
       router.push('/');
       setOpenMobile(false);
-  };
-
-  const handleSaveXpubs = async () => {
-    const result = await saveXpubsToNostr();
-    if (result.success) {
-        toast({ title: "XPUBs Saved", description: "Your xpub keys have been securely saved to your Nostr account." });
-    } else {
-        toast({ variant: 'destructive', title: 'Save Failed', description: result.error });
-    }
-    setShowSaveXpubsPrompt(false);
   };
 
   const currentPage = navItems.find(item => pathname.startsWith(item.href));
@@ -541,65 +188,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col gap-2 px-0 py-2">
                 <AccountSwitcher />
                 <SidebarSeparator className="my-0 w-auto" />
-                <div
-                  className={cn(
-                    "grid items-center rounded-md py-2",
-                    isMobile
-                      ? "grid-cols-1 justify-items-center text-center gap-1 py-3"
-                      : "grid-cols-[var(--sidebar-width-icon)_minmax(0,1fr)]"
-                  )}
-                >
-                  <div className="flex h-10 w-full items-center justify-center">
-                    {nostrNpub ? (
-                      <Avatar className="h-8 w-8">
-                          <AvatarImage src={nostrProfile?.picture} alt={nostrProfile?.display_name || nostrProfile?.name || 'Nostr User'} />
-                          <AvatarFallback>
-                              <OstrichIcon className="h-5 w-5 text-primary" />
-                          </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="flex items-center justify-center bg-transparent">
-                          <OstrichIcon className="h-5 w-5 text-primary" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                  <div
-                    className={cn(
-                      "min-w-0 overflow-hidden pr-2 transition-[opacity,transform] duration-200 ease-linear group-data-[collapsible=icon]:translate-x-1 group-data-[collapsible=icon]:opacity-0",
-                      isMobile && "pr-0 text-center"
-                    )}
-                  >
-                    {nostrNpub ? (
-                      <div className={cn("flex items-start gap-2", isMobile && "flex-col items-center gap-1")}>
-                        <div className={cn('min-w-0 flex-1', isMobile && "text-center")}>
-                          <span className='block truncate font-semibold text-sm'>{nostrProfile?.display_name || nostrProfile?.name || 'Nostr User'}</span>
-                          <span className='block truncate text-xs text-muted-foreground font-mono' title={nostrNpub}>{`${nostrNpub.substring(0, 12)}...`}</span>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditProfileOpen(true)}>
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className={cn('flex flex-col', isMobile && "items-center text-center")}>
-                          <span className='font-semibold text-sm truncate'>Nostr Account</span>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className={cn(
-                              "p-0 h-auto text-primary justify-start text-xs hover:no-underline",
-                              isMobile && "justify-center"
-                            )}
-                            onClick={() => setNostrDialogOpen(true)}
-                            disabled={!isNostrReady}
-                          >
-                            {isNostrReady ? 'Connect Account' : <LoaderCircle className="h-3 w-3 animate-spin"/>}
-                          </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <NostrAccount />
             </div>
         </SidebarFooter>
       </Sidebar>
@@ -641,169 +230,6 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </SidebarInset>
-
-      <Dialog open={isNostrDialogOpen} onOpenChange={setNostrDialogOpen}>
-
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>Connect Nostr Account</DialogTitle>
-                  <DialogDescription className="font-normal">
-                      Enter your Nostr private key (nsec) to associate your account. Your key is stored locally in your browser and never sent to our servers.
-                  </DialogDescription>
-              </DialogHeader>
-              <Form {...nostrForm}>
-                  <form onSubmit={nostrForm.handleSubmit(onNostrSubmit)} className="space-y-4">
-                      <FormField
-                          control={nostrForm.control}
-                          name="nsec"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel>Private Key (nsec)</FormLabel>
-                                  <FormControl>
-                                      <Input placeholder="nsec1..." {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                          )}
-                      />
-                      <DialogFooter>
-                          <Button type="submit" disabled={nostrForm.formState.isSubmitting}>
-                            {nostrForm.formState.isSubmitting ? 'Connecting...' : 'Connect'}
-                          </Button>
-                      </DialogFooter>
-                  </form>
-              </Form>
-          </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditProfileOpen} onOpenChange={setEditProfileOpen}>
-
-          <DialogContent className="sm:max-w-[480px]">
-              <DialogHeader>
-                  <DialogTitle>Edit Nostr Profile</DialogTitle>
-                  <DialogDescription className="font-normal">
-                      Update your public profile information. This will be published to the Nostr network.
-                  </DialogDescription>
-              </DialogHeader>
-              <Form {...editProfileForm}>
-                  <form onSubmit={editProfileForm.handleSubmit(onEditProfileSubmit)} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={editProfileForm.control}
-                            name="display_name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Display Name</FormLabel>
-                                    <FormControl><Input placeholder="Your public display name" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={editProfileForm.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Username</FormLabel>
-                                    <FormControl><Input placeholder="Your @username" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={editProfileForm.control}
-                            name="picture"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Avatar URL</FormLabel>
-                                    <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={editProfileForm.control}
-                            name="banner"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Banner URL</FormLabel>
-                                    <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                      </div>
-                      <FormField
-                          control={editProfileForm.control}
-                          name="website"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel>Website</FormLabel>
-                                  <FormControl><Input placeholder="https://your-website.com" {...field} /></FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                      <FormField
-                          control={editProfileForm.control}
-                          name="about"
-                          render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel>About</FormLabel>
-                                  <FormControl><Textarea placeholder="Tell everyone a bit about yourself." className="resize-y" {...field} /></FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={editProfileForm.control}
-                            name="lud16"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Lightning Address</FormLabel>
-                                    <FormControl><Input placeholder="user@domain.com" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={editProfileForm.control}
-                            name="nip05"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>NIP-05 Identifier</FormLabel>
-                                    <FormControl><Input placeholder="user@domain.com" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                      </div>
-                      <DialogFooter>
-                          <Button type="submit" disabled={editProfileForm.formState.isSubmitting}>
-                            {editProfileForm.formState.isSubmitting ? 'Publishing...' : 'Save and Publish'}
-                          </Button>
-                      </DialogFooter>
-                  </form>
-              </Form>
-          </DialogContent>
-      </Dialog>
-      <AlertDialog open={showSaveXpubsPrompt} onOpenChange={setShowSaveXpubsPrompt}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Save XPUB Keys to Nostr?</AlertDialogTitle>
-                    <AlertDialogDescription className="font-normal">
-                        Would you like to save your current list of xpub keys to your Nostr account? They will be encrypted so only you can access them. This allows you to sync your wallets across different devices. You can always manage your list of keys from within BitSleuth's account switcher.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>No, Thanks</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleSaveXpubs}>Yes, Save</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
     </>
   );
 }
@@ -824,7 +250,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   if (isConnectPage) {
     return <>{children}</>;
   }
-  
+
   return (
     <SidebarProvider>
       <AppLayoutInner>{children}</AppLayoutInner>
@@ -837,9 +263,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <AppLayoutContent>{children}</AppLayoutContent>
     )
 }
-
-    
-
-    
-
-
