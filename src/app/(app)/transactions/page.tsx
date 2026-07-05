@@ -27,7 +27,8 @@ import { ArrowUpRight, ArrowDownLeft, Download, Building, LoaderCircle } from 'l
 import { useWallet } from '@/contexts/wallet-context';
 import { useWalletDataGuard } from '@/components/wallet-data-guard';
 import { formatCurrency as formatCurrencyValue } from '@/lib/format';
-import { useState } from 'react';
+import { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
@@ -165,13 +166,30 @@ const TransactionCard = React.memo(({ tx, fiatPrice, currency }: { tx: Transacti
 TransactionCard.displayName = 'TransactionCard';
 
 
-const TRANSACTIONS_PER_PAGE = 20;
-
 export default function TransactionsPage() {
-  const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
+  const { data, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
   const walletGuard = useWalletDataGuard();
-  const [visibleCount, setVisibleCount] = useState(TRANSACTIONS_PER_PAGE);
   const { toast } = useToast();
+
+  // Both lists are windowed so the DOM stays small no matter how many
+  // transactions the wallet has. Hooks run unconditionally (before the
+  // guard early-return); a hidden container just measures 0 and renders
+  // nothing until its breakpoint makes it visible.
+  const transactions = data?.transactions ?? [];
+  const desktopScrollRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const desktopVirtualizer = useVirtualizer({
+    count: transactions.length,
+    getScrollElement: () => desktopScrollRef.current,
+    estimateSize: () => 73,
+    overscan: 10,
+  });
+  const mobileVirtualizer = useVirtualizer({
+    count: transactions.length,
+    getScrollElement: () => mobileScrollRef.current,
+    estimateSize: () => 112,
+    overscan: 8,
+  });
 
   if (walletGuard) return walletGuard;
   if (!data) return null;
@@ -225,11 +243,12 @@ export default function TransactionsPage() {
     });
   };
   
-  const handleLoadMore = () => {
-    setVisibleCount((prevCount) => prevCount + TRANSACTIONS_PER_PAGE);
-  };
-  
-  const transactionsToShow = data.transactions.slice(0, visibleCount);
+  const desktopItems = desktopVirtualizer.getVirtualItems();
+  const desktopPaddingTop = desktopItems.length > 0 ? desktopItems[0].start : 0;
+  const desktopPaddingBottom =
+    desktopItems.length > 0
+      ? desktopVirtualizer.getTotalSize() - desktopItems[desktopItems.length - 1].end
+      : 0;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
@@ -269,7 +288,7 @@ export default function TransactionsPage() {
                   Transaction History
                 </CardTitle>
                 <CardDescription className="mt-2">
-                A complete list of all your wallet's transactions.
+                A complete list of all your wallet&apos;s transactions ({data.transactions.length.toLocaleString()} total).
                 </CardDescription>
             </div>
             <Button variant="outline" onClick={handleExportCSV} size="sm" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
@@ -279,14 +298,29 @@ export default function TransactionsPage() {
         </div>
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
-        {/* Mobile: stacked cards so columns never overlap on small screens */}
-        <div className="sm:hidden" role="list">
-          {transactionsToShow.length > 0 ? (
-            transactionsToShow.map((tx) => (
-              <div role="listitem" key={tx.id}>
-                <TransactionCard tx={tx} fiatPrice={fiatPrice} currency={currency} />
-              </div>
-            ))
+        {/* Mobile: stacked cards, windowed so long histories stay light */}
+        <div ref={mobileScrollRef} className="sm:hidden max-h-[70vh] overflow-y-auto" role="list">
+          {transactions.length > 0 ? (
+            <div
+              className="relative w-full"
+              style={{ height: `${mobileVirtualizer.getTotalSize()}px` }}
+            >
+              {mobileVirtualizer.getVirtualItems().map((virtualItem) => {
+                const tx = transactions[virtualItem.index];
+                return (
+                  <div
+                    role="listitem"
+                    key={tx.id}
+                    data-index={virtualItem.index}
+                    ref={mobileVirtualizer.measureElement}
+                    className="absolute left-0 top-0 w-full"
+                    style={{ transform: `translateY(${virtualItem.start}px)` }}
+                  >
+                    <TransactionCard tx={tx} fiatPrice={fiatPrice} currency={currency} />
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <p className="flex h-24 items-center justify-center text-center text-muted-foreground">
               No transactions found.
@@ -294,10 +328,11 @@ export default function TransactionsPage() {
           )}
         </div>
 
-        {/* Desktop (sm+): table layout */}
-        <div className="hidden sm:block">
+        {/* Desktop (sm+): table layout, windowed via spacer rows to keep
+            real <table> semantics */}
+        <div ref={desktopScrollRef} className="hidden sm:block max-h-[65vh] overflow-y-auto">
           <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow className="border-b-2 hover:bg-transparent">
               <TableHead>Details</TableHead>
               <TableHead className="text-right">Amount (BTC)</TableHead>
@@ -306,10 +341,21 @@ export default function TransactionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactionsToShow.length > 0 ? (
-              transactionsToShow.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} fiatPrice={fiatPrice} currency={currency} />
-              ))
+            {transactions.length > 0 ? (
+              <>
+                {desktopPaddingTop > 0 && (
+                  <tr aria-hidden="true" style={{ height: `${desktopPaddingTop}px` }} />
+                )}
+                {desktopItems.map((virtualItem) => {
+                  const tx = transactions[virtualItem.index];
+                  return (
+                    <TransactionRow key={tx.id} tx={tx} fiatPrice={fiatPrice} currency={currency} />
+                  );
+                })}
+                {desktopPaddingBottom > 0 && (
+                  <tr aria-hidden="true" style={{ height: `${desktopPaddingBottom}px` }} />
+                )}
+              </>
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
@@ -320,14 +366,6 @@ export default function TransactionsPage() {
           </TableBody>
         </Table>
         </div>
-        {visibleCount < data.transactions.length && (
-            <div className="mt-4 sm:mt-6 flex justify-center px-4 sm:px-0">
-                <Button onClick={handleLoadMore} variant="outline" size="sm" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
-                    <Download className="mr-2 h-4 w-4" />
-                    Load More
-                </Button>
-            </div>
-        )}
       </CardContent>
     </Card>
     </div>
