@@ -17,6 +17,7 @@ import { useAnalytics } from '@/hooks/use-analytics';
 import { useChunkRetry } from '@/hooks/use-chunk-retry';
 import { useToast } from '@/hooks/use-toast';
 import { resetChunkRetry } from '@/lib/chunk-retry-service';
+import { writeWalletCache, resetWalletCacheTracking } from '@/lib/wallet-cache';
 import { logger } from '@/lib/logger';
 import { ToastAction } from '@/components/ui/toast';
 import {
@@ -80,6 +81,23 @@ const defaultRelays = [
   'wss://nos.lol',
   'wss://relay.snort.social',
 ];
+
+// One shared relay pool, created lazily on first Nostr operation and reused
+// so repeated operations don't reopen four websockets each time. Closed only
+// on explicit Nostr disconnect.
+let nostrPool: SimplePool | null = null;
+const getNostrPool = (): SimplePool => {
+  if (!nostrPool) {
+    nostrPool = new SimplePool();
+  }
+  return nostrPool;
+};
+const closeNostrPool = () => {
+  if (nostrPool) {
+    nostrPool.close(defaultRelays);
+    nostrPool = null;
+  }
+};
 
 const XPUB_PREFIXES = new Set(['xpub', 'ypub', 'zpub', 'tpub', 'upub', 'vpub']);
 const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]+$/;
@@ -168,6 +186,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
   // This simply signals that we are on the client and can proceed with Nostr logic.
   useEffect(() => {
     setIsNostrReady(true);
+    return () => closeNostrPool();
   }, []);
 
   const setActiveXpubAndPersist = useCallback((newXpub: string | null) => {
@@ -207,6 +226,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
           } else {
             console.warn(`[WalletContext] Cache XPUB mismatch on switch, clearing`);
             localStorage.removeItem(`walletCache:${newXpub}`);
+            resetWalletCacheTracking(newXpub);
           }
         }
       } catch {
@@ -232,9 +252,8 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
   }, []); // activeXpub intentionally omitted to avoid circular updates
 
   const fetchNostrProfile = useCallback(async (pubkey: string): Promise<NostrProfile | null> => {
-    const pool = new SimplePool();
     try {
-        const event = await pool.get(defaultRelays, {
+        const event = await getNostrPool().get(defaultRelays, {
             authors: [pubkey],
             kinds: [0],
             limit: 1,
@@ -249,19 +268,16 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     } catch (e) {
       console.error("Failed to fetch Nostr profile from any relay:", e);
       return null;
-    } finally {
-        pool.close(defaultRelays);
     }
   }, []);
 
   const loadXpubsFromNostr = useCallback(async (nsec: string): Promise<string[]> => {
-    const pool = new SimplePool();
     try {
         const sk = nip19.decode(nsec).data;
         const pk = getPublicKey(sk as Uint8Array);
 
         // Fetch the latest kind 4 event from the pool of relays
-        const latestEvent = await pool.get(defaultRelays, {
+        const latestEvent = await getNostrPool().get(defaultRelays, {
             kinds: [4],
             authors: [pk],
             '#p': [pk],
@@ -274,29 +290,23 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
 
         const decryptedContent = await nip04.decrypt(sk as Uint8Array, pk, latestEvent.content);
         const remoteXpubs = JSON.parse(decryptedContent);
-        
+
         if (Array.isArray(remoteXpubs)) {
             return remoteXpubs.map(normalizeXpub).filter(Boolean);
         }
     } catch (e) {
       console.error("Failed to load or decrypt xpubs from Nostr:", e);
-    } finally {
-        pool.close(defaultRelays);
     }
     return [];
   }, []);
-  
+
   const publishToRelays = async (event: NostrEvent): Promise<boolean> => {
-    const pool = new SimplePool();
     try {
-        const pubPromise = pool.publish(defaultRelays, event);
-        await pubPromise;
+        await getNostrPool().publish(defaultRelays, event);
         return true;
     } catch(e) {
         console.error("Failed to publish to Nostr relays:", e);
         return false;
-    } finally {
-        pool.close(defaultRelays);
     }
   };
 
@@ -512,6 +522,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     setNostrNsec(null);
     setNostrNpub(null);
     setNostrProfile(null);
+    closeNostrPool();
     try {
       localStorage.removeItem('nostr_nsec');
       localStorage.removeItem('nostr_profile');
@@ -700,6 +711,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
+      resetWalletCacheTracking();
       
       console.log(`[WalletContext] Cleared ${keysToRemove.length} wallet cache(s) on disconnect`);
     } catch (e) {
@@ -744,6 +756,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
           // Cache mismatch - clear invalid cache
           console.warn(`[WalletContext] Cache XPUB mismatch, clearing stale cache`);
           localStorage.removeItem(`walletCache:${activeXpub}`);
+          resetWalletCacheTracking(activeXpub);
         }
       }
     } catch (e) {
@@ -820,18 +833,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
       // Always set the final data (progress callback may not be called for empty wallets)
       if (result.data) {
         setData(result.data);
-        try {
-          const cacheEntry = {
-            _cacheMetadata: {
-              xpub: activeXpub,
-              timestamp: Date.now(),
-            },
-            data: result.data,
-          };
-          localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(cacheEntry));
-        } catch (storageError) {
-          logger.warn('[WalletContext] Failed to cache wallet data on switch', storageError);
-        }
+        writeWalletCache(activeXpub, result.data);
       }
 
       // Mark discovery as complete
@@ -853,19 +855,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
       setError(response.error);
     } else if (response.data) {
       setData(response.data);
-      try {
-        // Store with metadata for validation to prevent showing wrong wallet's data
-        const cacheEntry = {
-          _cacheMetadata: {
-            xpub: activeXpub,
-            timestamp: Date.now(),
-          },
-          data: response.data,
-        };
-        localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(cacheEntry));
-      } catch (storageError) {
-        logger.warn('[WalletContext] Failed to cache fresh wallet data', storageError);
-      }
+      writeWalletCache(activeXpub, response.data);
     }
     
     setIsLoading(false);
