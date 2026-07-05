@@ -19,7 +19,7 @@ import { summarizeAddress } from '@/ai/flows/summarize-address';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useWallet } from '@/contexts/wallet-context';
+import { useWalletData, useWalletActions, useWalletAi } from '@/contexts/wallet-context';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { AiChart } from '@/components/ui/ai-chart';
 import type { Message, WalletData } from '@/lib/types';
@@ -183,18 +183,9 @@ export default function ChatPage() {
   const { track } = useAnalytics();
   const [isAiLoading, setAiLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const {
-    data: walletData,
-    isLoading: isWalletLoading,
-    isLoadingAiContent,
-    aiContentError,
-    refreshAiContent,
-    error: walletError,
-    activeXpub: xpub,
-    messages,
-    setMessages,
-    suggestions: masterSuggestions,
-  } = useWallet();
+  const { data: walletData, isLoading: isWalletLoading, error: walletError, activeXpub: xpub } = useWalletData();
+  const { refreshAiContent } = useWalletActions();
+  const { isLoadingAiContent, aiContentError, messages, setMessages, suggestions: masterSuggestions } = useWalletAi();
   
   const [placeholder, setPlaceholder] = useState(fallbackSuggestions[0]);
   const [displayedSuggestions, setDisplayedSuggestions] = useState<string[]>([]);

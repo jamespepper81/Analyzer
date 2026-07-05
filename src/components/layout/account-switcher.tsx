@@ -9,11 +9,12 @@ import { Popover, PopoverContent, PopoverPortal, PopoverTrigger } from '@/compon
 import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWalletData, useWalletActions } from '@/contexts/wallet-context';
 import { AddAccountDialog } from '@/components/layout/add-account-dialog';
 
 export function AccountSwitcher() {
-    const { activeXpub, xpubs, setActiveXpub, removeXpub, refetch } = useWallet();
+    const { activeXpub, xpubs } = useWalletData();
+    const { setActiveXpub, removeXpub, refetch } = useWalletActions();
     const { isMobile, setOpenMobile } = useSidebar();
     const [isAddAccountDialogOpen, setAddAccountDialogOpen] = React.useState(false);
     const [isPopoverOpen, setPopoverOpen] = React.useState(false);

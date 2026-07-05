@@ -11,14 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWalletActions } from '@/contexts/wallet-context';
 
 const AddAccountFormSchema = z.object({
     xpub: z.string().min(1, { message: "XPUB key is required." }),
 });
 
 export function AddAccountDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
-    const { addXpub } = useWallet();
+    const { addXpub } = useWalletActions();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 

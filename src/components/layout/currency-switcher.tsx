@@ -2,10 +2,11 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Currency } from '@/lib/types';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWalletData, useWalletActions } from '@/contexts/wallet-context';
 
 export function CurrencySwitcher() {
-    const { currency, setCurrency, supportedCurrencies } = useWallet();
+    const { currency, supportedCurrencies } = useWalletData();
+    const { setCurrency } = useWalletActions();
 
     if (!currency) return null;
 

@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWalletData, useWalletActions } from '@/contexts/wallet-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ToastAction } from '@/components/ui/toast';
@@ -50,7 +50,8 @@ const navItems = [
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeXpub, isLoading, disconnect } = useWallet();
+  const { activeXpub, isLoading } = useWalletData();
+  const { disconnect } = useWalletActions();
   const { setOpenMobile, isMobile } = useSidebar();
   const { toast } = useToast();
 

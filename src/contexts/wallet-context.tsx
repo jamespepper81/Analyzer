@@ -73,7 +73,33 @@ type WalletState = {
   publishNostrNote: (content: string) => Promise<{ success: boolean; error?: string }>;
 };
 
-const WalletContext = createContext<WalletState | undefined>(undefined);
+// The provider exposes four scoped contexts so consumers subscribe only to
+// the slices they read: chat message churn no longer re-renders data-only
+// pages, and action-only consumers never re-render at all (the actions value
+// is referentially stable). useWallet() merges all four for compatibility.
+type WalletDataState = Pick<WalletState,
+  'activeXpub' | 'xpubs' | 'data' | 'isLoading' | 'error' |
+  'discoveryProgress' | 'isDiscovering' | 'currency' | 'fiatPrice' |
+  'fiatBalance' | 'currencySymbol' | 'supportedCurrencies' | 'testXpub'>;
+
+type WalletActionsState = Pick<WalletState,
+  'setActiveXpub' | 'addXpub' | 'removeXpub' | 'refetch' | 'disconnect' |
+  'setCurrency' | 'refreshRecommendations' | 'refreshAiContent'>;
+
+type WalletAiState = Pick<WalletState,
+  'messages' | 'setMessages' | 'suggestions' | 'recommendations' |
+  'recommendationsError' | 'isLoadingAiContent' | 'isRecommendationsLoading' |
+  'aiContentError'>;
+
+type NostrState = Pick<WalletState,
+  'nostrNpub' | 'nostrProfile' | 'isNostrReady' | 'connectNostr' |
+  'loginWithNostr' | 'updateNostrProfile' | 'showSaveXpubsPrompt' |
+  'setShowSaveXpubsPrompt' | 'saveXpubsToNostr' | 'publishNostrNote'>;
+
+const WalletDataContext = createContext<WalletDataState | undefined>(undefined);
+const WalletActionsContext = createContext<WalletActionsState | undefined>(undefined);
+const WalletAiContext = createContext<WalletAiState | undefined>(undefined);
+const NostrContext = createContext<NostrState | undefined>(undefined);
 
 const defaultRelays = [
   'wss://relay.damus.io',
@@ -1146,11 +1172,10 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     refreshAiContent();
   }, [data, isInitialAiContentLoaded, messages.length, refreshAiContent]);
 
-  // Memoized so consumers only re-render when state they read actually
-  // changes — the provider holds frequently-ticking state (price poll,
-  // discovery progress) that would otherwise re-render every useWallet()
-  // consumer app-wide on each tick.
-  const value = useMemo<WalletState>(() => {
+  // Each slice is memoized independently so consumers only re-render when
+  // the slice they subscribe to actually changes (e.g. streaming chat
+  // messages update the AI slice without touching data consumers).
+  const dataValue = useMemo<WalletDataState>(() => {
     const CURRENCY_SYMBOLS: Record<Currency, string> = {
       USD: '$',
       EUR: '€',
@@ -1163,67 +1188,44 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
       xpubs,
       data,
       isLoading,
-      isLoadingAiContent,
-      isRecommendationsLoading,
-      aiContentError,
       error,
-      messages,
-      setMessages,
-      suggestions,
-      recommendations,
-      recommendationsError,
-      testXpub: testXpubValue,
-      setActiveXpub: setActiveXpubAndPersist,
-      addXpub,
-      removeXpub,
-      refetch: getWalletData,
-      disconnect,
-      refreshRecommendations,
-      refreshAiContent,
+      discoveryProgress,
+      isDiscovering,
       currency,
-      setCurrency,
-      supportedCurrencies: SUPPORTED_CURRENCIES,
       fiatPrice,
       fiatBalance: (data?.balanceBTC || 0) * fiatPrice,
       currencySymbol: CURRENCY_SYMBOLS[currency] || '$',
-      discoveryProgress,
-      isDiscovering,
-      nostrNpub,
-      nostrProfile,
-      isNostrReady,
-      connectNostr,
-      loginWithNostr,
-      updateNostrProfile,
-      showSaveXpubsPrompt,
-      setShowSaveXpubsPrompt,
-      saveXpubsToNostr,
-      publishNostrNote,
+      supportedCurrencies: SUPPORTED_CURRENCIES,
+      testXpub: testXpubValue,
     };
-  }, [
-    activeXpub,
-    xpubs,
-    data,
-    isLoading,
-    isLoadingAiContent,
-    isRecommendationsLoading,
-    aiContentError,
-    error,
+  }, [activeXpub, xpubs, data, isLoading, error, discoveryProgress, isDiscovering, currency, testXpubValue]);
+
+  // Every member is useCallback-stable, so this value is referentially
+  // stable across data/AI/Nostr state churn — action-only consumers never
+  // re-render from provider state changes.
+  const actionsValue = useMemo<WalletActionsState>(() => ({
+    setActiveXpub: setActiveXpubAndPersist,
+    addXpub,
+    removeXpub,
+    refetch: getWalletData,
+    disconnect,
+    setCurrency,
+    refreshRecommendations,
+    refreshAiContent,
+  }), [setActiveXpubAndPersist, addXpub, removeXpub, getWalletData, disconnect, setCurrency, refreshRecommendations, refreshAiContent]);
+
+  const aiValue = useMemo<WalletAiState>(() => ({
     messages,
+    setMessages,
     suggestions,
     recommendations,
     recommendationsError,
-    testXpubValue,
-    setActiveXpubAndPersist,
-    addXpub,
-    removeXpub,
-    getWalletData,
-    disconnect,
-    refreshRecommendations,
-    refreshAiContent,
-    currency,
-    setCurrency,
-    discoveryProgress,
-    isDiscovering,
+    isLoadingAiContent,
+    isRecommendationsLoading,
+    aiContentError,
+  }), [messages, suggestions, recommendations, recommendationsError, isLoadingAiContent, isRecommendationsLoading, aiContentError]);
+
+  const nostrValue = useMemo<NostrState>(() => ({
     nostrNpub,
     nostrProfile,
     isNostrReady,
@@ -1231,21 +1233,55 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     loginWithNostr,
     updateNostrProfile,
     showSaveXpubsPrompt,
+    setShowSaveXpubsPrompt,
     saveXpubsToNostr,
     publishNostrNote,
-  ]);
+  }), [nostrNpub, nostrProfile, isNostrReady, connectNostr, loginWithNostr, updateNostrProfile, showSaveXpubsPrompt, saveXpubsToNostr, publishNostrNote]);
 
   return (
-    <WalletContext.Provider value={value}>
-      {children}
-    </WalletContext.Provider>
+    <WalletDataContext.Provider value={dataValue}>
+      <WalletActionsContext.Provider value={actionsValue}>
+        <WalletAiContext.Provider value={aiValue}>
+          <NostrContext.Provider value={nostrValue}>
+            {children}
+          </NostrContext.Provider>
+        </WalletAiContext.Provider>
+      </WalletActionsContext.Provider>
+    </WalletDataContext.Provider>
   );
 };
 
-export const useWallet = () => {
-  const context = useContext(WalletContext);
-  if (context === undefined) {
-    throw new Error('useWallet must be used within a WalletProvider');
+function useRequiredContext<T>(context: React.Context<T | undefined>, name: string): T {
+  const value = useContext(context);
+  if (value === undefined) {
+    throw new Error(`${name} must be used within a WalletProvider`);
   }
-  return context;
+  return value;
+}
+
+/** Wallet data slice: balances, transactions, discovery, currency. */
+export const useWalletData = () => useRequiredContext(WalletDataContext, 'useWalletData');
+
+/** Stable wallet actions; never re-renders consumers on state churn. */
+export const useWalletActions = () => useRequiredContext(WalletActionsContext, 'useWalletActions');
+
+/** AI slice: chat messages, suggestions, recommendations. */
+export const useWalletAi = () => useRequiredContext(WalletAiContext, 'useWalletAi');
+
+/** Nostr account slice. */
+export const useNostr = () => useRequiredContext(NostrContext, 'useNostr');
+
+/**
+ * Back-compat merged hook. Re-renders on any slice change (same behavior as
+ * before the split) — prefer the scoped hooks above in new/high-churn code.
+ */
+export const useWallet = (): WalletState => {
+  const dataSlice = useRequiredContext(WalletDataContext, 'useWallet');
+  const actions = useRequiredContext(WalletActionsContext, 'useWallet');
+  const ai = useRequiredContext(WalletAiContext, 'useWallet');
+  const nostr = useRequiredContext(NostrContext, 'useWallet');
+  return useMemo(
+    () => ({ ...dataSlice, ...actions, ...ai, ...nostr }),
+    [dataSlice, actions, ai, nostr]
+  );
 };

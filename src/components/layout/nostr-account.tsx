@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useWallet } from '@/contexts/wallet-context';
+import { useNostr } from '@/contexts/wallet-context';
 
 const NostrFormSchema = z.object({
   nsec: z.string().startsWith('nsec1', { message: 'Nostr private key must start with "nsec1"' }),
@@ -40,7 +40,7 @@ const EditProfileSchema = z.object({
  * even though the trigger renders inside the sidebar footer).
  */
 export function NostrAccount() {
-  const { nostrNpub, nostrProfile, isNostrReady, connectNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr } = useWallet();
+  const { nostrNpub, nostrProfile, isNostrReady, connectNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr } = useNostr();
   const { isMobile } = useSidebar();
   const { toast } = useToast();
   const [isNostrDialogOpen, setNostrDialogOpen] = React.useState(false);
