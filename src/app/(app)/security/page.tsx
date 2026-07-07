@@ -274,7 +274,6 @@ export default function SecurityPage() {
     const {
         data,
         isLoading,
-        error,
         activeXpub: xpub,
         recommendations,
         recommendationsError,
