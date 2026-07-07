@@ -16,7 +16,7 @@ export function useWalletDataGuard(): ReactElement | null {
 
   if (!activeXpub) return <FullPageLoader />;
   if (isLoading && !data) return <FullPageLoader />;
-  if (error && !data) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
+  if (error && !data) return <ErrorDisplay message={error} />;
   if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
   return null;
 }
