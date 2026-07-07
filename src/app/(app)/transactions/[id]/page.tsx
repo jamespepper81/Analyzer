@@ -83,7 +83,7 @@ export default function TransactionDetailsPage() {
     const txid = params.id as string;
     const router = useRouter();
     const { data: walletData, isLoading: isWalletLoading, error: walletError, fiatPrice, currency } = useWallet();
-    const { toast } = useToast();
+    useToast();
 
     const [pageData, setPageData] = useState<Transaction | null>(null);
     const [pageIsLoading, setPageIsLoading] = useState(true);
