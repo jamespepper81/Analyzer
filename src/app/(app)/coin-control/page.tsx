@@ -154,7 +154,7 @@ const CustomTreemapContent = (props: any, selectedUtxos: Record<string, boolean>
 };
 
 export default function CoinControlPage() {
-    const { data, isLoading, error, activeXpub, fiatPrice, currency, recommendations } = useWallet();
+    const { data, isLoading, error, fiatPrice, currency, recommendations } = useWallet();
     const walletGuard = useWalletDataGuard();
     const { state: sidebarState } = useSidebar(); // Force responsive widgets to remount when the sidebar width changes
     const [selectedUtxos, setSelectedUtxos] = useState<Record<string, boolean>>({});
