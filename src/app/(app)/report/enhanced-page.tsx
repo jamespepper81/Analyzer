@@ -22,6 +22,7 @@ import { format, subMonths, startOfYear, endOfYear, getYear } from 'date-fns';
 import { Calendar as CalendarIcon, Info, TrendingUp, TrendingDown, Bitcoin as BitcoinIcon, AlertTriangle, CircleCheck, FileText, Download, Package, FileOutput, Pen } from 'lucide-react';
 
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { 
   exportFullTaxPackage,
   downloadFile,
@@ -53,7 +54,6 @@ import { Badge } from '@/components/ui/badge';
 import { TaxHelpDialog } from '@/components/tax-help-dialog';
 import { TransactionCategoryDialog } from '@/components/transaction-category-dialog';
 import { UTXOLotTracking } from '@/components/utxo-lot-tracking';
-import { generateTaxReportPDF, generateForm8949PDF, downloadPDF } from '@/lib/pdf-export';
 import { useToast } from '@/hooks/use-toast';
 
 const ACCOUNTING_METHODS: { value: AccountingMethod; label: string; description: string }[] = [
@@ -91,8 +91,8 @@ const StatCard = ({ title, value, subtitle, tooltip, variant = 'default' }: {
           <div className={cn(
             "font-bold tracking-tighter text-2xl transition-colors",
             variant === 'default' && "text-foreground",
-            variant === 'success' && "text-emerald-500",
-            variant === 'danger' && "text-rose-500"
+            variant === 'success' && "text-success",
+            variant === 'danger' && "text-chart-negative"
           )}>
             {value}
           </div>
@@ -129,9 +129,9 @@ const isValidPortfolioData = (data: unknown): data is PortfolioHistoryPoint => {
 const IconContainer = ({ children, variant = 'primary' }: { children: React.ReactNode; variant?: 'primary' | 'emerald' | 'rose' | 'blue' }) => {
   const variantClasses = {
     primary: 'bg-primary/10',
-    emerald: 'bg-emerald-500/10',
-    rose: 'bg-rose-500/10',
-    blue: 'bg-blue-500/10'
+    emerald: 'bg-success/10',
+    rose: 'bg-chart-negative/10',
+    blue: 'bg-info/10'
   };
   
   return (
@@ -163,7 +163,7 @@ const CustomPortfolioTooltip = ({
       <p className="font-medium mb-1">{format(new Date(data.date), 'dd MMM yyyy')}</p>
       <p>Worth: <span className="font-bold">{formatCurrencyFull(data.totalValue)}</span></p>
       <p>Cost basis: <span className="font-bold">{formatCurrencyFull(data.costBasis)}</span></p>
-      <p>Unrealized: <span className={cn("font-bold", unrealizedGains >= 0 ? "text-emerald-500" : "text-rose-500")}>{formatCurrencyFull(unrealizedGains)} ({unrealizedPercent.toFixed(1)}%)</span></p>
+      <p>Unrealized: <span className={cn("font-bold", unrealizedGains >= 0 ? "text-success" : "text-chart-negative")}>{formatCurrencyFull(unrealizedGains)} ({unrealizedPercent.toFixed(1)}%)</span></p>
     </div>
   );
 };
@@ -203,15 +203,9 @@ export default function EnhancedReportPage() {
     return Array.from(years).sort((a, b) => b - a);
   }, [walletData]);
 
-  const formatCurrency = useCallback((value: number | undefined) => {
-    if (value === undefined) return `${currencySymbol}0.00`;
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(value);
-  }, [currency, currencySymbol]);
+  const formatCurrency = useCallback((value: number | undefined) => formatCurrencyValue(value, currency, { compact: true }), [currency]);
 
-  const formatCurrencyFull = useCallback((value: number | undefined) => {
-    if (value === undefined) return `${currencySymbol}0.00`;
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
-  }, [currency, currencySymbol]);
+  const formatCurrencyFull = useCallback((value: number | undefined) => formatCurrencyValue(value, currency), [currency]);
 
   const generateReport = useCallback(async () => {
     if (!walletData || !date?.from || !date?.to) {
@@ -290,17 +284,21 @@ export default function EnhancedReportPage() {
     // For now, we just store it in state
   };
 
-  const handleGeneratePDF = () => {
+  // jspdf is heavy, so the PDF module is loaded on demand when a user
+  // actually exports rather than being bundled with the page
+  const handleGeneratePDF = async () => {
     if (!reportData) return;
-    
+
+    const { generateTaxReportPDF, downloadPDF } = await import('@/lib/pdf-export');
     const pdf = generateTaxReportPDF(reportData, currency, currencySymbol);
     const timestamp = format(new Date(), 'yyyy-MM-dd');
     downloadPDF(pdf, `bitcoin-tax-report-${timestamp}.pdf`);
   };
 
-  const handleGenerateForm8949PDF = () => {
+  const handleGenerateForm8949PDF = async () => {
     if (!reportData) return;
-    
+
+    const { generateForm8949PDF, downloadPDF } = await import('@/lib/pdf-export');
     const taxYear = getYear(new Date(reportData.summary.endDate));
     const pdf = generateForm8949PDF(reportData.disposals, currency, currencySymbol, taxYear);
     const timestamp = format(new Date(), 'yyyy-MM-dd');
@@ -491,10 +489,10 @@ export default function EnhancedReportPage() {
 
       {/* Calculation Methodology */}
       <Card className="shadow-sm border">
-        <CardHeader className="bg-emerald-500/5 border-b">
+        <CardHeader className="bg-success/5 border-b">
           <CardTitle className="flex items-center gap-2 text-lg">
             <IconContainer variant="emerald">
-              <CircleCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <CircleCheck className="h-4 w-4 text-success" />
             </IconContainer>
             Calculation Methodology
           </CardTitle>
@@ -622,7 +620,7 @@ export default function EnhancedReportPage() {
                   <TrendingUp className="h-4 w-4" />
                   Unrealized Gains
                 </p>
-                <p className={cn("text-2xl font-bold mt-2", summary.unrealizedGains >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                <p className={cn("text-2xl font-bold mt-2", summary.unrealizedGains >= 0 ? "text-success" : "text-chart-negative")}>
                   {formatCurrencyFull(summary.unrealizedGains)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">Not yet taxable</p>
@@ -634,7 +632,7 @@ export default function EnhancedReportPage() {
                   <TrendingDown className="h-4 w-4" />
                   Harvestable Losses
                 </p>
-                <p className="text-2xl font-bold text-blue-500 mt-2">
+                <p className="text-2xl font-bold text-info mt-2">
                   {formatCurrencyFull(-(summary.harvestableShortTermLosses + summary.harvestableLongTermLosses))}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">Available to offset gains</p>
@@ -643,7 +641,7 @@ export default function EnhancedReportPage() {
             <Card className="hover:shadow-md transition-shadow border-2">
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
-                  <BitcoinIcon className="h-4 w-4 text-amber-500" />
+                  <BitcoinIcon className="h-4 w-4 text-warning" />
                   Deductible Fees
                 </p>
                 <p className="text-2xl font-bold mt-2">
@@ -655,7 +653,7 @@ export default function EnhancedReportPage() {
             <Card className="hover:shadow-md transition-shadow border-2">
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
-                  <BitcoinIcon className="h-4 w-4 text-amber-500" />
+                  <BitcoinIcon className="h-4 w-4 text-warning" />
                   Cost Basis
                 </p>
                 <p className="text-2xl font-bold mt-2">
@@ -784,7 +782,7 @@ export default function EnhancedReportPage() {
                             <TableCell className="text-right font-mono text-sm">{disposal.amount.toFixed(8)}</TableCell>
                             <TableCell className="text-right font-medium">{formatCurrencyFull(disposal.proceeds)}</TableCell>
                             <TableCell className="text-right font-medium">{formatCurrencyFull(disposal.costBasis)}</TableCell>
-                            <TableCell className={cn("text-right font-bold", disposal.realizedGain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                            <TableCell className={cn("text-right font-bold", disposal.realizedGain >= 0 ? "text-success" : "text-chart-negative")}>
                               {formatCurrencyFull(disposal.realizedGain)}
                             </TableCell>
                             <TableCell>
@@ -814,10 +812,10 @@ export default function EnhancedReportPage() {
 
           {reportData.income.length > 0 && (
             <Card className="shadow-md border-2">
-              <CardHeader className="border-b bg-gradient-to-r from-blue-500/5 to-transparent">
+              <CardHeader className="border-b bg-gradient-to-r from-info/5 to-transparent">
                 <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-blue-500/10">
-                    <BitcoinIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 rounded-lg bg-info/10">
+                    <BitcoinIcon className="h-4 w-4 text-info" />
                   </div>
                   Income Events
                 </CardTitle>
@@ -910,7 +908,7 @@ export default function EnhancedReportPage() {
                           <TableCell className="text-right font-mono">{lot.remaining.toFixed(8)}</TableCell>
                           <TableCell className="text-right">{formatCurrencyFull(lot.costPerUnit * lot.remaining)}</TableCell>
                           <TableCell className="text-right">{formatCurrencyFull(lot.currentValue)}</TableCell>
-                          <TableCell className={cn("text-right font-bold", lot.unrealizedGain >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                          <TableCell className={cn("text-right font-bold", lot.unrealizedGain >= 0 ? "text-success" : "text-chart-negative")}>
                             {formatCurrencyFull(lot.unrealizedGain)}
                           </TableCell>
                           <TableCell>{lot.holdingPeriodDays} days</TableCell>
@@ -942,20 +940,20 @@ export default function EnhancedReportPage() {
 
         {/* Tax Optimization Tab */}
         <TabsContent value="optimization" className="space-y-6 mt-6">
-          <Alert className="border-blue-500/20 bg-gradient-to-r from-blue-500/10 to-cyan-500/5 shadow-sm">
-            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <AlertTitle className="text-blue-900 dark:text-blue-100">Tax Loss Harvesting</AlertTitle>
-            <AlertDescription className="text-blue-800 dark:text-blue-200">
+          <Alert className="border-info/20 bg-gradient-to-r from-info/10 to-cyan-500/5 shadow-sm">
+            <Info className="h-4 w-4 text-info" />
+            <AlertTitle className="text-info">Tax Loss Harvesting</AlertTitle>
+            <AlertDescription className="text-info">
               Review lots with unrealized losses that could be sold to offset capital gains. Be aware of wash sale rules 
               in your jurisdiction before repurchasing the same asset.
             </AlertDescription>
           </Alert>
 
           <Card className="shadow-md border-2">
-            <CardHeader className="border-b bg-gradient-to-r from-rose-500/5 to-transparent">
+            <CardHeader className="border-b bg-gradient-to-r from-chart-negative/5 to-transparent">
               <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-rose-500/10">
-                  <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                <div className="p-2 rounded-lg bg-chart-negative/10">
+                  <TrendingDown className="h-4 w-4 text-chart-negative" />
                 </div>
                 Harvestable Losses
               </CardTitle>
@@ -1002,7 +1000,7 @@ export default function EnhancedReportPage() {
                               </TableCell>
                               <TableCell className="text-right font-mono">{lot.remaining.toFixed(8)}</TableCell>
                               <TableCell className="text-right">{formatCurrencyFull(lot.currentValue)}</TableCell>
-                              <TableCell className="text-right font-bold text-rose-500">
+                              <TableCell className="text-right font-bold text-chart-negative">
                                 {formatCurrencyFull(lot.unrealizedGain)}
                               </TableCell>
                               <TableCell>
@@ -1010,7 +1008,7 @@ export default function EnhancedReportPage() {
                                   {isLongTerm ? 'Long' : 'Short'}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-right text-blue-500 font-medium">
+                              <TableCell className="text-right text-info font-medium">
                                 ~{formatCurrencyFull(potentialBenefit)}
                               </TableCell>
                             </TableRow>
@@ -1024,10 +1022,10 @@ export default function EnhancedReportPage() {
           </Card>
 
           <Card className="shadow-md border-2">
-            <CardHeader className="border-b bg-gradient-to-r from-emerald-500/5 to-transparent">
+            <CardHeader className="border-b bg-gradient-to-r from-success/5 to-transparent">
               <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-emerald-500/10">
-                  <CircleCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="p-2 rounded-lg bg-success/10">
+                  <CircleCheck className="h-4 w-4 text-success" />
                 </div>
                 Optimization Strategies
               </CardTitle>
@@ -1038,10 +1036,10 @@ export default function EnhancedReportPage() {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 {summary.harvestableShortTermLosses > 0 && (
-                  <Alert className="border-rose-500/20 bg-rose-500/5 shadow-sm">
-                    <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                    <AlertTitle className="text-rose-900 dark:text-rose-100">Short-Term Loss Harvesting Opportunity</AlertTitle>
-                    <AlertDescription className="text-rose-800 dark:text-rose-200">
+                  <Alert className="border-chart-negative/20 bg-chart-negative/5 shadow-sm">
+                    <TrendingDown className="h-4 w-4 text-chart-negative" />
+                    <AlertTitle className="text-chart-negative">Short-Term Loss Harvesting Opportunity</AlertTitle>
+                    <AlertDescription className="text-chart-negative">
                       You have <span className="font-bold">{formatCurrencyFull(-summary.harvestableShortTermLosses)}</span> in short-term losses available.
                       These can offset short-term gains or up to $3,000 of ordinary income annually (US rules).
                     </AlertDescription>
@@ -1049,10 +1047,10 @@ export default function EnhancedReportPage() {
                 )}
                 
                 {summary.harvestableLongTermLosses > 0 && (
-                  <Alert className="border-rose-500/20 bg-rose-500/5 shadow-sm">
-                    <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                    <AlertTitle className="text-rose-900 dark:text-rose-100">Long-Term Loss Harvesting Opportunity</AlertTitle>
-                    <AlertDescription className="text-rose-800 dark:text-rose-200">
+                  <Alert className="border-chart-negative/20 bg-chart-negative/5 shadow-sm">
+                    <TrendingDown className="h-4 w-4 text-chart-negative" />
+                    <AlertTitle className="text-chart-negative">Long-Term Loss Harvesting Opportunity</AlertTitle>
+                    <AlertDescription className="text-chart-negative">
                       You have <span className="font-bold">{formatCurrencyFull(-summary.harvestableLongTermLosses)}</span> in long-term losses available.
                       Consider selling these to offset long-term gains.
                     </AlertDescription>
@@ -1064,10 +1062,10 @@ export default function EnhancedReportPage() {
                   lot.holdingPeriodDays < reportData.jurisdictionRules.longTermHoldingPeriodDays &&
                   lot.unrealizedGain > 0
                 ) && (
-                  <Alert className="border-emerald-500/20 bg-emerald-500/5 shadow-sm">
-                    <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <AlertTitle className="text-emerald-900 dark:text-emerald-100">Approaching Long-Term Status</AlertTitle>
-                    <AlertDescription className="text-emerald-800 dark:text-emerald-200">
+                  <Alert className="border-success/20 bg-success/5 shadow-sm">
+                    <TrendingUp className="h-4 w-4 text-success" />
+                    <AlertTitle className="text-success">Approaching Long-Term Status</AlertTitle>
+                    <AlertDescription className="text-success">
                       Some of your lots will qualify for long-term capital gains treatment within 30 days.
                       Consider waiting to sell these to benefit from lower tax rates.
                     </AlertDescription>

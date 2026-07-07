@@ -15,7 +15,7 @@ describe('Address Discovery Optimization', () => {
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
         // Verify the optimization constants are present
-        expect(content).toContain('PARALLEL_BATCH_SIZE');
+        expect(content).toContain('ADDRESS_BUNDLE_CHUNK_SIZE');
         expect(content).toContain('GAP_LIMIT');
         expect(content).toContain('INITIAL_CHECK_LIMIT');
         expect(content).toContain('ADDRESS_DISCOVERY_CACHE_TTL_MS');
@@ -94,22 +94,19 @@ describe('Address Discovery Optimization', () => {
     it('Parallel type detection is implemented', () => {
         const content = fs.readFileSync(blockchainPath, 'utf-8');
 
-        // Verify the parallel type detection pattern
-        expect(content).toContain('typeDetectionResults');
-        expect(content).toContain('typesToCheck.map(async (type)');
-        expect(content).toContain('Promise.allSettled');
+        // Type detection probes every candidate type in one batched
+        // server call (Server Actions execute serially per client)
+        expect(content).toContain('typesToCheck.map((type)');
+        expect(content).toContain('getAddressStatsBatch(flatAddresses)');
         expect(content).toContain('activeTypes.push');
     });
     
     it('Parallel address discovery is implemented', () => {
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
-        // Verify chunked parallel processing
-        expect(content).toContain('chunkSize');
-        expect(content).toContain('chunkStart');
-        expect(content).toContain('chunkEnd');
-        expect(content).toContain('chunkAddresses');
-        expect(content).toContain('chunkResults');
+        // The whole gap window resolves in one batched server round trip;
+        // the server fans out to the provider in parallel
+        expect(content).toContain('await getAddressStatsBatch(batch)');
         
         // Should use Promise.allSettled for resilience
         expect(content).toContain('Promise.allSettled');
@@ -118,8 +115,8 @@ describe('Address Discovery Optimization', () => {
     it('Uses lightweight address stats endpoint for discovery', () => {
         const content = fs.readFileSync(blockchainPath, 'utf-8');
         
-        // Should use /address stats endpoint instead of /txs
-        expect(content).toContain('/address/${addr}');
+        // Should use batched /address stats lookups instead of /txs
+        expect(content).toContain('getAddressStatsBatch');
         
         // Should combine chain + mempool transaction counts
         expect(content).toContain('chain_stats');

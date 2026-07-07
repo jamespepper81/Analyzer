@@ -133,8 +133,8 @@ export function TransactionCategoryDialog({
             </Select>
           </div>
 
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm">
-            <p className="text-amber-700 dark:text-amber-400">
+          <div className="rounded-lg border border-warning/20 bg-warning/10 p-3 text-sm">
+            <p className="text-warning">
               <strong>Note:</strong> Changing the category affects how this transaction is reported for tax purposes.
               Make sure the new category accurately reflects the nature of the transaction.
             </p>

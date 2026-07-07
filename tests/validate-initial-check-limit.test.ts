@@ -60,19 +60,21 @@ describe('INITIAL_CHECK_LIMIT Configuration Validation', () => {
         expect(blockchainContent).toContain('checking other types');
     });
 
-    it('Uses lightweight address stats endpoint', () => {
-        // Verify using /address/${addr} instead of /address/${addr}/txs
-        expect(blockchainContent).toContain('/address/${addr}');
+    it('Uses lightweight address stats (batched server action)', () => {
+        // Discovery checks activity via batched /address stats lookups
+        expect(blockchainContent).toContain('getAddressStatsBatch');
         expect(blockchainContent).toContain('chain_stats');
         expect(blockchainContent).toContain('mempool_stats');
         expect(blockchainContent).toContain('tx_count');
     });
 
-    it('Parallel batch processing is implemented', () => {
-        // Verify parallel processing patterns
-        expect(blockchainContent).toContain('PARALLEL_BATCH_SIZE');
-        expect(blockchainContent).toContain('Promise.allSettled');
-        expect(blockchainContent).toContain('chunkSize');
+    it('Batched server-side fan-out is implemented', () => {
+        // Server Actions run serially per client, so the gap window and the
+        // per-address data phase must go through batch actions (one round
+        // trip per window/chunk) rather than per-address esploraGet calls.
+        expect(blockchainContent).toContain('getAddressStatsBatch');
+        expect(blockchainContent).toContain('getAddressBundleBatch');
+        expect(blockchainContent).toContain('ADDRESS_BUNDLE_CHUNK_SIZE');
     });
 
     it('Address discovery cache is integrated', () => {
@@ -99,16 +101,16 @@ describe('Performance Optimization Validation', () => {
         expect(match?.[1]).toBe('20');
     });
 
-    it('PARALLEL_BATCH_SIZE matches the gap window so a full window resolves in one round-trip (20)', () => {
-        const match = blockchainContent.match(/const\s+PARALLEL_BATCH_SIZE\s*=\s*(\d+)/);
-        expect(match).toBeTruthy();
-        expect(match?.[1]).toBe('20');
+    it('Gap window resolves in a single batched round trip', () => {
+        // The whole GAP_LIMIT window is checked with one getAddressStatsBatch
+        // call (the batch action allows up to 40 addresses per call).
+        expect(blockchainContent).toContain('await getAddressStatsBatch(batch)');
     });
 
     it('All optimization constants are defined', () => {
         expect(blockchainContent).toContain('GAP_LIMIT');
         expect(blockchainContent).toContain('INITIAL_CHECK_LIMIT');
-        expect(blockchainContent).toContain('PARALLEL_BATCH_SIZE');
+        expect(blockchainContent).toContain('ADDRESS_BUNDLE_CHUNK_SIZE');
         expect(blockchainContent).toContain('ADDRESS_DISCOVERY_CACHE_TTL_MS');
     });
 

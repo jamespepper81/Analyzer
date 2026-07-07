@@ -21,8 +21,10 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bitcoin, CircleAlert, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ArrowLeft, Bitcoin, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 import type { Transaction, AddressInfo } from '@/lib/types';
@@ -32,12 +34,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
   const isReceived = tx.type === 'Received';
   const fiatAmount = Math.abs(tx.btc * fiatPrice);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   return (
     <TableRow className="hover:bg-muted/50 transition-colors">
@@ -80,7 +77,7 @@ const TransactionRow = React.memo(({ tx, fiatPrice, currency }: { tx: Transactio
           className={cn(
             'text-sm',
             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
-            tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
+            tx.status === 'Pending' && 'border-warning/40 text-warning'
           )}
         >
           {tx.status}
@@ -152,29 +149,25 @@ export default function AddressDetailsPage() {
     loadData();
   }, [address, loadData]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   if (isWalletLoading || pageIsLoading) return <FullPageLoader />;
   if (walletError && !pageData) return <ErrorDisplay message={walletError} />;
   
   if (pageError) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-            <CircleAlert className="h-12 w-12 text-destructive" />
-            <h1 className="text-2xl font-bold">Address Not Found</h1>
-            <p className="text-muted-foreground">{pageError}</p>
-            <Button asChild onClick={() => router.back()}>
+        <EmptyState
+          title="Address Not Found"
+          message={pageError}
+          action={
+            <Button asChild>
               <Link href="/security">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Link>
             </Button>
-        </div>
+          }
+        />
       );
   }
 
@@ -209,7 +202,7 @@ export default function AddressDetailsPage() {
           </CardHeader>
           <CardContent>
               <Card className="border-2 shadow-sm">
-                  <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+                  <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent">
                       <CardTitle className="text-base font-medium">Address Balance</CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -225,7 +218,7 @@ export default function AddressDetailsPage() {
       </Card>
 
       <Card className="border-2 shadow-md">
-        <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+        <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
           <CardTitle className="flex items-center gap-2">
             <IconContainer variant="emerald">
               <ArrowLeftRight className="h-5 w-5" />

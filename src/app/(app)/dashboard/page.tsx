@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, CircleArrowUp, CircleArrowDown, ArrowUpRight, ArrowDownLeft, Activity, RefreshCw } from 'lucide-react';
+import { ArrowRight, Bitcoin, ShieldCheck, TrendingUp, TrendingDown, CircleArrowUp, CircleArrowDown, ArrowUpRight, ArrowDownLeft, Activity, RefreshCw, Lightbulb } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { ErrorDisplay } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -128,12 +129,7 @@ export default function DashboardPage() {
 
   const recentTransactions = data.transactions.slice(0, 3);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
@@ -172,9 +168,9 @@ export default function DashboardPage() {
                 </Link>
               </Button>
             </div>
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 max-w-lg">
-              <p className="text-xs text-blue-900 dark:text-blue-100 text-left">
-                <strong className="block mb-1">💡 What to do next:</strong>
+            <div className="mt-6 p-4 bg-info/10 rounded-lg border border-info/30 max-w-lg">
+              <p className="text-xs text-foreground/80 text-left">
+                <strong className="mb-1 flex items-center gap-1.5 text-info"><Lightbulb className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> What to do next:</strong>
                 • Generate a receiving address from your wallet using this XPUB<br />
                 • Send Bitcoin to that address<br />
                 • Return here to see your balance and transaction history
@@ -217,7 +213,7 @@ export default function DashboardPage() {
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Card className="cursor-help border-2 shadow-sm hover:shadow-md transition-all duration-200">
-                      <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
+                      <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-success/5 via-transparent to-transparent">
                         <CardTitle className="text-base font-medium">Security Score</CardTitle>
                         <IconContainer variant="emerald">
                           <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -235,24 +231,24 @@ export default function DashboardPage() {
             </Tooltip>
         </TooltipProvider>
         <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-info/5 via-transparent to-transparent">
             <CardTitle className="text-base font-medium">Performance (30d)</CardTitle>
             <IconContainer variant={data.performance.change30d >= 0 ? 'emerald' : 'rose'}>
               {data.performance.change30d >= 0 ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />}
             </IconContainer>
           </CardHeader>
           <CardContent>
-            <div className={cn("text-2xl sm:text-3xl font-bold tracking-tighter", data.performance.change30d >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+            <div className={cn("text-2xl sm:text-3xl font-bold tracking-tighter", data.performance.change30d >= 0 ? 'text-success' : 'text-chart-negative')}>
               {data.performance.change30d >= 0 ? '+' : ''}{isFinite(data.performance.change30d) ? data.performance.change30d.toFixed(2) : '0.00'}%
             </div>
              <div className="flex justify-between text-xs text-muted-foreground mt-2 font-normal">
-                <span>24h: <span className={cn("font-semibold", data.performance.change24h >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{isFinite(data.performance.change24h) ? data.performance.change24h.toFixed(2) : '0.00'}%</span></span>
-                <span>7d: <span className={cn("font-semibold", data.performance.change7d >= 0 ? 'text-emerald-500' : 'text-rose-500')}>{isFinite(data.performance.change7d) ? data.performance.change7d.toFixed(2) : '0.00'}%</span></span>
+                <span>24h: <span className={cn("font-semibold", data.performance.change24h >= 0 ? 'text-success' : 'text-chart-negative')}>{isFinite(data.performance.change24h) ? data.performance.change24h.toFixed(2) : '0.00'}%</span></span>
+                <span>7d: <span className={cn("font-semibold", data.performance.change7d >= 0 ? 'text-success' : 'text-chart-negative')}>{isFinite(data.performance.change7d) ? data.performance.change7d.toFixed(2) : '0.00'}%</span></span>
             </div>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-br from-chart-purple/5 via-transparent to-transparent">
               <CardTitle className="text-base font-medium">Activity (30d)</CardTitle>
               <IconContainer variant="purple">
                 <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -260,14 +256,14 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2 sm:space-y-3 pt-1">
               <div className="flex items-center gap-2 sm:gap-3">
-                  <CircleArrowUp className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500 shrink-0" />
+                  <CircleArrowUp className="h-5 w-5 sm:h-6 sm:w-6 text-success shrink-0" />
                   <div>
                       <p className="text-xs text-muted-foreground font-normal">Inflow</p>
                       <p className="font-bold text-sm">{data.inflowOutflow.inflowBTC.toFixed(6)} BTC</p>
                   </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                  <CircleArrowDown className="h-5 w-5 sm:h-6 sm:w-6 text-rose-500 shrink-0" />
+                  <CircleArrowDown className="h-5 w-5 sm:h-6 sm:w-6 text-chart-negative shrink-0" />
                   <div>
                       <p className="text-xs text-muted-foreground font-normal">Outflow</p>
                       <p className="font-bold text-sm">{Math.abs(data.inflowOutflow.outflowBTC).toFixed(6)} BTC</p>
@@ -364,7 +360,7 @@ export default function DashboardPage() {
                         className={cn(
                             'text-xs sm:text-sm',
                             tx.status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
-                            tx.status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
+                            tx.status === 'Pending' && 'border-warning/40 text-warning'
                         )}
                         >
                         {tx.status}

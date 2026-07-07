@@ -237,7 +237,7 @@ export default function ConnectWalletPage() {
       icon = <SearchX className="h-12 w-12 text-primary" />;
       title = "No Wallets Found";
     } else if (isTimeoutError) {
-      icon = <AlertTriangle className="h-12 w-12 text-amber-500" />;
+      icon = <AlertTriangle className="h-12 w-12 text-warning" />;
       title = "Connection Timeout";
     } else {
       icon = <AlertTriangle className="h-12 w-12 text-destructive" />;
@@ -270,7 +270,7 @@ export default function ConnectWalletPage() {
                 {error}
               </p>
               {isTimeoutError && (
-                <div className="mt-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-xs text-amber-900 dark:text-amber-100 text-left">
+                <div className="mt-4 rounded-lg bg-warning/15 border border-warning/30 p-3 text-xs text-foreground/80 text-left">
                   <p className="font-semibold mb-2">Tips to resolve this:</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>Check your internet connection is stable</li>
@@ -384,6 +384,7 @@ export default function ConnectWalletPage() {
                       onPointerDownOutside={(e) => e.preventDefault()}
                       onEscapeKeyDown={(e) => e.preventDefault()}
                     >
+                      <DialogTitle className="sr-only">Connecting wallet</DialogTitle>
                       <WalletConnectionProgress type="xpub" isOpen={isSubmitting} />
                     </DialogContent>
                   </Dialog>
@@ -456,6 +457,7 @@ export default function ConnectWalletPage() {
                       onPointerDownOutside={(e) => e.preventDefault()}
                       onEscapeKeyDown={(e) => e.preventDefault()}
                     >
+                      <DialogTitle className="sr-only">Connecting via Nostr</DialogTitle>
                       <WalletConnectionProgress type="nostr" isOpen={isNostrSubmitting && !isNostrLoginOpen} />
                     </DialogContent>
                   </Dialog>

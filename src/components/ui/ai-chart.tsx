@@ -6,16 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useMemo, useId } from 'react';
 
 // Pre-defined colors for pie chart slices to ensure visual consistency.
+// All theme-driven so charts stay coherent across light/dark mode.
 const COLORS = [
-  'hsl(var(--chart-1, var(--primary)))',
-  'hsl(var(--chart-2, 191 97% 50%))',
-  'hsl(var(--chart-3, 48 96% 53%))',
-  'hsl(var(--chart-4, 280 77% 60%))',
-  'hsl(var(--chart-5, 140 71% 45%))',
-  '#7c3aed',
-  '#22c55e',
-  '#0ea5e9',
-  '#f59e0b',
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+  'hsl(var(--chart-purple))',
+  'hsl(var(--success))',
+  'hsl(var(--info))',
+  'hsl(var(--warning))',
 ];
 
 const GRID_COLOR = 'hsl(var(--border))';
@@ -33,7 +34,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   if (percent < 0.05) return null;
 
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="text-[11px] font-semibold drop-shadow-sm">
+    <text x={x} y={y} fill="hsl(var(--primary-foreground))" textAnchor="middle" dominantBaseline="central" className="text-[11px] font-semibold drop-shadow-sm">
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
@@ -352,8 +353,8 @@ export function AiChart({ chart }: { chart: any }) {
 
   return (
     <Card className="relative overflow-hidden border-border/80 bg-gradient-to-br from-background/80 via-background/70 to-muted/60 shadow-xl shadow-black/10 backdrop-blur supports-[backdrop-filter]:backdrop-blur-xl">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(124,58,237,0.08),transparent_30%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.07),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,hsl(var(--chart-purple)/0.08),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,hsl(var(--info)/0.07),transparent_30%)]" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
 
       {title && (

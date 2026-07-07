@@ -4,7 +4,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from 'react';
 import { getPublicKey, nip19, nip04, finalizeEvent, SimplePool } from 'nostr-tools';
 import type { Event as NostrEvent } from 'nostr-tools';
-import { getWalletData as fetchWalletData, getWalletDataProgressive, type DiscoveryProgress, type PartialWalletData } from '@/lib/blockchain';
+// Type-only import: the blockchain module (and the bitcoinjs/bip32/secp256k1
+// crypto stack it pulls in) is loaded on demand inside getWalletData so it
+// stays out of the shared client bundle. Derivation must stay client-side —
+// xpubs never leave the browser.
+import type { DiscoveryProgress, PartialWalletData } from '@/lib/blockchain';
 import type { WalletData, Message, SecurityRecommendation, NostrProfile, Currency } from '@/lib/types';
 import { getProactiveInsight } from '@/ai/flows/proactive-insights';
 import { getProactiveSuggestions } from '@/ai/flows/proactive-suggestions';
@@ -13,6 +17,7 @@ import { useAnalytics } from '@/hooks/use-analytics';
 import { useChunkRetry } from '@/hooks/use-chunk-retry';
 import { useToast } from '@/hooks/use-toast';
 import { resetChunkRetry } from '@/lib/chunk-retry-service';
+import { writeWalletCache, resetWalletCacheTracking } from '@/lib/wallet-cache';
 import { logger } from '@/lib/logger';
 import { ToastAction } from '@/components/ui/toast';
 import {
@@ -68,7 +73,33 @@ type WalletState = {
   publishNostrNote: (content: string) => Promise<{ success: boolean; error?: string }>;
 };
 
-const WalletContext = createContext<WalletState | undefined>(undefined);
+// The provider exposes four scoped contexts so consumers subscribe only to
+// the slices they read: chat message churn no longer re-renders data-only
+// pages, and action-only consumers never re-render at all (the actions value
+// is referentially stable). useWallet() merges all four for compatibility.
+type WalletDataState = Pick<WalletState,
+  'activeXpub' | 'xpubs' | 'data' | 'isLoading' | 'error' |
+  'discoveryProgress' | 'isDiscovering' | 'currency' | 'fiatPrice' |
+  'fiatBalance' | 'currencySymbol' | 'supportedCurrencies' | 'testXpub'>;
+
+type WalletActionsState = Pick<WalletState,
+  'setActiveXpub' | 'addXpub' | 'removeXpub' | 'refetch' | 'disconnect' |
+  'setCurrency' | 'refreshRecommendations' | 'refreshAiContent'>;
+
+type WalletAiState = Pick<WalletState,
+  'messages' | 'setMessages' | 'suggestions' | 'recommendations' |
+  'recommendationsError' | 'isLoadingAiContent' | 'isRecommendationsLoading' |
+  'aiContentError'>;
+
+type NostrState = Pick<WalletState,
+  'nostrNpub' | 'nostrProfile' | 'isNostrReady' | 'connectNostr' |
+  'loginWithNostr' | 'updateNostrProfile' | 'showSaveXpubsPrompt' |
+  'setShowSaveXpubsPrompt' | 'saveXpubsToNostr' | 'publishNostrNote'>;
+
+const WalletDataContext = createContext<WalletDataState | undefined>(undefined);
+const WalletActionsContext = createContext<WalletActionsState | undefined>(undefined);
+const WalletAiContext = createContext<WalletAiState | undefined>(undefined);
+const NostrContext = createContext<NostrState | undefined>(undefined);
 
 const defaultRelays = [
   'wss://relay.damus.io',
@@ -76,6 +107,23 @@ const defaultRelays = [
   'wss://nos.lol',
   'wss://relay.snort.social',
 ];
+
+// One shared relay pool, created lazily on first Nostr operation and reused
+// so repeated operations don't reopen four websockets each time. Closed only
+// on explicit Nostr disconnect.
+let nostrPool: SimplePool | null = null;
+const getNostrPool = (): SimplePool => {
+  if (!nostrPool) {
+    nostrPool = new SimplePool();
+  }
+  return nostrPool;
+};
+const closeNostrPool = () => {
+  if (nostrPool) {
+    nostrPool.close(defaultRelays);
+    nostrPool = null;
+  }
+};
 
 const XPUB_PREFIXES = new Set(['xpub', 'ypub', 'zpub', 'tpub', 'upub', 'vpub']);
 const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]+$/;
@@ -164,6 +212,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
   // This simply signals that we are on the client and can proceed with Nostr logic.
   useEffect(() => {
     setIsNostrReady(true);
+    return () => closeNostrPool();
   }, []);
 
   const setActiveXpubAndPersist = useCallback((newXpub: string | null) => {
@@ -203,6 +252,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
           } else {
             console.warn(`[WalletContext] Cache XPUB mismatch on switch, clearing`);
             localStorage.removeItem(`walletCache:${newXpub}`);
+            resetWalletCacheTracking(newXpub);
           }
         }
       } catch {
@@ -228,9 +278,8 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
   }, []); // activeXpub intentionally omitted to avoid circular updates
 
   const fetchNostrProfile = useCallback(async (pubkey: string): Promise<NostrProfile | null> => {
-    const pool = new SimplePool();
     try {
-        const event = await pool.get(defaultRelays, {
+        const event = await getNostrPool().get(defaultRelays, {
             authors: [pubkey],
             kinds: [0],
             limit: 1,
@@ -245,19 +294,16 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     } catch (e) {
       console.error("Failed to fetch Nostr profile from any relay:", e);
       return null;
-    } finally {
-        pool.close(defaultRelays);
     }
   }, []);
 
   const loadXpubsFromNostr = useCallback(async (nsec: string): Promise<string[]> => {
-    const pool = new SimplePool();
     try {
         const sk = nip19.decode(nsec).data;
         const pk = getPublicKey(sk as Uint8Array);
 
         // Fetch the latest kind 4 event from the pool of relays
-        const latestEvent = await pool.get(defaultRelays, {
+        const latestEvent = await getNostrPool().get(defaultRelays, {
             kinds: [4],
             authors: [pk],
             '#p': [pk],
@@ -270,29 +316,23 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
 
         const decryptedContent = await nip04.decrypt(sk as Uint8Array, pk, latestEvent.content);
         const remoteXpubs = JSON.parse(decryptedContent);
-        
+
         if (Array.isArray(remoteXpubs)) {
             return remoteXpubs.map(normalizeXpub).filter(Boolean);
         }
     } catch (e) {
       console.error("Failed to load or decrypt xpubs from Nostr:", e);
-    } finally {
-        pool.close(defaultRelays);
     }
     return [];
   }, []);
-  
+
   const publishToRelays = async (event: NostrEvent): Promise<boolean> => {
-    const pool = new SimplePool();
     try {
-        const pubPromise = pool.publish(defaultRelays, event);
-        await pubPromise;
+        await getNostrPool().publish(defaultRelays, event);
         return true;
     } catch(e) {
         console.error("Failed to publish to Nostr relays:", e);
         return false;
-    } finally {
-        pool.close(defaultRelays);
     }
   };
 
@@ -508,6 +548,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     setNostrNsec(null);
     setNostrNpub(null);
     setNostrProfile(null);
+    closeNostrPool();
     try {
       localStorage.removeItem('nostr_nsec');
       localStorage.removeItem('nostr_profile');
@@ -696,6 +737,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
+      resetWalletCacheTracking();
       
       console.log(`[WalletContext] Cleared ${keysToRemove.length} wallet cache(s) on disconnect`);
     } catch (e) {
@@ -713,6 +755,8 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
         setIsLoading(false);
         return;
     }
+
+    const { getWalletData: fetchWalletData, getWalletDataProgressive } = await import('@/lib/blockchain');
 
     // INSTANT CACHED DATA LOADING
     // Check cache FIRST and show immediately if available
@@ -738,6 +782,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
           // Cache mismatch - clear invalid cache
           console.warn(`[WalletContext] Cache XPUB mismatch, clearing stale cache`);
           localStorage.removeItem(`walletCache:${activeXpub}`);
+          resetWalletCacheTracking(activeXpub);
         }
       }
     } catch (e) {
@@ -814,18 +859,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
       // Always set the final data (progress callback may not be called for empty wallets)
       if (result.data) {
         setData(result.data);
-        try {
-          const cacheEntry = {
-            _cacheMetadata: {
-              xpub: activeXpub,
-              timestamp: Date.now(),
-            },
-            data: result.data,
-          };
-          localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(cacheEntry));
-        } catch (storageError) {
-          logger.warn('[WalletContext] Failed to cache wallet data on switch', storageError);
-        }
+        writeWalletCache(activeXpub, result.data);
       }
 
       // Mark discovery as complete
@@ -847,19 +881,7 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
       setError(response.error);
     } else if (response.data) {
       setData(response.data);
-      try {
-        // Store with metadata for validation to prevent showing wrong wallet's data
-        const cacheEntry = {
-          _cacheMetadata: {
-            xpub: activeXpub,
-            timestamp: Date.now(),
-          },
-          data: response.data,
-        };
-        localStorage.setItem(`walletCache:${activeXpub}`, JSON.stringify(cacheEntry));
-      } catch (storageError) {
-        logger.warn('[WalletContext] Failed to cache fresh wallet data', storageError);
-      }
+      writeWalletCache(activeXpub, response.data);
     }
     
     setIsLoading(false);
@@ -1150,59 +1172,116 @@ export const WalletProvider = ({ children, testXpub }: { children: ReactNode; te
     refreshAiContent();
   }, [data, isInitialAiContentLoaded, messages.length, refreshAiContent]);
 
-  // Derived currency values
-  const fiatPrice = data?.btcPrices?.[currency]?.last || 0;
-  
-  // Map currency codes to actual symbols
-  const getCurrencySymbol = (currencyCode: Currency): string => {
-    const symbols: Record<Currency, string> = {
+  // Each slice is memoized independently so consumers only re-render when
+  // the slice they subscribe to actually changes (e.g. streaming chat
+  // messages update the AI slice without touching data consumers).
+  const dataValue = useMemo<WalletDataState>(() => {
+    const CURRENCY_SYMBOLS: Record<Currency, string> = {
       USD: '$',
       EUR: '€',
       GBP: '£',
     };
-    return symbols[currencyCode] || '$';
-  };
-  
-  const currencySymbol = getCurrencySymbol(currency);
-  const fiatBalance = (data?.balanceBTC || 0) * fiatPrice;
+    const fiatPrice = data?.btcPrices?.[currency]?.last || 0;
 
-
-  return (
-    <WalletContext.Provider value={{
+    return {
       activeXpub,
       xpubs,
       data,
       isLoading,
-      isLoadingAiContent,
-      isRecommendationsLoading,
-      aiContentError,
       error,
-      messages,
-      setMessages,
-      suggestions,
-      recommendations,
-      recommendationsError,
+      discoveryProgress,
+      isDiscovering,
+      currency,
+      fiatPrice,
+      fiatBalance: (data?.balanceBTC || 0) * fiatPrice,
+      currencySymbol: CURRENCY_SYMBOLS[currency] || '$',
+      supportedCurrencies: SUPPORTED_CURRENCIES,
       testXpub: testXpubValue,
-      setActiveXpub: setActiveXpubAndPersist,
-      addXpub,
-      removeXpub,
-      refetch: getWalletData,
-      disconnect,
-      refreshRecommendations,
-      refreshAiContent,
-      currency, setCurrency, supportedCurrencies: SUPPORTED_CURRENCIES, fiatPrice, fiatBalance, currencySymbol,
-      discoveryProgress, isDiscovering,
-      nostrNpub, nostrProfile, isNostrReady, connectNostr, loginWithNostr, updateNostrProfile, showSaveXpubsPrompt, setShowSaveXpubsPrompt, saveXpubsToNostr, publishNostrNote
-      }}>
-      {children}
-    </WalletContext.Provider>
+    };
+  }, [activeXpub, xpubs, data, isLoading, error, discoveryProgress, isDiscovering, currency, testXpubValue]);
+
+  // Every member is useCallback-stable, so this value is referentially
+  // stable across data/AI/Nostr state churn — action-only consumers never
+  // re-render from provider state changes.
+  const actionsValue = useMemo<WalletActionsState>(() => ({
+    setActiveXpub: setActiveXpubAndPersist,
+    addXpub,
+    removeXpub,
+    refetch: getWalletData,
+    disconnect,
+    setCurrency,
+    refreshRecommendations,
+    refreshAiContent,
+  }), [setActiveXpubAndPersist, addXpub, removeXpub, getWalletData, disconnect, setCurrency, refreshRecommendations, refreshAiContent]);
+
+  const aiValue = useMemo<WalletAiState>(() => ({
+    messages,
+    setMessages,
+    suggestions,
+    recommendations,
+    recommendationsError,
+    isLoadingAiContent,
+    isRecommendationsLoading,
+    aiContentError,
+  }), [messages, suggestions, recommendations, recommendationsError, isLoadingAiContent, isRecommendationsLoading, aiContentError]);
+
+  const nostrValue = useMemo<NostrState>(() => ({
+    nostrNpub,
+    nostrProfile,
+    isNostrReady,
+    connectNostr,
+    loginWithNostr,
+    updateNostrProfile,
+    showSaveXpubsPrompt,
+    setShowSaveXpubsPrompt,
+    saveXpubsToNostr,
+    publishNostrNote,
+  }), [nostrNpub, nostrProfile, isNostrReady, connectNostr, loginWithNostr, updateNostrProfile, showSaveXpubsPrompt, saveXpubsToNostr, publishNostrNote]);
+
+  return (
+    <WalletDataContext.Provider value={dataValue}>
+      <WalletActionsContext.Provider value={actionsValue}>
+        <WalletAiContext.Provider value={aiValue}>
+          <NostrContext.Provider value={nostrValue}>
+            {children}
+          </NostrContext.Provider>
+        </WalletAiContext.Provider>
+      </WalletActionsContext.Provider>
+    </WalletDataContext.Provider>
   );
 };
 
-export const useWallet = () => {
-  const context = useContext(WalletContext);
-  if (context === undefined) {
-    throw new Error('useWallet must be used within a WalletProvider');
+function useRequiredContext<T>(context: React.Context<T | undefined>, name: string): T {
+  const value = useContext(context);
+  if (value === undefined) {
+    throw new Error(`${name} must be used within a WalletProvider`);
   }
-  return context;
+  return value;
+}
+
+/** Wallet data slice: balances, transactions, discovery, currency. */
+export const useWalletData = () => useRequiredContext(WalletDataContext, 'useWalletData');
+
+/** Stable wallet actions; never re-renders consumers on state churn. */
+export const useWalletActions = () => useRequiredContext(WalletActionsContext, 'useWalletActions');
+
+/** AI slice: chat messages, suggestions, recommendations. */
+export const useWalletAi = () => useRequiredContext(WalletAiContext, 'useWalletAi');
+
+/** Nostr account slice. */
+export const useNostr = () => useRequiredContext(NostrContext, 'useNostr');
+
+/**
+ * Back-compat merged hook. Re-renders on any slice change (same behavior as
+ * before the split) — prefer the scoped hooks above in new/high-churn code.
+ */
+export const useWallet = (): WalletState => {
+  const dataSlice = useRequiredContext(WalletDataContext, 'useWallet');
+  const actions = useRequiredContext(WalletActionsContext, 'useWallet');
+  const ai = useRequiredContext(WalletAiContext, 'useWallet');
+  const nostr = useRequiredContext(NostrContext, 'useWallet');
+  return useMemo(
+    () => ({ ...dataSlice, ...actions, ...ai, ...nostr }),
+    [dataSlice, actions, ai, nostr]
+  );
 };

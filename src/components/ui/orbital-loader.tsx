@@ -141,7 +141,7 @@ export function OrbitalLoader({
             nodeSizes[size],
             'rounded-full',
             'bg-gradient-to-br from-primary to-primary/70',
-            'shadow-[0_0_12px_rgba(247,147,26,0.5)]',
+            'shadow-[0_0_12px_hsl(var(--brand)/0.5)]',
             'animate-[pulse_2s_ease-in-out_infinite]',
             isComplete && 'animate-none opacity-0 transition-opacity duration-500'
           )}
@@ -155,7 +155,7 @@ export function OrbitalLoader({
             nodeSizes[size],
             'rounded-full',
             'bg-gradient-to-br from-primary to-primary/70',
-            'shadow-[0_0_12px_rgba(247,147,26,0.5)]',
+            'shadow-[0_0_12px_hsl(var(--brand)/0.5)]',
             'animate-[pulse_2s_ease-in-out_infinite]',
             isComplete && 'animate-none opacity-0 transition-opacity duration-500'
           )}
@@ -169,7 +169,7 @@ export function OrbitalLoader({
             nodeSizes[size],
             'rounded-full',
             'bg-gradient-to-br from-primary to-primary/70',
-            'shadow-[0_0_12px_rgba(247,147,26,0.5)]',
+            'shadow-[0_0_12px_hsl(var(--brand)/0.5)]',
             'animate-[pulse_2s_ease-in-out_infinite]',
             isComplete && 'animate-none opacity-0 transition-opacity duration-500'
           )}
@@ -183,7 +183,7 @@ export function OrbitalLoader({
             nodeSizes[size],
             'rounded-full',
             'bg-gradient-to-br from-primary to-primary/70',
-            'shadow-[0_0_12px_rgba(247,147,26,0.5)]',
+            'shadow-[0_0_12px_hsl(var(--brand)/0.5)]',
             'animate-[pulse_2s_ease-in-out_infinite]',
             isComplete && 'animate-none opacity-0 transition-opacity duration-500'
           )}
@@ -204,8 +204,8 @@ export function OrbitalLoader({
             'absolute top-0 right-0 translate-x-1/4 -translate-y-1/4',
             size === 'sm' ? 'w-1.5 h-1.5' : size === 'md' ? 'w-2 h-2' : 'w-2.5 h-2.5',
             'rounded-full',
-            'bg-gradient-to-br from-amber-400 to-primary',
-            'shadow-[0_0_8px_rgba(247,147,26,0.4)]',
+            'bg-gradient-to-br from-warning to-primary',
+            'shadow-[0_0_8px_hsl(var(--brand)/0.4)]',
             'animate-[pulse_1.5s_ease-in-out_infinite]',
             isComplete && 'animate-none opacity-0 transition-opacity duration-500'
           )}
@@ -216,8 +216,8 @@ export function OrbitalLoader({
             'absolute bottom-0 left-0 -translate-x-1/4 translate-y-1/4',
             size === 'sm' ? 'w-1.5 h-1.5' : size === 'md' ? 'w-2 h-2' : 'w-2.5 h-2.5',
             'rounded-full',
-            'bg-gradient-to-br from-amber-400 to-primary',
-            'shadow-[0_0_8px_rgba(247,147,26,0.4)]',
+            'bg-gradient-to-br from-warning to-primary',
+            'shadow-[0_0_8px_hsl(var(--brand)/0.4)]',
             'animate-[pulse_1.5s_ease-in-out_infinite]',
             isComplete && 'animate-none opacity-0 transition-opacity duration-500'
           )}
@@ -232,8 +232,8 @@ export function OrbitalLoader({
           'bg-gradient-to-br from-primary/20 to-primary/5',
           'border border-primary/30',
           isComplete
-            ? 'scale-110 shadow-[0_0_20px_rgba(247,147,26,0.6)]'
-            : 'shadow-[0_0_12px_rgba(247,147,26,0.3)]',
+            ? 'scale-110 shadow-[0_0_20px_hsl(var(--brand)/0.6)]'
+            : 'shadow-[0_0_12px_hsl(var(--brand)/0.3)]',
           'transition-all duration-500'
         )}
       >
@@ -278,63 +278,6 @@ export function InlineLoader({ className }: { className?: string }) {
           className="w-2 h-2 rounded-full bg-primary animate-bounce"
           style={{ animationDelay: '0.3s' }}
         />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Skeleton card with shimmer effect for loading states.
- */
-export function SkeletonCard({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        'rounded-lg border bg-card p-4 space-y-3',
-        'relative overflow-hidden',
-        className
-      )}
-    >
-      {/* Shimmer overlay */}
-      <div
-        className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent"
-      />
-
-      {/* Content placeholders */}
-      <div className="flex items-center justify-between">
-        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-        <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-      </div>
-      <div className="h-8 w-32 rounded bg-muted animate-pulse" />
-      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-
-      <style jsx>{`
-        @keyframes shimmer {
-          100% {
-            transform: translateX(100%);
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-/**
- * Transaction row skeleton for loading states.
- */
-export function SkeletonTransactionRow() {
-  return (
-    <div className="flex items-center justify-between py-3 px-4 border-b last:border-0">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
-        <div className="space-y-2">
-          <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-          <div className="h-3 w-24 rounded bg-muted animate-pulse" />
-        </div>
-      </div>
-      <div className="text-right space-y-2">
-        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-        <div className="h-3 w-16 rounded bg-muted animate-pulse" />
       </div>
     </div>
   );

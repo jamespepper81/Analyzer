@@ -31,7 +31,7 @@ function FearGreedNeedle({ value }: { value: number }) {
     return (
         <div className="relative w-full h-12">
             <div className="absolute bottom-0 left-0 w-full h-12 rounded-t-full overflow-hidden">
-                 <div className="absolute w-full h-full bg-gradient-to-r from-red-500 via-yellow-400 to-green-500" />
+                 <div className="absolute w-full h-full bg-gradient-to-r from-destructive via-warning to-success" />
             </div>
             <div
                 className="absolute bottom-0 left-1/2 w-0.5 h-10 bg-card-foreground origin-bottom transition-transform duration-500"
@@ -52,7 +52,7 @@ function MarketStatItem({ label, value, subValue, change, tooltipText }: { label
                      <div className="flex items-baseline gap-1 sm:gap-1.5">
                         <p className="text-xs text-muted-foreground">{subValue}</p>
                         {change !== undefined && (
-                            <p className={cn("text-xs font-bold", change >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                            <p className={cn("text-xs font-bold", change >= 0 ? 'text-success' : 'text-chart-negative')}>
                                 {change >= 0 ? '▲' : '▼'}{Math.abs(change).toFixed(2)}%
                             </p>
                         )}
@@ -215,7 +215,7 @@ export default function MarketPage() {
         <TooltipProvider>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
                 <Card className="lg:col-span-4 border-2 shadow-md">
-                    <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
+                    <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <IconContainer variant="orange">
@@ -230,7 +230,7 @@ export default function MarketPage() {
                             </div>
                             <div className="text-left sm:text-right w-full sm:w-auto">
                                 <p className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter">{formatCurrency(marketData.price)}</p>
-                                <div className={cn("flex items-center sm:justify-end gap-1 text-sm sm:text-base font-bold", isPositiveChange ? 'text-emerald-500' : 'text-rose-500')}>
+                                <div className={cn("flex items-center sm:justify-end gap-1 text-sm sm:text-base font-bold", isPositiveChange ? 'text-success' : 'text-chart-negative')}>
                                     {isPositiveChange ? <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4" />}
                                     {formatCurrency(priceChange)} ({priceChangePercentage.toFixed(2)}%)
                                 </div>
@@ -269,7 +269,7 @@ export default function MarketPage() {
 
                 <Card className="lg:col-span-4 border-2 shadow-md">
                     <Tabs defaultValue="price">
-                        <CardHeader className="flex flex-col items-start justify-between gap-3 sm:gap-2 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                        <CardHeader className="flex flex-col items-start justify-between gap-3 sm:gap-2 bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                             <div className='w-full'>
                                 <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:inline-grid">
                                     <TabsTrigger value="price" className="text-xs sm:text-sm">Price Chart</TabsTrigger>
