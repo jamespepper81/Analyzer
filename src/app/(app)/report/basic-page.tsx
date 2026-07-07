@@ -144,7 +144,7 @@ const ValueCostBar = ({ marketValue, cost }: { marketValue: number, cost: number
 
 
 export default function BasicReportPage() {
-    const { data: walletData, isLoading: isWalletLoading, error: walletError, activeXpub: xpub, currency, currencySymbol } = useWallet();
+    const { data: walletData, isLoading: isWalletLoading, error: walletError, activeXpub: xpub, currency } = useWallet();
     const [reportData, setReportData] = useState<TaxReportData | null>(null);
     const [isReportLoading, setIsReportLoading] = useState(false);
     const [reportError, setReportError] = useState<string | null>(null);
