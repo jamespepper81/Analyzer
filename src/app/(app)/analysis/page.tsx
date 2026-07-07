@@ -66,7 +66,7 @@ const btcToSatsFormatter = (value: any) => {
 
 
 export default function AnalysisPage() {
-  const { data, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
+  const { data, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
   const walletGuard = useWalletDataGuard();
 
   const balanceChartData = useMemo(() => {
