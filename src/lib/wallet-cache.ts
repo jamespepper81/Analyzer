@@ -27,7 +27,26 @@ function fingerprint(data: WalletData): Fingerprint {
   return `${data.transactions.length}:${data.balanceBTC}:${lastTxId}`;
 }
 
+let unloadFlushHooked = false;
+
+// Idle-deferred writes would otherwise be lost if the tab is closed or
+// backgrounded before the idle callback runs — which would defeat the
+// instant cached-reconnect path. Flush synchronously on pagehide (covers
+// close / bfcache) and when the tab becomes hidden.
+function ensureUnloadFlush() {
+  if (unloadFlushHooked || typeof window === 'undefined') return;
+  unloadFlushHooked = true;
+  const flushNow = () => {
+    if (pending.size > 0) flushPendingWrites();
+  };
+  window.addEventListener('pagehide', flushNow);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushNow();
+  });
+}
+
 function scheduleFlush() {
+  ensureUnloadFlush();
   if (flushScheduled) return;
   flushScheduled = true;
   const run = () => {
