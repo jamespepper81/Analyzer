@@ -19,10 +19,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconContainer } from '@/components/ui/icon-container';
 import { ArrowLeft, CircleAlert, Copy, Box, Download, LoaderCircle } from 'lucide-react';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import type { BlockDetails, BlockTransaction } from '@/lib/types';
 import { getBlockDetails } from '@/lib/mempool';
 
@@ -98,27 +100,13 @@ export default function BlockDetailsPage() {
   };
 
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: 'Copied to clipboard',
-      description: text,
-    });
-  };
+  const handleCopy = useCopyToClipboard();
 
   if (pageIsLoading) return <FullPageLoader />;
   
   if (pageError) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-            <CircleAlert className="h-12 w-12 text-destructive" />
-            <h1 className="text-2xl font-bold">Block Not Found</h1>
-            <p className="text-muted-foreground">{pageError}</p>
-            <Button onClick={() => router.back()}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
-        </div>
+        <EmptyState title="Block Not Found" message={pageError} onBack={() => router.back()} />
       );
   }
 
@@ -158,7 +146,7 @@ export default function BlockDetailsPage() {
         </Card>
 
         <Card className="border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant="blue">
                         <CircleAlert className="h-5 w-5" />
@@ -184,7 +172,7 @@ export default function BlockDetailsPage() {
         </Card>
         
         <Card className="border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant="emerald">
                         <Download className="h-5 w-5" />

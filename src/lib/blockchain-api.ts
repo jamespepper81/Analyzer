@@ -221,6 +221,103 @@ export async function esploraGet(path: string, revalidate?: number): Promise<any
     throw lastError ?? new Error('Failed to fetch from any Esplora provider');
 }
 
+// ---------------------------------------------------------------------------
+// Batch actions
+//
+// Next.js executes Server Actions serially per client, so client-side
+// Promise.all over many esploraGet calls degrades to one round trip per
+// address (RTT × N). These batch actions accept a bounded list of addresses
+// and fan out to the provider ON THE SERVER, where fetches genuinely run in
+// parallel — collapsing a gap-scan round from 20 round trips to 1.
+// Same security posture as esploraGet: every address is individually
+// sanitized and only allowlisted provider paths are reachable.
+// ---------------------------------------------------------------------------
+
+const BATCH_STATS_MAX = 40;
+const BATCH_BUNDLE_MAX = 20;
+const BATCH_PROVIDER_CONCURRENCY = 10;
+
+async function mapWithConcurrency<T, R>(
+    items: T[],
+    limit: number,
+    fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+    const results: R[] = new Array(items.length);
+    let next = 0;
+    async function worker() {
+        while (next < items.length) {
+            const i = next++;
+            results[i] = await fn(items[i]);
+        }
+    }
+    await Promise.all(
+        Array.from({ length: Math.min(limit, items.length) }, () => worker())
+    );
+    return results;
+}
+
+/**
+ * Fetch esplora /address stats for up to 40 addresses in one action call.
+ * Returns results in input order; failed lookups are null.
+ */
+export async function getAddressStatsBatch(addresses: string[]): Promise<(any | null)[]> {
+    if (!Array.isArray(addresses) || addresses.length === 0) return [];
+    if (addresses.length > BATCH_STATS_MAX) {
+        throw new Error(`Too many addresses in one batch (max ${BATCH_STATS_MAX}).`);
+    }
+    // Validate everything up front so a single bad input rejects the call
+    // instead of silently partial-failing.
+    addresses.forEach(sanitizeAddress);
+
+    return mapWithConcurrency(addresses, BATCH_PROVIDER_CONCURRENCY, (address) =>
+        esploraGet(`/address/${address}`, 300).catch(() => null)
+    );
+}
+
+export type AddressBundle = { stats: any | null; txs: any[]; utxos: any[] };
+
+/**
+ * Fetch stats + transactions + UTXOs for up to 20 addresses in one action
+ * call. Results are in input order; a fully-failed address is null.
+ */
+export async function getAddressBundleBatch(addresses: string[]): Promise<(AddressBundle | null)[]> {
+    if (!Array.isArray(addresses) || addresses.length === 0) return [];
+    if (addresses.length > BATCH_BUNDLE_MAX) {
+        throw new Error(`Too many addresses in one batch (max ${BATCH_BUNDLE_MAX}).`);
+    }
+    addresses.forEach(sanitizeAddress);
+
+    return mapWithConcurrency(addresses, BATCH_PROVIDER_CONCURRENCY, async (address) => {
+        try {
+            const [stats, txs, initialUtxos] = await Promise.all([
+                esploraGet(`/address/${address}`, 300).catch(() => null),
+                esploraGet(`/address/${address}/txs`).catch(() => []),
+                esploraGet(`/address/${address}/utxo`).catch(() => []),
+            ]);
+
+            // If the address shows a positive balance but the UTXO call failed,
+            // retry once so we don't silently undercount UTXOs.
+            const balanceSats =
+                (stats?.chain_stats?.funded_txo_sum || 0) -
+                (stats?.chain_stats?.spent_txo_sum || 0);
+            const utxos =
+                Array.isArray(initialUtxos) && initialUtxos.length > 0
+                    ? initialUtxos
+                    : balanceSats > 0
+                        ? await esploraGet(`/address/${address}/utxo`).catch(() => [])
+                        : [];
+
+            return {
+                stats,
+                txs: Array.isArray(txs) ? txs : [],
+                utxos: Array.isArray(utxos) ? utxos : [],
+            };
+        } catch {
+            return null;
+        }
+    });
+}
+
 // Cache for historical prices to avoid redundant API calls for the same day.
 const priceCache = new Map<string, number>();
 

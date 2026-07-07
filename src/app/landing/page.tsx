@@ -185,7 +185,7 @@ export default function LandingPage() {
             </div>
             <div className="space-y-6">
               <Card className="border-2 shadow-md">
-                <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
+                <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
                   <CardTitle className="flex items-center gap-2">
                     <IconContainer variant="orange">
                       <Bitcoin className="h-5 w-5" />
@@ -201,7 +201,7 @@ export default function LandingPage() {
                 </CardContent>
               </Card>
               <Card className="border-2 shadow-md">
-                <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                   <CardTitle className="flex items-center gap-2">
                     <IconContainer variant="blue">
                       <Globe className="h-5 w-5" />

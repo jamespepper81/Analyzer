@@ -42,14 +42,21 @@
   --color-brand: hsl(var(--brand));
   --color-treemap: hsl(var(--treemap));
   --color-progress: hsl(var(--progress));
-  
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+
   /* Border radius - using Tailwind v4 @theme syntax */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  /* Font family */
-  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Font family (--font-inter is injected by next/font in the root layout) */
+  --font-body: var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-headline: var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Animations - using Tailwind v4 @theme syntax */
   --animate-accordion-down: accordion-down 0.2s ease-out;
@@ -85,22 +92,6 @@
   }
 }
 
-/* Warning alert text colors - explicit overrides for light mode visibility */
-[role="alert"].bg-orange-100 > h5,
-[role="alert"].bg-orange-100 > div {
-  color: #431407; /* orange-950 */
-}
-[role="alert"].bg-orange-100 > svg {
-  color: #c2410c; /* orange-700 */
-}
-.dark [role="alert"].dark\:bg-orange-500\/20 > h5,
-.dark [role="alert"].dark\:bg-orange-500\/20 > div {
-  color: #fff7ed; /* orange-50 */
-}
-.dark [role="alert"].dark\:bg-orange-500\/20 > svg {
-  color: #fb923c; /* orange-400 */
-}
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -117,18 +108,27 @@
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 33 93% 54%; /* Bitcoin orange #F7931A */
-    --accent-foreground: 0 0% 100%;
+    /* Subtle warm hover surface — distinct from primary so menus/dropdowns don't flash full brand orange */
+    --accent: 33 60% 94%;
+    --accent-foreground: 26 60% 18%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
+    /* Semantic status tokens */
+    --success: 158 82% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 26 83% 14%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 33 93% 54%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Bitcoin-anchored categorical ramp — same hues in dark mode, lightness-tuned there */
+    --chart-1: 33 93% 54%;  /* Bitcoin orange */
+    --chart-2: 173 58% 39%; /* teal */
+    --chart-3: 226 70% 55%; /* indigo */
+    --chart-4: 43 90% 50%;  /* gold */
+    --chart-5: 276 70% 60%; /* purple */
     --chart-positive: 158 82% 42%;
     --chart-negative: 350 89% 60%;
     --chart-received: 350 89% 60%; /* Match chart-negative for consistency */
@@ -164,18 +164,27 @@
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 33 93% 54%; /* Bitcoin orange #F7931A */
-    --accent-foreground: 0 0% 100%;
+    /* Subtle warm hover surface — distinct from primary so menus/dropdowns don't flash full brand orange */
+    --accent: 33 20% 18%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+    /* Semantic status tokens */
+    --success: 158 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 26 83% 14%;
+    --info: 217 91% 65%;
+    --info-foreground: 0 0% 100%;
     --border: 0 0% 20%;
     --input: 0 0% 20%;
     --ring: 33 93% 54%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Same categorical hues as light mode, lightness-tuned for dark surfaces */
+    --chart-1: 33 93% 58%;  /* Bitcoin orange */
+    --chart-2: 173 55% 45%; /* teal */
+    --chart-3: 226 75% 64%; /* indigo */
+    --chart-4: 43 90% 58%;  /* gold */
+    --chart-5: 276 75% 68%; /* purple */
     --chart-positive: 158 82% 42%; /* Match light mode for consistency */
     --chart-negative: 350 89% 60%; /* Match light mode for consistency */
     --chart-received: 350 89% 60%; /* Match chart-negative for consistency */

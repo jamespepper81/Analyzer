@@ -23,7 +23,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useWallet } from '@/contexts/wallet-context';
-import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
+import { useWalletDataGuard } from '@/components/wallet-data-guard';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Scatter, ScatterChart, XAxis, YAxis, Tooltip, ZAxis } from 'recharts';
 import { useMemo } from 'react';
 import { TrendingUp } from 'lucide-react';
@@ -67,6 +67,7 @@ const btcToSatsFormatter = (value: any) => {
 
 export default function AnalysisPage() {
   const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
+  const walletGuard = useWalletDataGuard();
 
   const balanceChartData = useMemo(() => {
     if (!data || !data.transactions || data.transactions.length === 0) {
@@ -187,12 +188,8 @@ export default function AnalysisPage() {
     return Object.values(feesByMonth).sort((a,b) => a.key.localeCompare(b.key));
   }, [data]);
 
-  const hasBlockingError = !!error && !data;
-
-  if (!xpub) return <FullPageLoader />;
-  if (isLoading && !data) return <FullPageLoader />;
-  if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
-  if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
+  if (walletGuard) return walletGuard;
+  if (!data) return null;
     
   if (balanceChartData.length <= 2) { // only has start and end points
     return (
@@ -231,21 +228,21 @@ export default function AnalysisPage() {
     <div className="flex flex-col gap-4 sm:gap-6">
       {/* Progressive Discovery Status */}
       {isDiscovering && discoveryProgress && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 shadow-md">
+        <div className="bg-gradient-to-r from-info/10 to-chart-purple/10 dark:from-info/30 dark:to-chart-purple/30 border-2 border-info/30 dark:border-info/40 rounded-lg px-4 py-3 shadow-md">
           <div className="flex items-start gap-3">
-            <LoaderCircle className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <LoaderCircle className="h-5 w-5 animate-spin text-info mt-0.5 flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                <p className="text-sm font-semibold text-info">
                   🔍 Discovering addresses... Charts updating with new data
                 </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">
+                <p className="text-xs text-info font-mono">
                   {discoveryProgress.addressesWithActivity} addresses
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Progress value={(discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100} className="h-1.5" />
-                <span className="text-xs text-blue-700 dark:text-blue-300 whitespace-nowrap">
+                <span className="text-xs text-info whitespace-nowrap">
                   {discoveryProgress.addressesChecked} checked
                 </span>
               </div>
@@ -322,7 +319,7 @@ export default function AnalysisPage() {
        </Card>
 
        <Card className="border-2 shadow-md">
-          <CardHeader className="bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+          <CardHeader className="bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <IconContainer variant="emerald">
                   <ChartColumn className="h-5 w-5" />
@@ -360,7 +357,7 @@ export default function AnalysisPage() {
         </Card>
 
         <Card className="border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-primary/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <IconContainer variant="orange">
                     <ChartPie className="h-5 w-5" />
@@ -383,7 +380,7 @@ export default function AnalysisPage() {
         </Card>
 
         <Card className="border-2 shadow-md">
-          <CardHeader className="bg-gradient-to-br from-rose-500/5 via-transparent to-transparent border-b">
+          <CardHeader className="bg-gradient-to-br from-chart-negative/5 via-transparent to-transparent border-b">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <IconContainer variant="rose">
                   <DollarSign className="h-5 w-5" />
@@ -425,7 +422,7 @@ export default function AnalysisPage() {
         </Card>
 
         <Card className="border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-chart-purple/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <IconContainer variant="purple">
                     <Activity className="h-5 w-5" />
@@ -455,7 +452,7 @@ export default function AnalysisPage() {
         </Card>
 
         <Card className="lg:col-span-2 border-2 shadow-md">
-            <CardHeader className="bg-gradient-to-br from-amber-500/5 via-transparent to-transparent border-b">
+            <CardHeader className="bg-gradient-to-br from-warning/5 via-transparent to-transparent border-b">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <IconContainer variant="amber">
                     <Coins className="h-5 w-5" />

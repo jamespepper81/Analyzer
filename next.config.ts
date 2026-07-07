@@ -1,9 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   // Development-specific optimizations
   ...(process.env.NODE_ENV === 'development' && {
     onDemandEntries: {
@@ -150,7 +147,7 @@ const nextConfig: NextConfig = {
   // Updated experimental flags for Next.js 16
   experimental: {
     webVitalsAttribution: ['CLS', 'LCP'],
-    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
+    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react', 'recharts'],
   },
   // Turbopack configuration (replaces webpack)
   // Turbopack has native WASM support - no custom config needed

@@ -4,7 +4,6 @@
  */
 
 import { format } from 'date-fns';
-import JSZip from 'jszip';
 import type { EnhancedTaxReportOutput, DisposalDetail, IncomeDetail, TaxLotDetail } from './types';
 
 /**
@@ -389,8 +388,10 @@ export async function exportFullTaxPackage(
 ) {
   try {
     const timestamp = format(new Date(), 'yyyy-MM-dd');
-    
-    // Create a new ZIP file
+
+    // jszip is only needed for the full-package export, so load it on demand
+    // instead of shipping it with every page that imports this module
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
     
     // Generate all reports

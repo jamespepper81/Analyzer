@@ -13,11 +13,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { IconContainer } from '@/components/ui/icon-container';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { CircleAlert, ArrowDownLeft, ArrowLeft, ArrowLeftRight, ArrowUpRight, CircleCheckBig, Clock, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { useWallet } from '@/contexts/wallet-context';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
 import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import type { Transaction, TransactionInput, TransactionOutput } from '@/lib/types';
 import { getTransactionData } from '@/lib/blockchain-api';
 
@@ -33,18 +36,13 @@ function DetailItem({ label, value, children }: { label: string; value?: React.R
 }
 
 function AddressCard({ title, items, btcPrice, currency, type }: { title: string; items: Array<{ address: string | null, value: number }>; btcPrice: number, currency: string, type: 'input' | 'output' }) {
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(value);
-    }
+    const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
     const isInput = type === 'input';
 
     return (
         <Card className="border-2 shadow-md">
-            <CardHeader className={`bg-gradient-to-br ${isInput ? 'from-rose-500/5' : 'from-emerald-500/5'} via-transparent to-transparent border-b`}>
+            <CardHeader className={`bg-gradient-to-br ${isInput ? 'from-chart-negative/5' : 'from-success/5'} via-transparent to-transparent border-b`}>
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <IconContainer variant={isInput ? 'rose' : 'emerald'}>
                         {isInput ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownLeft className="h-5 w-5" />}
@@ -126,28 +124,14 @@ export default function TransactionDetailsPage() {
         loadData();
     }, [txid, loadData]);
 
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({
-            title: 'Copied to clipboard',
-            description: text,
-        });
-    };
+    const handleCopy = useCopyToClipboard();
 
     if (isWalletLoading || pageIsLoading) return <FullPageLoader />;
     if (walletError && !pageData) return <ErrorDisplay message={walletError} />;
 
     if (pageError) {
         return (
-            <div className="flex flex-col items-center justify-center gap-4 text-center px-4">
-                <CircleAlert className="h-10 w-10 sm:h-12 sm:w-12 text-destructive" />
-                <h1 className="text-xl sm:text-2xl font-bold">Transaction Not Found</h1>
-                <p className="text-muted-foreground text-sm sm:text-base">{pageError}</p>
-                <Button onClick={() => router.back()} size="sm">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
-                </Button>
-            </div>
+            <EmptyState title="Transaction Not Found" message={pageError} onBack={() => router.back()} />
         );
     }
 
@@ -161,12 +145,7 @@ export default function TransactionDetailsPage() {
     const inputValue = tx.inputs.reduce((sum, i) => sum + (i.value || 0), 0) / 1e8;
     const outputValue = tx.outputs.reduce((sum, o) => sum + o.value, 0) / 1e8;
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(value);
-    };
+    const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
     return (
         <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6 px-2 sm:px-0">
@@ -202,7 +181,7 @@ export default function TransactionDetailsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="lg:col-span-1 space-y-4 sm:space-y-6">
                     <Card className="border-2 shadow-md">
-                        <CardHeader className="bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-b">
+                        <CardHeader className="bg-gradient-to-br from-info/5 via-transparent to-transparent border-b">
                             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                                 <IconContainer variant="blue">
                                     <ArrowLeftRight className="h-5 w-5" />
@@ -230,12 +209,12 @@ export default function TransactionDetailsPage() {
                         </CardContent>
                     </Card>
                     <Card className="border-2 shadow-md">
-                        <CardHeader className="flex flex-row items-center justify-between pb-4 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-b">
+                        <CardHeader className="flex flex-row items-center justify-between pb-4 bg-gradient-to-br from-success/5 via-transparent to-transparent border-b">
                             <CardTitle className="text-base sm:text-lg">Status</CardTitle>
                             <Badge variant={tx.status === 'Confirmed' ? 'outline' : 'secondary'} className="text-xs">{tx.status}</Badge>
                         </CardHeader>
                         <CardContent className="flex items-start gap-3 sm:gap-4">
-                            {tx.status === 'Confirmed' ? <CircleCheckBig className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-500 mt-1 flex-shrink-0" /> : <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 mt-1 flex-shrink-0" />}
+                            {tx.status === 'Confirmed' ? <CircleCheckBig className="h-6 w-6 sm:h-8 sm:w-8 text-success mt-1 flex-shrink-0" /> : <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning mt-1 flex-shrink-0" />}
                             <div className="min-w-0">
                                 <p className="font-semibold text-sm sm:text-base">This transaction has {tx.confirmations.toLocaleString()} confirmations.</p>
                                 <p className="text-xs sm:text-sm text-muted-foreground">
@@ -247,7 +226,7 @@ export default function TransactionDetailsPage() {
                 </div>
                 <div className="lg:col-span-2">
                     <Card className="border-2 shadow-md">
-                        <CardHeader className="bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border-b">
+                        <CardHeader className="bg-gradient-to-br from-chart-purple/5 via-transparent to-transparent border-b">
                             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                                 <IconContainer variant="purple">
                                     <CircleAlert className="h-5 w-5" />

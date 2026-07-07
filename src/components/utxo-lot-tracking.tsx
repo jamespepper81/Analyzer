@@ -128,7 +128,7 @@ export function UTXOLotTracking({
             <p className="text-sm text-muted-foreground font-medium">Unrealized Gain</p>
             <p className={cn(
               "text-2xl font-bold",
-              stats.totalUnrealizedGain >= 0 ? "text-emerald-500" : "text-rose-500"
+              stats.totalUnrealizedGain >= 0 ? "text-success" : "text-chart-negative"
             )}>
               {formatCurrency(stats.totalUnrealizedGain)}
             </p>
@@ -214,7 +214,7 @@ export function UTXOLotTracking({
                         </TableCell>
                         <TableCell className={cn(
                           "text-right font-bold",
-                          lot.unrealizedGain >= 0 ? "text-emerald-500" : "text-rose-500"
+                          lot.unrealizedGain >= 0 ? "text-success" : "text-chart-negative"
                         )}>
                           {formatCurrency(lot.unrealizedGain)}
                         </TableCell>

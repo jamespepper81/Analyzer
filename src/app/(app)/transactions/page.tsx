@@ -25,8 +25,10 @@ import type { Transaction } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownLeft, Download, Building, LoaderCircle } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
-import { FullPageLoader, ErrorDisplay } from '@/components/ui/loader';
-import { useState } from 'react';
+import { useWalletDataGuard } from '@/components/wallet-data-guard';
+import { formatCurrency as formatCurrencyValue } from '@/lib/format';
+import { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
@@ -36,11 +38,7 @@ function getTxDerived(tx: Transaction, fiatPrice: number, currency: string) {
   const addressToShow = isReceived ? tx.fromAddress[0] : tx.toAddress[0];
   const fiatAmount = Math.abs(tx.btc * fiatPrice);
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(value);
+  const formatCurrency = (value: number) => formatCurrencyValue(value, currency);
 
   // Ensure unique labels are displayed (e.g., if multiple addresses belong to the same exchange)
   const uniqueLabels = tx.labels ? [...new Map(tx.labels.map(item => [item.label, item])).values()] : [];
@@ -63,7 +61,7 @@ function StatusBadge({ status }: { status: Transaction['status'] }) {
       className={cn(
         'text-xs sm:text-sm',
         status === 'Confirmed' && 'border-chart-positive/40 text-chart-positive',
-        status === 'Pending' && 'border-yellow-500/40 text-yellow-500'
+        status === 'Pending' && 'border-warning/40 text-warning'
       )}
     >
       {status}
@@ -168,18 +166,33 @@ const TransactionCard = React.memo(({ tx, fiatPrice, currency }: { tx: Transacti
 TransactionCard.displayName = 'TransactionCard';
 
 
-const TRANSACTIONS_PER_PAGE = 20;
-
 export default function TransactionsPage() {
-  const { data, isLoading, error, activeXpub: xpub, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
-  const [visibleCount, setVisibleCount] = useState(TRANSACTIONS_PER_PAGE);
+  const { data, fiatPrice, currency, isDiscovering, discoveryProgress } = useWallet();
+  const walletGuard = useWalletDataGuard();
   const { toast } = useToast();
-  const hasBlockingError = !!error && !data;
 
-  if (!xpub) return <FullPageLoader />;
-  if (isLoading && !data) return <FullPageLoader />;
-  if (hasBlockingError) return <ErrorDisplay message={error ?? 'Unable to load wallet data.'} />;
-  if (!data) return <ErrorDisplay message="No wallet data found. Please connect a wallet." />;
+  // Both lists are windowed so the DOM stays small no matter how many
+  // transactions the wallet has. Hooks run unconditionally (before the
+  // guard early-return); a hidden container just measures 0 and renders
+  // nothing until its breakpoint makes it visible.
+  const transactions = data?.transactions ?? [];
+  const desktopScrollRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const desktopVirtualizer = useVirtualizer({
+    count: transactions.length,
+    getScrollElement: () => desktopScrollRef.current,
+    estimateSize: () => 73,
+    overscan: 10,
+  });
+  const mobileVirtualizer = useVirtualizer({
+    count: transactions.length,
+    getScrollElement: () => mobileScrollRef.current,
+    estimateSize: () => 112,
+    overscan: 8,
+  });
+
+  if (walletGuard) return walletGuard;
+  if (!data) return null;
 
   const handleExportCSV = () => {
     if (!data || data.transactions.length === 0) {
@@ -230,31 +243,32 @@ export default function TransactionsPage() {
     });
   };
   
-  const handleLoadMore = () => {
-    setVisibleCount((prevCount) => prevCount + TRANSACTIONS_PER_PAGE);
-  };
-  
-  const transactionsToShow = data.transactions.slice(0, visibleCount);
+  const desktopItems = desktopVirtualizer.getVirtualItems();
+  const desktopPaddingTop = desktopItems.length > 0 ? desktopItems[0].start : 0;
+  const desktopPaddingBottom =
+    desktopItems.length > 0
+      ? desktopVirtualizer.getTotalSize() - desktopItems[desktopItems.length - 1].end
+      : 0;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       {/* Progressive Discovery Status */}
       {isDiscovering && discoveryProgress && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 shadow-md">
+        <div className="bg-gradient-to-r from-info/10 to-chart-purple/10 dark:from-info/30 dark:to-chart-purple/30 border-2 border-info/30 dark:border-info/40 rounded-lg px-4 py-3 shadow-md">
           <div className="flex items-start gap-3">
-            <LoaderCircle className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <LoaderCircle className="h-5 w-5 animate-spin text-info mt-0.5 flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                <p className="text-sm font-semibold text-info">
                   🔍 Discovering addresses... Transactions updating in real-time
                 </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">
+                <p className="text-xs text-info font-mono">
                   {discoveryProgress.addressesWithActivity} addresses
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Progress value={(discoveryProgress.addressesChecked / (discoveryProgress.addressesChecked + 20)) * 100} className="h-1.5" />
-                <span className="text-xs text-blue-700 dark:text-blue-300 whitespace-nowrap">
+                <span className="text-xs text-info whitespace-nowrap">
                   {discoveryProgress.addressesChecked} checked
                 </span>
               </div>
@@ -274,7 +288,7 @@ export default function TransactionsPage() {
                   Transaction History
                 </CardTitle>
                 <CardDescription className="mt-2">
-                A complete list of all your wallet's transactions.
+                A complete list of all your wallet&apos;s transactions ({data.transactions.length.toLocaleString()} total).
                 </CardDescription>
             </div>
             <Button variant="outline" onClick={handleExportCSV} size="sm" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
@@ -284,14 +298,29 @@ export default function TransactionsPage() {
         </div>
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
-        {/* Mobile: stacked cards so columns never overlap on small screens */}
-        <div className="sm:hidden" role="list">
-          {transactionsToShow.length > 0 ? (
-            transactionsToShow.map((tx) => (
-              <div role="listitem" key={tx.id}>
-                <TransactionCard tx={tx} fiatPrice={fiatPrice} currency={currency} />
-              </div>
-            ))
+        {/* Mobile: stacked cards, windowed so long histories stay light */}
+        <div ref={mobileScrollRef} className="sm:hidden max-h-[70vh] overflow-y-auto" role="list">
+          {transactions.length > 0 ? (
+            <div
+              className="relative w-full"
+              style={{ height: `${mobileVirtualizer.getTotalSize()}px` }}
+            >
+              {mobileVirtualizer.getVirtualItems().map((virtualItem) => {
+                const tx = transactions[virtualItem.index];
+                return (
+                  <div
+                    role="listitem"
+                    key={tx.id}
+                    data-index={virtualItem.index}
+                    ref={mobileVirtualizer.measureElement}
+                    className="absolute left-0 top-0 w-full"
+                    style={{ transform: `translateY(${virtualItem.start}px)` }}
+                  >
+                    <TransactionCard tx={tx} fiatPrice={fiatPrice} currency={currency} />
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <p className="flex h-24 items-center justify-center text-center text-muted-foreground">
               No transactions found.
@@ -299,10 +328,11 @@ export default function TransactionsPage() {
           )}
         </div>
 
-        {/* Desktop (sm+): table layout */}
-        <div className="hidden sm:block">
+        {/* Desktop (sm+): table layout, windowed via spacer rows to keep
+            real <table> semantics */}
+        <div ref={desktopScrollRef} className="hidden sm:block max-h-[65vh] overflow-y-auto">
           <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow className="border-b-2 hover:bg-transparent">
               <TableHead>Details</TableHead>
               <TableHead className="text-right">Amount (BTC)</TableHead>
@@ -311,10 +341,21 @@ export default function TransactionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactionsToShow.length > 0 ? (
-              transactionsToShow.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} fiatPrice={fiatPrice} currency={currency} />
-              ))
+            {transactions.length > 0 ? (
+              <>
+                {desktopPaddingTop > 0 && (
+                  <tr aria-hidden="true" style={{ height: `${desktopPaddingTop}px` }} />
+                )}
+                {desktopItems.map((virtualItem) => {
+                  const tx = transactions[virtualItem.index];
+                  return (
+                    <TransactionRow key={tx.id} tx={tx} fiatPrice={fiatPrice} currency={currency} />
+                  );
+                })}
+                {desktopPaddingBottom > 0 && (
+                  <tr aria-hidden="true" style={{ height: `${desktopPaddingBottom}px` }} />
+                )}
+              </>
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
@@ -325,14 +366,6 @@ export default function TransactionsPage() {
           </TableBody>
         </Table>
         </div>
-        {visibleCount < data.transactions.length && (
-            <div className="mt-4 sm:mt-6 flex justify-center px-4 sm:px-0">
-                <Button onClick={handleLoadMore} variant="outline" size="sm" className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
-                    <Download className="mr-2 h-4 w-4" />
-                    Load More
-                </Button>
-            </div>
-        )}
       </CardContent>
     </Card>
     </div>

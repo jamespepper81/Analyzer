@@ -2,7 +2,7 @@
 import { bitcoin, bip32 } from '@/lib/bitcoin-init';
 import type { WalletData, Transaction, AddressInfo, UTXO, Currency, TransactionLabel, BtcPriceInfo } from '@/lib/types';
 import { KNOWN_EXCHANGE_ADDRESSES } from '@/lib/exchange-labels';
-import { esploraGet, fetchJson, getHistoricalPriceRange } from './blockchain-api';
+import { esploraGet, fetchJson, getHistoricalPriceRange, getAddressStatsBatch, getAddressBundleBatch } from './blockchain-api';
 import { format, startOfDay } from 'date-fns';
 import { 
     getCachedSnapshot, 
@@ -18,8 +18,7 @@ type AddressType = 'native' | 'legacy' | 'nested';
 // The discovery process is the main bottleneck during wallet login/connection
 const GAP_LIMIT = 20; // Standard BIP44 gap limit for address discovery
 const INITIAL_CHECK_LIMIT = 5; // Number of addresses to check per type for detection (5 provides better accuracy than 3)
-const PARALLEL_BATCH_SIZE = 20; // How many addresses to check in parallel (matches GAP_LIMIT so a full gap window resolves in one round-trip)
-const ADDRESS_DATA_CONCURRENCY = 6; // Bounded concurrency for per-address data fetches (avoids provider throttling)
+const ADDRESS_DATA_CONCURRENCY = 6; // Legacy default kept for the fetchAddressDataConcurrent signature; batching happens server-side now
 const ADDRESS_DISCOVERY_CACHE_TTL_MS = 10 * 60 * 1000; // Cache discovered addresses for 10 minutes
 const XPUB_LOG_PREFIX_LENGTH = 12; // How many characters of XPUB to show in logs (balance of readability vs privacy)
 
@@ -119,29 +118,34 @@ async function detectActiveTypes(node: any, typesToCheck: AddressType[]): Promis
     const detectionStart = Date.now();
     const activeTypes: AddressType[] = [];
 
-    const typeDetectionResults = await Promise.allSettled(
-        typesToCheck.map(async (type) => {
-            const batch = deriveAddressBatch(node, 0, 0, INITIAL_CHECK_LIMIT, type);
-            // Use lightweight /address stats endpoint instead of full /txs
-            // This reduces data fetched by ~90% while preserving detection accuracy
-            const results = await Promise.allSettled(
-                batch.map(addr => esploraGet(`/address/${addr}`, 300))
-            );
-            const hasActivity = results.some(result =>
-                result.status === 'fulfilled' &&
-                result.value &&
-                // Combine chain + mempool transaction counts for full coverage
-                ((result.value.chain_stats?.tx_count || 0) + (result.value.mempool_stats?.tx_count || 0)) > 0
-            );
-            return { type, hasActivity };
-        })
-    );
+    // Derive the probe addresses for every type up front and check them all
+    // in a single batched server call (Server Actions run serially per
+    // client, so per-address calls would execute one round trip at a time).
+    const probes = typesToCheck.map((type) => ({
+        type,
+        addresses: deriveAddressBatch(node, 0, 0, INITIAL_CHECK_LIMIT, type),
+    }));
+    const flatAddresses = probes.flatMap((p) => p.addresses);
 
-    typeDetectionResults.forEach((result) => {
-        if (result.status === 'fulfilled' && result.value.hasActivity) {
-            activeTypes.push(result.value.type);
+    try {
+        const stats = await getAddressStatsBatch(flatAddresses);
+        let offset = 0;
+        for (const probe of probes) {
+            const slice = stats.slice(offset, offset + probe.addresses.length);
+            offset += probe.addresses.length;
+            const hasActivity = slice.some(
+                (s) =>
+                    s &&
+                    // Combine chain + mempool transaction counts for full coverage
+                    ((s.chain_stats?.tx_count || 0) + (s.mempool_stats?.tx_count || 0)) > 0
+            );
+            if (hasActivity) {
+                activeTypes.push(probe.type);
+            }
         }
-    });
+    } catch (e) {
+        console.warn('[Discovery] Type detection batch failed:', e);
+    }
 
     const detectionTime = Date.now() - detectionStart;
     return { activeTypes, detectionTime };
@@ -181,27 +185,16 @@ async function performDiscoveryForTypesProgressive(
                 const batch = deriveAddressBatch(node, chain, index, index + GAP_LIMIT, type);
                 currentBatchNumber++;
 
-                const chunkSize = PARALLEL_BATCH_SIZE;
-                const addressStats: any[] = new Array(batch.length);
-
-                for (let chunkStart = 0; chunkStart < batch.length; chunkStart += chunkSize) {
-                    const chunkEnd = Math.min(chunkStart + chunkSize, batch.length);
-                    const chunkAddresses = batch.slice(chunkStart, chunkEnd);
-
-                    // Use lightweight /address stats endpoint instead of /txs/chain
-                    // This reduces data transfer by ~95% (stats ~500 bytes vs txs ~50KB+)
-                    const chunkResults = await Promise.allSettled(
-                        chunkAddresses.map(addr => esploraGet(`/address/${addr}`, 300))
-                    );
-
-                    chunkResults.forEach((result, i) => {
-                        const absoluteIndex = chunkStart + i;
-                        if (result.status === 'fulfilled') {
-                            addressStats[absoluteIndex] = result.value;
-                        } else {
-                            addressStats[absoluteIndex] = null;
-                        }
-                    });
+                // One batched server call checks the whole gap window. The
+                // server fans out to the provider in parallel — previously
+                // these were 20 individual Server Action round trips that
+                // Next.js executed one at a time.
+                let addressStats: (any | null)[];
+                try {
+                    addressStats = await getAddressStatsBatch(batch);
+                } catch (e) {
+                    console.warn('[Discovery] Stats batch failed, treating window as empty:', e);
+                    addressStats = new Array(batch.length).fill(null);
                 }
 
                 let foundInBatch = false;
@@ -287,13 +280,8 @@ export async function discoverUsedAddressesProgressive(
     
     const inferenceResult = inferAddressTypesFromXpub(xpub);
 
-    // Quick provider readiness check (with fallback & retry under the hood)
-    // Do not hard-fail here; continue and let downstream calls surface provider errors if needed.
-    try {
-        await esploraGet(`/blocks/tip/height`, 60);
-    } catch (e) {
-        console.warn('[Progressive Discovery] Provider readiness check failed, continuing.', e);
-    }
+    // No standalone provider readiness check: the first stats batch surfaces
+    // provider errors just as well and saves a serial round trip.
 
     let activeTypes: AddressType[] = [];
 
@@ -484,70 +472,57 @@ function createEmptySnapshot(xpub: string): WalletSnapshot {
     };
 }
 
+// How many addresses to bundle per server call. Must not exceed the server's
+// per-call limit; 15 keeps individual response payloads bounded for busy
+// addresses.
+const ADDRESS_BUNDLE_CHUNK_SIZE = 15;
+
 /**
- * Fetch txs/utxos/info for a set of addresses using a bounded worker pool.
+ * Fetch txs/utxos/info for a set of addresses via chunked batch server calls.
  *
- * Concurrency is capped (default {@link ADDRESS_DATA_CONCURRENCY}) to avoid
- * flooding the Esplora provider, which otherwise responds with 429/5xx and
- * triggers retry-backoff that stretches wallet loading into minutes.
+ * Server Actions execute serially per client, so the previous per-address
+ * worker pool degraded to one round trip per request. Each chunk here is a
+ * single action call; the server fans out to the provider in parallel (with
+ * its own politeness cap) and applies the balance>0 UTXO retry.
  *
- * When `statsByAddress` already contains the `/address` response for an address
- * (e.g. fetched during discovery), it is reused as `info` and the redundant
- * `/address/{addr}` call is skipped.
+ * When `statsByAddress` already contains the `/address` response for an
+ * address (fetched during discovery), it is reused as `info`; the batch
+ * response's stats are used otherwise.
  */
 export async function fetchAddressDataConcurrent(
     addresses: string[],
     statsByAddress?: Map<string, any>,
-    concurrency: number = ADDRESS_DATA_CONCURRENCY,
+    _concurrency: number = ADDRESS_DATA_CONCURRENCY,
     onAddressProcessed?: (processed: number, soFar: Map<string, { txs: any[]; utxos: any[]; info: any }>) => void
 ): Promise<Map<string, { txs: any[]; utxos: any[]; info: any }>> {
     const result = new Map<string, { txs: any[]; utxos: any[]; info: any }>();
     if (addresses.length === 0) return result;
 
-    let idx = 0;
     let processed = 0;
-    async function worker() {
-        while (idx < addresses.length) {
-            const address = addresses[idx++];
-            try {
-                const cachedInfo = statsByAddress?.get(address);
-                const [txs, initialAddressUtxos, fetchedInfo] = await Promise.all([
-                    esploraGet(`/address/${address}/txs`).catch(() => []),
-                    esploraGet(`/address/${address}/utxo`).catch(() => []),
-                    cachedInfo !== undefined
-                        ? Promise.resolve(cachedInfo)
-                        : esploraGet(`/address/${address}`).catch(() => null),
-                ]);
-                const addressInfo = fetchedInfo;
-
-                // If the address shows a positive balance but the first UTXO call failed,
-                // try a dedicated retry to avoid silently undercounting UTXOs.
-                const addressBalanceSats =
-                    (addressInfo?.chain_stats?.funded_txo_sum || 0) -
-                    (addressInfo?.chain_stats?.spent_txo_sum || 0);
-                const addressUtxos =
-                    Array.isArray(initialAddressUtxos) && initialAddressUtxos.length > 0
-                        ? initialAddressUtxos
-                        : addressBalanceSats > 0
-                            ? await esploraGet(`/address/${address}/utxo`).catch(() => [])
-                            : [];
-
-                result.set(address, {
-                    txs: Array.isArray(txs) ? txs : [],
-                    utxos: Array.isArray(addressUtxos) ? addressUtxos : [],
-                    info: addressInfo,
-                });
-            } catch {
-                // Skip this address on failure
-            } finally {
-                processed++;
-                onAddressProcessed?.(processed, result);
-            }
+    for (let start = 0; start < addresses.length; start += ADDRESS_BUNDLE_CHUNK_SIZE) {
+        const chunk = addresses.slice(start, start + ADDRESS_BUNDLE_CHUNK_SIZE);
+        let bundles: (import('./blockchain-api').AddressBundle | null)[];
+        try {
+            bundles = await getAddressBundleBatch(chunk);
+        } catch (e) {
+            console.warn('[WalletData] Address bundle batch failed, skipping chunk:', e);
+            bundles = new Array(chunk.length).fill(null);
         }
+
+        chunk.forEach((address, i) => {
+            const bundle = bundles[i];
+            if (bundle) {
+                const cachedInfo = statsByAddress?.get(address);
+                result.set(address, {
+                    txs: bundle.txs,
+                    utxos: bundle.utxos,
+                    info: cachedInfo !== undefined ? cachedInfo : bundle.stats,
+                });
+            }
+            processed++;
+            onAddressProcessed?.(processed, result);
+        });
     }
-    await Promise.all(
-        Array.from({ length: Math.min(concurrency, addresses.length) }, () => worker())
-    );
 
     return result;
 }
@@ -801,16 +776,22 @@ export async function getWalletDataProgressive(
     try {
         // Check for cached snapshot - if available, show it immediately then update progressively
         const cachedSnapshot = getCachedSnapshot(xpub);
-        
-        // Fetch fresh price data early (needed for all updates)
+
+        // Fetch price data and chain tip in parallel — they're independent,
+        // and Server Actions run serially per client, so awaiting them one
+        // after another would cost an extra round trip each.
+        const [tickerResult, tipResult] = await Promise.allSettled([
+            fetchJson('blockchain_info', '/ticker'),
+            esploraGet(`/blocks/tip/height`, 60),
+        ]);
         let btcPrices: Record<string, BtcPriceInfo>;
-        try {
-            const fetchedPrices = await fetchJson('blockchain_info', '/ticker');
-            btcPrices = normalizeBtcPrices(fetchedPrices);
-        } catch (e) {
-            console.warn('[WalletData] Failed to fetch BTC price data, continuing with zeroed prices.', e);
+        if (tickerResult.status === 'fulfilled') {
+            btcPrices = normalizeBtcPrices(tickerResult.value);
+        } else {
+            console.warn('[WalletData] Failed to fetch BTC price data, continuing with zeroed prices.', tickerResult.reason);
             btcPrices = { ...DEFAULT_BTC_PRICES };
         }
+        const latestBlockHeight = tipResult.status === 'fulfilled' ? tipResult.value : null;
 
 
         // If we have cached data, show it first
@@ -839,8 +820,6 @@ export async function getWalletDataProgressive(
         // → retry-backoff) and racing the snapshot build.
         const discoveredAddresses: string[] = [];
         const statsByAddress = new Map<string, any>();
-
-        const latestBlockHeight = await esploraGet(`/blocks/tip/height`, 60).catch(() => null);
 
         // Emit a lightweight discovery-phase progress update. It carries no wallet
         // data yet (only the running counts), so the dashboard keeps its skeleton

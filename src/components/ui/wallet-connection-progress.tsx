@@ -135,7 +135,7 @@ export function WalletConnectionProgress({
               <div
                 className={cn(
                   'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300',
-                  isCompleted && 'bg-green-500 text-white',
+                  isCompleted && 'bg-success text-success-foreground',
                   isCurrent && 'bg-primary/20 border-2 border-primary',
                   isPending && 'bg-muted border border-muted-foreground/20'
                 )}
@@ -153,7 +153,7 @@ export function WalletConnectionProgress({
               <span
                 className={cn(
                   'text-sm transition-colors duration-300',
-                  isCompleted && 'text-green-600 dark:text-green-400',
+                  isCompleted && 'text-success',
                   isCurrent && 'text-foreground font-medium',
                   isPending && 'text-muted-foreground'
                 )}
