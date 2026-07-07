@@ -273,7 +273,6 @@ function RecommendationsErrorState({
 export default function SecurityPage() {
     const {
         data,
-        isLoading,
         recommendations,
         recommendationsError,
         isRecommendationsLoading,
