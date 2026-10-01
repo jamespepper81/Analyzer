@@ -71,7 +71,7 @@
     "embla-carousel-react": "^8.6.0",
     "genkit": "^1.36.0",
     "google-auth-library": "^10.2.0",
-    "googleapis": "^173.0.0",
+    "googleapis": "^182.0.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "jszip": "^3.10.1",
