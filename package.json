@@ -122,7 +122,7 @@
     "@opentelemetry/sdk-logs": "^0.219.0",
     "@opentelemetry/sdk-metrics": "^2.8.0",
     "@opentelemetry/sdk-trace-base": "^2.8.0",
-    "@opentelemetry/sdk-trace-node": "^2.8.0",
+    "@opentelemetry/sdk-trace-node": "^2.11.0",
     "@opentelemetry/context-async-hooks": "^2.8.0",
     "@opentelemetry/exporter-zipkin": "^2.8.0",
     "@opentelemetry/sdk-node": "^0.219.0",
